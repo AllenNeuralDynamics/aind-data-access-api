@@ -17,6 +17,8 @@ readme = "README.md"
 dynamic = ["version"]
 
 dependencies = [
+    "SQLAlchemy",
+    "pandas"
 ]
 
 [project.optional-dependencies]
