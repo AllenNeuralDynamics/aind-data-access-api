@@ -17,6 +17,8 @@ readme = "README.md"
 dynamic = ["version"]
 
 dependencies = [
+    "pymongo",
+    "pydantic"
 ]
 
 [project.optional-dependencies]
