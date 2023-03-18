@@ -2,7 +2,7 @@ import csv
 from io import StringIO
 
 import pandas as pd
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text, engine
 
 
 class Client:
@@ -15,10 +15,15 @@ class Client:
 
     @property
     def engine(self):
-        return create_engine(
-            f"postgresql://{self.user}:{self.password}@{self.host}:"
-            f"{self.port}/{self.database}"
+        connection_url = engine.URL.create(
+            drivername="postgresql",
+            username=self.user,
+            password=self.password,
+            host=self.host,
+            database=self.database,
+            port=self.port,
         )
+        return create_engine(connection_url)
 
     @staticmethod
     def __psql_insert_copy(table, conn, keys, data_iter):
@@ -41,25 +46,30 @@ class Client:
             )
             cur.copy_expert(sql=sql, file=s_buf)
 
-    def append_df_to_table(self, df, table_name: str) -> None:
+    def append_df_to_table(self, df, table_name: str, index=False) -> None:
         df.to_sql(
             table_name,
             self.engine,
             method=self.__psql_insert_copy,
             if_exists="append",
+            index=index,
         )
         return None
 
-    def overwrite_table_with_df(self, df, table_name: str) -> None:
+    def overwrite_table_with_df(
+        self, df, table_name: str, index=False
+    ) -> None:
         df.to_sql(
             table_name,
             self.engine,
             method=self.__psql_insert_copy,
             if_exists="replace",
+            index=index,
         )
         return None
 
     def read_table(self, table_name: str) -> pd.DataFrame:
-        return pd.read_sql_query(
-            f'SELECT * FROM "{table_name}"', con=self.engine
-        )
+        with self.engine.begin() as conn:
+            query = f'SELECT * FROM "{table_name}"'
+            df = pd.read_sql_query(sql=text(query), con=conn)
+        return df
