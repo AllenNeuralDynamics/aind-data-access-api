@@ -18,8 +18,7 @@ dynamic = ["version"]
 
 dependencies = [
     "pymongo",
-    "pydantic",
-    "boto3"
+    "pydantic"
 ]
 
 [project.optional-dependencies]
