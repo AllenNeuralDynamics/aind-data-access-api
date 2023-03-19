@@ -1,39 +1,39 @@
+"""Module to manage credentials to connect to databases."""
+
 from enum import Enum, auto
-import os
+
+from pydantic import BaseSettings, Field, SecretStr
 
 
 class AutoName(Enum):
     """Autogenerate name using auto feature. Retrieved from
     https://stackoverflow.com/a/32313954"""
 
-    def _generate_next_value_(name, start, count, last_values):
-        return name
+    def _generate_next_value_(self, start, count, last_values):
+        """Hack to get auto to reflect var name instead of int"""
+        return self
 
 
-class EnvVarKeys(AutoName):
-    MONGODB_USER: str = auto()
-    MONGODB_PASSWORD: str = auto()
-    MONGODB_HOST: str = auto()
+# TODO: There's a bug with pycharm warning about auto. The latest version
+#  of Pycharm should fix it.
+# noinspection PyArgumentList
+class EnvVarKeys(str, AutoName):
+    """Enum of the names of the environment variables to check."""
+
+    DOC_STORE_USER = auto()
+    DOC_STORE_PASSWORD = auto()
+    DOC_STORE_HOST = auto()
+    DOC_STORE_PORT = auto()
 
     def __str__(self):
+        """As a default, have the string representation just be the value."""
         return str(self.value)
 
 
-class DocumentStoreCredentials:
-    def __init__(
-        self, user: str = None, password: str = None, host: str = None
-    ) -> None:
-        self.user = user
-        self.password = password
-        self.host = host
+class DocumentStoreCredentials(BaseSettings):
+    """Credentials for the Document Store."""
 
-    def _resolve_from_env_vars(self):
-        if self.user is None:
-            self.user = os.getenv(str(EnvVarKeys.MONGODB_USER))
-        if self.password is None:
-            self.password = os.getenv(str(EnvVarKeys.MONGODB_PASSWORD))
-        if self.host is None:
-            self.host = os.getenv(str(EnvVarKeys.MONGODB_HOST))
-
-
-# class Credentials:
+    user: str = Field(..., env=EnvVarKeys.DOC_STORE_USER.value)
+    password: SecretStr = Field(..., env=EnvVarKeys.DOC_STORE_PASSWORD.value)
+    host: str = Field(..., env=EnvVarKeys.DOC_STORE_HOST.value)
+    port: int = Field(..., env=EnvVarKeys.DOC_STORE_PORT.value)

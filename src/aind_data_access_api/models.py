@@ -1,8 +1,14 @@
-from pydantic import BaseModel, Field, Extra
+"""Module for models"""
+
 from datetime import datetime
+
+from pydantic import BaseModel, Extra, Field
 
 
 class DataAssetRecord(BaseModel):
+    """The records in the Data Asset Collection needs to contain certain fields
+    to easily query and index the data."""
+
     id: str = Field(
         ...,
         alias="_id",
@@ -29,20 +35,26 @@ class DataAssetRecord(BaseModel):
     )
 
     class Config:
+        """Need to allow for additional fields to append to base model"""
+
         extra = Extra.allow
 
     @property
     def _id(self):
+        """Property for _id"""
         return self.id
 
     @property
     def _name(self):
+        """Property for _name"""
         return self.name
 
     @property
     def _location(self):
+        """Property for _location"""
         return self.location
 
     @property
     def _created(self):
+        """Property for _created"""
         return self.created

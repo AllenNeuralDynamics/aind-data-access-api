@@ -1,47 +1,55 @@
-import pymongo
-from pymongo import UpdateOne
-from typing import Optional, List
+"""Module to interface with the Document Store"""
+
+import logging
+from typing import Iterator, List, Optional
+
+from pymongo import MongoClient, UpdateOne
+
 from aind_data_access_api.credentials import DocumentStoreCredentials
 from aind_data_access_api.models import DataAssetRecord
-import logging
 
 
 class Client:
+    """Class to establish a document store client."""
+
     def __init__(
         self,
-        credentials: Optional[DocumentStoreCredentials] = None,
         _password: Optional[str] = None,
         _user: Optional[str] = None,
         _host: Optional[str] = None,
-        db_name: str = None,
-        collection_name: str = None,
+        _port: Optional[int] = 27017,
+        db_name: Optional[str] = None,
+        collection_name: Optional[str] = None,
     ):
-        if credentials is None:
-            self.credentials = DocumentStoreCredentials(
-                password=_password, user=_user, host=_host
-            )
-        else:
-            self.credentials = credentials
+        """
+        Construct a client to interface with a document store.
+        Parameters
+        ----------
+        _password : Optional[str]
+        _user : Optional[str]
+        _host : Optional[str]
+        _port : Optional[int]
+        db_name : Optional[str]
+        collection_name : Optional[str]
+        """
+        self.credentials = DocumentStoreCredentials(
+            password=_password, user=_user, host=_host, port=_port
+        )
         self.db_name = db_name
         self.collection_name = collection_name
-        self._client = pymongo.MongoClient(self._url)
-
-    @property
-    def _url(self):
-        mongodb_url = (
-            f"mongodb://{self.credentials.user}:"
-            f"{self.credentials.password}@"
-            f"{self.credentials.host}"
+        self._client = MongoClient(
+            _host, port=_port, username=_user, password=_password
         )
-        return mongodb_url
 
     @property
     def db(self):
+        """Document Store database to connect to."""
         db = None if self.db_name is None else self._client[self.db_name]
         return db
 
     @property
     def collection(self):
+        """Collection of records in Document Store database to access."""
         collection = (
             None
             if self.collection_name is None
@@ -50,14 +58,45 @@ class Client:
         return collection
 
     def close(self):
+        """Close the client."""
         self._client.close()
 
-    def retrieve_data_asset_records(self, query=None) -> None:
+    def retrieve_data_asset_records(
+        self, query: dict = None
+    ) -> Iterator[DataAssetRecord]:
+        """
+        Retrieve data asset records. Will pull all records if query is None.
+        Can add a query to filter the records. For example:
+        retrieve_data_asset_records(query = {"subject.subject_id":"646253"})
+        will retrieve records for that specific subject_id.
+        Parameters
+        ----------
+        query : dict
+          A query to add additional filtering. Consult:
+          https://pymongo.readthedocs.io/en/stable/tutorial.html
+          for additional information.
+
+        Returns
+        -------
+        Iterator[DataAssetRecord]
+
+        """
         iter_response = self.collection.find(query)
         for response in iter_response:
             yield DataAssetRecord(**response)
 
     def upsert_one_record(self, data_asset_record: DataAssetRecord) -> None:
+        """
+        Upsert a single record into DocumentStore.
+        Parameters
+        ----------
+        data_asset_record : DataAssetRecord
+
+        Returns
+        -------
+        None
+
+        """
         # TODO: Add error handling
         upsert_response = self.collection.update_one(
             {"_id": data_asset_record.id},
@@ -69,6 +108,17 @@ class Client:
     def upsert_list_of_records(
         self, data_asset_records: List[DataAssetRecord]
     ) -> None:
+        """
+        Bulk upsert a list of records into the Document Store
+        Parameters
+        ----------
+        data_asset_records : List[DataAssetRecord]
+
+        Returns
+        -------
+        None
+
+        """
         # TODO: Add error handling
         operations = [
             UpdateOne(
