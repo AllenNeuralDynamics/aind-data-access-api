@@ -19,7 +19,9 @@ dynamic = ["version"]
 dependencies = [
     "SQLAlchemy",
     "psycopg2-binary",
-    "pandas"
+    "pandas",
+    "pymongo",
+    "pydantic"
 ]
 
 [project.optional-dependencies]
