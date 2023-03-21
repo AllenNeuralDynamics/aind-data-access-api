@@ -17,6 +17,9 @@ readme = "README.md"
 dynamic = ["version"]
 
 dependencies = [
+    "SQLAlchemy",
+    "psycopg2-binary",
+    "pandas",
     "pymongo",
     "pydantic"
 ]

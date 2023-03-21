@@ -18,7 +18,7 @@ class Client:
         _user: Optional[str] = None,
         _host: Optional[str] = None,
         _port: Optional[int] = 27017,
-        db_name: Optional[str] = None,
+        _database: Optional[str] = None,
         collection_name: Optional[str] = None,
     ):
         """
@@ -29,31 +29,27 @@ class Client:
         _user : Optional[str]
         _host : Optional[str]
         _port : Optional[int]
-        db_name : Optional[str]
+        _database : Optional[str]
         collection_name : Optional[str]
         """
         self.credentials = DocumentStoreCredentials(
-            password=_password, user=_user, host=_host, port=_port
+            password=_password,
+            user=_user,
+            host=_host,
+            port=_port,
+            database=_database,
         )
-        self.db_name = db_name
         self.collection_name = collection_name
         self._client = MongoClient(
             _host, port=_port, username=_user, password=_password
         )
 
     @property
-    def db(self):
-        """Document Store database to connect to."""
-        db = None if self.db_name is None else self._client[self.db_name]
-        return db
-
-    @property
     def collection(self):
         """Collection of records in Document Store database to access."""
+        db = self._client[self.credentials.database]
         collection = (
-            None
-            if self.collection_name is None
-            else self.db[self.collection_name]
+            None if self.collection_name is None else db[self.collection_name]
         )
         return collection
 

@@ -7,6 +7,7 @@ from unittest.mock import patch
 from aind_data_access_api.credentials import (
     DocumentStoreCredentials,
     EnvVarKeys,
+    RDSCredentials,
 )
 
 
@@ -29,6 +30,20 @@ class TestEnvVarKeys(unittest.TestCase):
         self.assertEqual(
             EnvVarKeys.DOC_STORE_PORT.value, str(EnvVarKeys.DOC_STORE_PORT)
         )
+        self.assertEqual(
+            EnvVarKeys.DOC_STORE_DATABASE.value,
+            str(EnvVarKeys.DOC_STORE_DATABASE),
+        )
+        self.assertEqual(
+            EnvVarKeys.RDS_PASSWORD.value,
+            str(EnvVarKeys.RDS_PASSWORD),
+        )
+        self.assertEqual(EnvVarKeys.RDS_USER.value, str(EnvVarKeys.RDS_USER))
+        self.assertEqual(EnvVarKeys.RDS_HOST.value, str(EnvVarKeys.RDS_HOST))
+        self.assertEqual(EnvVarKeys.RDS_PORT.value, str(EnvVarKeys.RDS_PORT))
+        self.assertEqual(
+            EnvVarKeys.RDS_DATABASE.value, str(EnvVarKeys.RDS_DATABASE)
+        )
 
 
 class TestDocumentStoreCredentials(unittest.TestCase):
@@ -41,6 +56,7 @@ class TestDocumentStoreCredentials(unittest.TestCase):
             "DOC_STORE_PASSWORD": "fake_password",
             "DOC_STORE_host": "localhost",
             "DOC_STORE_PORT": "12345",
+            "DOC_STORE_DATABASE": "db",
         },
         clear=True,
     )
@@ -51,6 +67,31 @@ class TestDocumentStoreCredentials(unittest.TestCase):
         self.assertEqual("localhost", creds.host)
         self.assertEqual(12345, creds.port)
         self.assertEqual("fake_password", creds.password.get_secret_value())
+        self.assertEqual("db", creds.database)
+
+
+class TestRDSCredentials(unittest.TestCase):
+    """Test methods in DocumentStoreCredentials class."""
+
+    @patch.dict(
+        os.environ,
+        {
+            "RDS_USER": "fake_user",
+            "RDS_PASSWORD": "fake_password",
+            "RDS_host": "localhost",
+            "RDS_PORT": "12345",
+            "RDS_DATABASE": "db",
+        },
+        clear=True,
+    )
+    def test_credentials_loaded_from_env(self):
+        """Tests that the credentials are loaded from env vars correctly"""
+        creds = RDSCredentials()
+        self.assertEqual("fake_user", creds.user)
+        self.assertEqual("localhost", creds.host)
+        self.assertEqual(12345, creds.port)
+        self.assertEqual("fake_password", creds.password.get_secret_value())
+        self.assertEqual("db", creds.database)
 
 
 if __name__ == "__main__":
