@@ -31,8 +31,8 @@ class TestClient(unittest.TestCase):
             _password="password",
             _host="localhost",
             _user="user",
+            _database="db",
             collection_name="coll",
-            db_name="db",
         )
 
         records = list(ds_client.retrieve_data_asset_records(query=None))
@@ -58,8 +58,8 @@ class TestClient(unittest.TestCase):
             _password="password",
             _host="localhost",
             _user="user",
+            _database="db",
             collection_name="coll",
-            db_name="db",
         )
 
         data_asset_record = DataAssetRecord(
@@ -93,8 +93,8 @@ class TestClient(unittest.TestCase):
             _password="password",
             _host="localhost",
             _user="user",
+            _database="db",
             collection_name="coll",
-            db_name="db",
         )
 
         data_asset_records = [

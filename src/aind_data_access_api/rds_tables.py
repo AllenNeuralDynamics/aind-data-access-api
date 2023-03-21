@@ -19,7 +19,7 @@ class Client:
 
     def __init__(
         self,
-        database: Optional[str],
+        _database: Optional[str],
         _user: Optional[str],
         _password: Optional[str],
         _host: Optional[str],
@@ -29,16 +29,19 @@ class Client:
         Construct a client to interface with relational database.
         Parameters
         ----------
-        database : Optional[str]
+        _database : Optional[str]
         _user : Optional[str]
         _password : Optional[str]
         _host : Optional[str]
         _port : Optional[int]
         """
         self.credentials = RDSCredentials(
-            password=_password, user=_user, host=_host, port=_port
+            password=_password,
+            user=_user,
+            host=_host,
+            port=_port,
+            database=_database,
         )
-        self.database = database
 
     @property
     def engine(self) -> sqlalchemy.engine.Engine:
@@ -53,7 +56,7 @@ class Client:
             username=self.credentials.user,
             password=self.credentials.password.get_secret_value(),
             host=self.credentials.host,
-            database=self.database,
+            database=self.credentials.database,
             port=self.credentials.port,
         )
         return create_engine(connection_url)

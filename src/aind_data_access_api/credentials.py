@@ -24,10 +24,12 @@ class EnvVarKeys(str, AutoName):
     DOC_STORE_PASSWORD = auto()
     DOC_STORE_HOST = auto()
     DOC_STORE_PORT = auto()
+    DOC_STORE_DATABASE = auto()
     RDS_USER = auto()
     RDS_PASSWORD = auto()
     RDS_HOST = auto()
     RDS_PORT = auto()
+    RDS_DATABASE = auto()
 
     def __str__(self):
         """As a default, have the string representation just be the value."""
@@ -41,6 +43,7 @@ class DocumentStoreCredentials(BaseSettings):
     password: SecretStr = Field(..., env=EnvVarKeys.DOC_STORE_PASSWORD.value)
     host: str = Field(..., env=EnvVarKeys.DOC_STORE_HOST.value)
     port: int = Field(..., env=EnvVarKeys.DOC_STORE_PORT.value)
+    database: str = Field(..., env=EnvVarKeys.DOC_STORE_DATABASE.value)
 
 
 class RDSCredentials(BaseSettings):
@@ -50,3 +53,4 @@ class RDSCredentials(BaseSettings):
     password: SecretStr = Field(..., env=EnvVarKeys.RDS_PASSWORD.value)
     host: str = Field(..., env=EnvVarKeys.RDS_HOST.value)
     port: int = Field(..., env=EnvVarKeys.RDS_PORT.value)
+    database: str = Field(..., env=EnvVarKeys.RDS_DATABASE.value)

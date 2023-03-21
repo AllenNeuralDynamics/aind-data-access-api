@@ -20,7 +20,7 @@ class TestClient(unittest.TestCase):
             _password="password",
             _host="localhost",
             _user="user",
-            database="db",
+            _database="db",
         )
 
         mock_pd_read.return_value = pd.DataFrame()
@@ -61,7 +61,7 @@ class TestClient(unittest.TestCase):
             _password="password",
             _host="localhost",
             _user="user",
-            database="db",
+            _database="db",
         )
 
         df1 = pd.DataFrame([["a", 1], ["b", 2]], columns=["foo", "bar"])
@@ -87,7 +87,7 @@ class TestClient(unittest.TestCase):
             _password="password",
             _host="localhost",
             _user="user",
-            database="db",
+            _database="db",
         )
 
         df1 = pd.DataFrame([["a", 1], ["b", 2]], columns=["foo", "bar"])
@@ -117,7 +117,7 @@ class TestClient(unittest.TestCase):
             _password="password",
             _host="localhost",
             _user="user",
-            database="db",
+            _database="db",
         )
         writer: MagicMock = mock_write.return_value.writerows
         func = getattr(rds_client, "_Client__psql_insert_copy")
