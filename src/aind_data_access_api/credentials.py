@@ -1,7 +1,12 @@
 """Module to manage credentials to connect to databases."""
 
+import json
+import logging
 from enum import Enum, auto
+from typing import Any, Dict, Optional
 
+import boto3
+from botocore.exceptions import ClientError
 from pydantic import BaseSettings, Field, SecretStr
 
 
@@ -36,21 +41,115 @@ class EnvVarKeys(str, AutoName):
         return str(self.value)
 
 
-class DocumentStoreCredentials(BaseSettings):
-    """Credentials for the Document Store."""
+class CoreCredentials(BaseSettings):
+    """Core credentials for most of our databases."""
 
-    user: str = Field(..., env=EnvVarKeys.DOC_STORE_USER.value)
+    # Optional field the user can set to pull secrets from AWS Secrets Manager
+    # Will not be printed in repr string.
+    aws_secrets_name: Optional[str] = Field(default=None, repr=False)
+
+    username: str = Field(...)
+    password: SecretStr = Field(...)
+    host: str = Field(...)
+    port: int = Field(...)
+    database: str = Field(...)
+
+    class Config:
+        """This class will add custom sourcing from aws."""
+
+        @staticmethod
+        def settings_from_aws(secrets_name: Optional[str]):  # noqa: C901
+            """
+            Curried function that returns a function to retrieve creds from aws
+            Parameters
+            ----------
+            secrets_name : Name of the credentials we wish to retrieve
+
+            Returns
+            -------
+            A function that retrieves the credentials.
+
+            """
+
+            def set_settings(_: BaseSettings) -> Dict[str, Any]:
+                """
+                A simple settings source that loads from aws secrets manager
+                """
+                sm_client = boto3.client("secretsmanager")
+                try:
+                    secret_from_aws = sm_client.get_secret_value(
+                        SecretId=secrets_name
+                    )
+                    secret_as_string = secret_from_aws["SecretString"]
+                    secrets_json = json.loads(secret_as_string)
+                    secrets = {}
+                    # Map to our secrets model
+                    if secrets_json.get("username"):
+                        secrets["username"] = secrets_json.get("username")
+                    if secrets_json.get("password"):
+                        secrets["password"] = secrets_json.get("password")
+                    if secrets_json.get("host"):
+                        secrets["host"] = secrets_json.get("host")
+                    if secrets_json.get("port"):
+                        secrets["port"] = secrets_json.get("port")
+                    if secrets_json.get("dbname"):
+                        secrets["database"] = secrets_json.get("dbname")
+                    if secrets_json.get("database"):
+                        secrets["database"] = secrets_json.get("database")
+                    if secrets_json.get("username"):
+                        secrets["username"] = secrets_json.get("username")
+                except ClientError as e:
+                    logging.warning(
+                        f"Unable to retrieve parameters from aws: {e.response}"
+                    )
+                    secrets = {}
+                finally:
+                    sm_client.close()
+                return secrets
+
+            return set_settings
+
+        @classmethod
+        def customise_sources(
+            cls,
+            init_settings,
+            env_settings,
+            file_secret_settings,
+        ):
+            """Class method to return custom sources."""
+            aws_secrets_name = init_settings.init_kwargs.get(
+                "aws_secrets_name"
+            )
+            if aws_secrets_name:
+                return (
+                    init_settings,
+                    env_settings,
+                    file_secret_settings,
+                    cls.settings_from_aws(secrets_name=aws_secrets_name),
+                )
+            else:
+                return (
+                    init_settings,
+                    env_settings,
+                    file_secret_settings,
+                )
+
+
+class DocumentStoreCredentials(CoreCredentials):
+    """Document Store credentials"""
+
+    username: str = Field(..., env=EnvVarKeys.DOC_STORE_USER.value)
     password: SecretStr = Field(..., env=EnvVarKeys.DOC_STORE_PASSWORD.value)
     host: str = Field(..., env=EnvVarKeys.DOC_STORE_HOST.value)
-    port: int = Field(..., env=EnvVarKeys.DOC_STORE_PORT.value)
+    port: int = Field(default=27017, env=EnvVarKeys.DOC_STORE_PORT.value)
     database: str = Field(..., env=EnvVarKeys.DOC_STORE_DATABASE.value)
 
 
-class RDSCredentials(BaseSettings):
-    """Credentials for the relational database."""
+class RDSCredentials(CoreCredentials):
+    """RDS db credentials"""
 
-    user: str = Field(..., env=EnvVarKeys.RDS_USER.value)
+    username: str = Field(..., env=EnvVarKeys.RDS_USER.value)
     password: SecretStr = Field(..., env=EnvVarKeys.RDS_PASSWORD.value)
     host: str = Field(..., env=EnvVarKeys.RDS_HOST.value)
-    port: int = Field(..., env=EnvVarKeys.RDS_PORT.value)
+    port: int = Field(default=5432, env=EnvVarKeys.RDS_PORT.value)
     database: str = Field(..., env=EnvVarKeys.RDS_DATABASE.value)

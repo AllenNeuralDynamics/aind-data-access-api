@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, call, patch
 import pandas as pd
 from sqlalchemy import text
 
+from aind_data_access_api.credentials import RDSCredentials
 from aind_data_access_api.rds_tables import Client
 
 
@@ -17,10 +18,12 @@ class TestClient(unittest.TestCase):
     def test_read_table(self, mock_engine: MagicMock, mock_pd_read: MagicMock):
         """Tests that read_table returns a pandas df."""
         rds_client = Client(
-            _password="password",
-            _host="localhost",
-            _user="user",
-            _database="db",
+            credentials=RDSCredentials(
+                username="user",
+                password="password",
+                host="localhost",
+                database="db",
+            ),
         )
 
         mock_pd_read.return_value = pd.DataFrame()
@@ -58,10 +61,12 @@ class TestClient(unittest.TestCase):
     ):
         """Test overwrite table method"""
         rds_client = Client(
-            _password="password",
-            _host="localhost",
-            _user="user",
-            _database="db",
+            credentials=RDSCredentials(
+                username="user",
+                password="password",
+                host="localhost",
+                database="db",
+            ),
         )
 
         df1 = pd.DataFrame([["a", 1], ["b", 2]], columns=["foo", "bar"])
@@ -84,10 +89,12 @@ class TestClient(unittest.TestCase):
     ):
         """Test append df to table method"""
         rds_client = Client(
-            _password="password",
-            _host="localhost",
-            _user="user",
-            _database="db",
+            credentials=RDSCredentials(
+                username="user",
+                password="password",
+                host="localhost",
+                database="db",
+            ),
         )
 
         df1 = pd.DataFrame([["a", 1], ["b", 2]], columns=["foo", "bar"])
@@ -114,10 +121,12 @@ class TestClient(unittest.TestCase):
     ):
         """Test pandas to sql insertion method"""
         rds_client = Client(
-            _password="password",
-            _host="localhost",
-            _user="user",
-            _database="db",
+            credentials=RDSCredentials(
+                username="user",
+                password="password",
+                host="localhost",
+                database="db",
+            ),
         )
         writer: MagicMock = mock_write.return_value.writerows
         func = getattr(rds_client, "_Client__psql_insert_copy")
