@@ -6,8 +6,10 @@ from unittest.mock import MagicMock, patch
 
 from pymongo import UpdateOne
 
-from aind_data_access_api.credentials import DocumentStoreCredentials
-from aind_data_access_api.document_store import Client
+from aind_data_access_api.document_store import (
+    Client,
+    DocumentStoreCredentials,
+)
 from aind_data_access_api.models import DataAssetRecord
 
 

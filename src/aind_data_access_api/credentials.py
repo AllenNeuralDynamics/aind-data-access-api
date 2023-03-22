@@ -131,23 +131,3 @@ class CoreCredentials(BaseSettings):
                     env_settings,
                     file_secret_settings,
                 )
-
-
-class DocumentStoreCredentials(CoreCredentials):
-    """Document Store credentials"""
-
-    username: str = Field(..., env=EnvVarKeys.DOC_STORE_USER.value)
-    password: SecretStr = Field(..., env=EnvVarKeys.DOC_STORE_PASSWORD.value)
-    host: str = Field(..., env=EnvVarKeys.DOC_STORE_HOST.value)
-    port: int = Field(default=27017, env=EnvVarKeys.DOC_STORE_PORT.value)
-    database: str = Field(..., env=EnvVarKeys.DOC_STORE_DATABASE.value)
-
-
-class RDSCredentials(CoreCredentials):
-    """RDS db credentials"""
-
-    username: str = Field(..., env=EnvVarKeys.RDS_USER.value)
-    password: SecretStr = Field(..., env=EnvVarKeys.RDS_PASSWORD.value)
-    host: str = Field(..., env=EnvVarKeys.RDS_HOST.value)
-    port: int = Field(default=5432, env=EnvVarKeys.RDS_PORT.value)
-    database: str = Field(..., env=EnvVarKeys.RDS_DATABASE.value)

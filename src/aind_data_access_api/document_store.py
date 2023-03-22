@@ -3,10 +3,21 @@
 import logging
 from typing import Iterator, List, Optional
 
+from pydantic import Field, SecretStr
 from pymongo import MongoClient, UpdateOne
 
-from aind_data_access_api.credentials import DocumentStoreCredentials
+from aind_data_access_api.credentials import CoreCredentials, EnvVarKeys
 from aind_data_access_api.models import DataAssetRecord
+
+
+class DocumentStoreCredentials(CoreCredentials):
+    """Document Store credentials"""
+
+    username: str = Field(..., env=EnvVarKeys.DOC_STORE_USER.value)
+    password: SecretStr = Field(..., env=EnvVarKeys.DOC_STORE_PASSWORD.value)
+    host: str = Field(..., env=EnvVarKeys.DOC_STORE_HOST.value)
+    port: int = Field(default=27017, env=EnvVarKeys.DOC_STORE_PORT.value)
+    database: str = Field(..., env=EnvVarKeys.DOC_STORE_DATABASE.value)
 
 
 class Client:

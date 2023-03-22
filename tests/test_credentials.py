@@ -5,12 +5,9 @@ import os
 import unittest
 from unittest.mock import MagicMock, patch
 
-from aind_data_access_api.credentials import (
-    CoreCredentials,
-    DocumentStoreCredentials,
-    EnvVarKeys,
-    RDSCredentials,
-)
+from aind_data_access_api.credentials import CoreCredentials, EnvVarKeys
+from aind_data_access_api.document_store import DocumentStoreCredentials
+from aind_data_access_api.rds_tables import RDSCredentials
 
 
 class TestEnvVarKeys(unittest.TestCase):

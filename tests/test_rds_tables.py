@@ -6,8 +6,7 @@ from unittest.mock import MagicMock, call, patch
 import pandas as pd
 from sqlalchemy import text
 
-from aind_data_access_api.credentials import RDSCredentials
-from aind_data_access_api.rds_tables import Client
+from aind_data_access_api.rds_tables import Client, RDSCredentials
 
 
 class TestClient(unittest.TestCase):

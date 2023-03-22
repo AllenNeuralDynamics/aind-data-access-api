@@ -7,10 +7,21 @@ from typing import Iterator, List, Optional
 import pandas as pd
 import sqlalchemy.engine
 from pandas.io.sql import SQLTable
+from pydantic import Field, SecretStr
 from sqlalchemy import create_engine, engine, text
 from sqlalchemy.engine.base import Connection
 
-from aind_data_access_api.credentials import RDSCredentials
+from aind_data_access_api.credentials import CoreCredentials, EnvVarKeys
+
+
+class RDSCredentials(CoreCredentials):
+    """RDS db credentials"""
+
+    username: str = Field(..., env=EnvVarKeys.RDS_USER.value)
+    password: SecretStr = Field(..., env=EnvVarKeys.RDS_PASSWORD.value)
+    host: str = Field(..., env=EnvVarKeys.RDS_HOST.value)
+    port: int = Field(default=5432, env=EnvVarKeys.RDS_PORT.value)
+    database: str = Field(..., env=EnvVarKeys.RDS_DATABASE.value)
 
 
 class Client:
