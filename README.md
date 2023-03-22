@@ -4,22 +4,84 @@
 ![Code Style](https://img.shields.io/badge/code%20style-black-black)
 [![semantic-release: angular](https://img.shields.io/badge/semantic--release-angular-e10079?logo=semantic-release)](https://github.com/semantic-release/semantic-release)
 
-Generated from aind-library-template
+API to interact with a few AIND databases.
 
 ## Usage
- - To use this template, click the green `Use this template` button and `Create new repository`.
- - After github initially creates the new repository, please wait an extra minute for the initialization scripts to finish organizing the repo.
- - To enable the automatic semantic version increments: in the repository go to `Settings` and `Collaborators and teams`. Click the green `Add people` button. Add `svc-aindscicomp` as an admin. Modify the file in `.github/workflows/tag_and_publish.yml` and remove the if statement in line 10. The semantic version will now be incremented every time a code is committed into the main branch.
- - To publish to PyPI, enable semantic versioning and uncomment the publish block in `.github/workflows/tag_and_publish.yml`. The code will now be published to PyPI every time the code is committed into the main branch.
- - The `.github/workflows/test_and_lint.yml` file will run automated tests and style checks every time a Pull Request is opened. If the checks are undesired, the `test_and_lint.yml` can be deleted. The strictness of the code coverage level, etc., can be modified by altering the configurations in the `pyproject.toml` file and the `.flake8` file.
+We have two primary databases. A Document store to keep unstructured json documents, and a relational database to store structured tables.
 
-## Installation
-To use the software, in the root directory, run
-```bash
-pip install -e .
+### Document Store
+We have some convenience methods to interact with our Document Store. You can create a client by explicitly setting credentials, or downloading from AWS Secrets Manager.
+```
+from aind_data_access_api.credentials import DocumentStoreCredentials
+from aind_data_access_api.document_store import Client
+
+# Method one assuming user, password, and host are known
+ds_client = Client(
+            credentials=DocumentStoreCredentials(
+                username="user",
+                password="password",
+                host="host",
+                database="metadata",
+            ),
+            collection_name="data_assets",
+        )
+
+# Method two if you have permissions to AWS Secrets Manager
+ds_client = Client(
+            credentials=DocumentStoreCredentials(
+                aws_secrets_name="aind/data/access/api/document_store/metadata"
+            ),
+            collection_name="data_assets",
+        )
+
+# To get all records
+response = list(ds_client.retrieve_data_asset_records())
+
+# To get a list of filtered records:
+response = list(ds_client.retrieve_data_asset_records({"subject.subject_id": "123456"}))
 ```
 
-To develop the code, run
+### RDS Tables
+We have some convenience methods to interact with our Relational Database. You can create a client by explicitly setting credentials, or downloading from AWS Secrets Manager.
+```
+from aind_data_access_api.credentials import RDSCredentials
+from aind_data_access_api.rds_tables import Client
+
+# Method one assuming user, password, and host are known
+ds_client = Client(
+            credentials=RDSCredentials(
+                username="user",
+                password="password",
+                host="host",
+                database="metadata",
+            ),
+            collection_name="data_assets",
+        )
+
+# Method two if you have permissions to AWS Secrets Manager
+ds_client = Client(
+            credentials=RDSCredentials(
+                aws_secrets_name="aind/data/access/api/rds_tables"
+            ),
+        )
+
+# To retrieve a table as a pandas dataframe
+df = ds_client.read_table(table_name="spike_sorting_urls")
+
+# Can also pass in a custom sql query
+df = ds_client.read_table(query="SELECT * FROM spike_sorting_urls")
+
+# It's also possible to save a pandas dataframe as a table. Please check internal documentation for more details.
+ds_client.overwrite_table_with_df(df, table_name)
+```
+
+## Installation
+To use the software, it can be installed from PyPI.
+```bash
+pip install aind-data-access-api
+```
+
+To develop the code, clone repo and run
 ```bash
 pip install -e .[dev]
 ```
