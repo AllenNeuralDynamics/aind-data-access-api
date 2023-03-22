@@ -17,11 +17,12 @@ readme = "README.md"
 dynamic = ["version"]
 
 dependencies = [
-    "SQLAlchemy",
-    "psycopg2-binary",
+    "boto3",
     "pandas",
+    "psycopg2-binary",
+    "pydantic",
     "pymongo",
-    "pydantic"
+    "SQLAlchemy",
 ]
 
 [project.optional-dependencies]

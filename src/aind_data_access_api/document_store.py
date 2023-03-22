@@ -3,10 +3,21 @@
 import logging
 from typing import Iterator, List, Optional
 
+from pydantic import Field, SecretStr
 from pymongo import MongoClient, UpdateOne
 
-from aind_data_access_api.credentials import DocumentStoreCredentials
+from aind_data_access_api.credentials import CoreCredentials, EnvVarKeys
 from aind_data_access_api.models import DataAssetRecord
+
+
+class DocumentStoreCredentials(CoreCredentials):
+    """Document Store credentials"""
+
+    username: str = Field(..., env=EnvVarKeys.DOC_STORE_USER.value)
+    password: SecretStr = Field(..., env=EnvVarKeys.DOC_STORE_PASSWORD.value)
+    host: str = Field(..., env=EnvVarKeys.DOC_STORE_HOST.value)
+    port: int = Field(default=27017, env=EnvVarKeys.DOC_STORE_PORT.value)
+    database: str = Field(..., env=EnvVarKeys.DOC_STORE_DATABASE.value)
 
 
 class Client:
@@ -14,34 +25,23 @@ class Client:
 
     def __init__(
         self,
-        _password: Optional[str] = None,
-        _user: Optional[str] = None,
-        _host: Optional[str] = None,
-        _port: Optional[int] = 27017,
-        _database: Optional[str] = None,
+        credentials: DocumentStoreCredentials,
         collection_name: Optional[str] = None,
     ):
         """
         Construct a client to interface with a document store.
         Parameters
         ----------
-        _password : Optional[str]
-        _user : Optional[str]
-        _host : Optional[str]
-        _port : Optional[int]
-        _database : Optional[str]
+        credentials: CoreCredentials
         collection_name : Optional[str]
         """
-        self.credentials = DocumentStoreCredentials(
-            password=_password,
-            user=_user,
-            host=_host,
-            port=_port,
-            database=_database,
-        )
+        self.credentials = credentials
         self.collection_name = collection_name
         self._client = MongoClient(
-            _host, port=_port, username=_user, password=_password
+            credentials.host,
+            port=credentials.port,
+            username=credentials.username,
+            password=credentials.password.get_secret_value(),
         )
 
     @property
