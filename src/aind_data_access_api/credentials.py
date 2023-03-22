@@ -96,8 +96,6 @@ class CoreCredentials(BaseSettings):
                         secrets["database"] = secrets_json.get("dbname")
                     if secrets_json.get("database"):
                         secrets["database"] = secrets_json.get("database")
-                    if secrets_json.get("username"):
-                        secrets["username"] = secrets_json.get("username")
                 except ClientError as e:
                     logging.warning(
                         f"Unable to retrieve parameters from aws: {e.response}"
