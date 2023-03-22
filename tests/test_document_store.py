@@ -6,7 +6,10 @@ from unittest.mock import MagicMock, patch
 
 from pymongo import UpdateOne
 
-from aind_data_access_api.document_store import Client
+from aind_data_access_api.document_store import (
+    Client,
+    DocumentStoreCredentials,
+)
 from aind_data_access_api.models import DataAssetRecord
 
 
@@ -28,10 +31,12 @@ class TestClient(unittest.TestCase):
         ]
 
         ds_client = Client(
-            _password="password",
-            _host="localhost",
-            _user="user",
-            _database="db",
+            credentials=DocumentStoreCredentials(
+                username="user",
+                password="password",
+                host="host",
+                database="db",
+            ),
             collection_name="coll",
         )
 
@@ -55,10 +60,12 @@ class TestClient(unittest.TestCase):
     ):
         """Tests upserting a single record."""
         ds_client = Client(
-            _password="password",
-            _host="localhost",
-            _user="user",
-            _database="db",
+            credentials=DocumentStoreCredentials(
+                username="user",
+                password="password",
+                host="localhost",
+                database="db",
+            ),
             collection_name="coll",
         )
 
@@ -90,10 +97,12 @@ class TestClient(unittest.TestCase):
     ) -> None:
         """Tests upserting a list of records."""
         ds_client = Client(
-            _password="password",
-            _host="localhost",
-            _user="user",
-            _database="db",
+            credentials=DocumentStoreCredentials(
+                username="user",
+                password="password",
+                host="localhost",
+                database="db",
+            ),
             collection_name="coll",
         )
 
