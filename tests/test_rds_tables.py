@@ -27,10 +27,10 @@ class TestClient(unittest.TestCase):
 
         mock_pd_read.return_value = pd.DataFrame()
 
-        df1 = rds_client.read_table("some_table", custom_query=None)
+        df1 = rds_client.read_table("some_table", where_clause=None)
         df2 = rds_client.read_table(
             "some_table",
-            custom_query='SELECT * FROM "some_table" WHERE subject_id=0',
+            where_clause="subject_id=0",
         )
         query = text('SELECT * FROM "some_table"')
         query2 = text('SELECT * FROM "some_table" WHERE subject_id=0')
@@ -54,7 +54,7 @@ class TestClient(unittest.TestCase):
         self.assertTrue(df2.empty)
 
     @patch("pandas.DataFrame.to_sql")
-    @patch("aind_data_access_api.rds_tables.Client.engine")
+    @patch("aind_data_access_api.rds_tables.Client._engine")
     def test_overwrite_table_with_df(
         self, mock_engine: MagicMock, mock_to_sql: MagicMock
     ):
@@ -75,14 +75,14 @@ class TestClient(unittest.TestCase):
         rds_client.overwrite_table_with_df(df1, "some_table")
         mock_to_sql.assert_called_once_with(
             name="some_table",
-            con=rds_client.engine,
+            con=rds_client._engine,
             method=func,
             if_exists="replace",
             index=False,
         )
 
     @patch("pandas.DataFrame.to_sql")
-    @patch("aind_data_access_api.rds_tables.Client.engine")
+    @patch("aind_data_access_api.rds_tables.Client._engine")
     def test_append_df_to_table(
         self, mock_engine: MagicMock, mock_to_sql: MagicMock
     ):
@@ -103,7 +103,7 @@ class TestClient(unittest.TestCase):
         rds_client.append_df_to_table(df1, "some_table")
         mock_to_sql.assert_called_once_with(
             name="some_table",
-            con=rds_client.engine,
+            con=rds_client._engine,
             method=func,
             if_exists="append",
             index=False,
@@ -142,6 +142,24 @@ class TestClient(unittest.TestCase):
         )
 
         writer.assert_has_calls([call(data), call(data)])
+
+    @patch("sqlalchemy.engine.Engine.begin")
+    def test_execute_query(self, mock_engine: MagicMock):
+        """Tests that a sql query gets executed."""
+        rds_client = Client(
+            credentials=RDSCredentials(
+                username="user",
+                password="password",
+                host="localhost",
+                database="db",
+            ),
+        )
+        mock_exec = mock_engine.return_value.__enter__.return_value.execute
+        mock_exec.return_value = "some result"
+        res = rds_client.execute_query('SELECT * FROM "some_table"')
+        self.assertEqual("some result", res)
+        input_text = mock_exec.mock_calls[0].args[0].text
+        self.assertEqual('SELECT * FROM "some_table"', input_text)
 
 
 if __name__ == "__main__":

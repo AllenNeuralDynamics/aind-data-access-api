@@ -10,6 +10,7 @@ from pandas.io.sql import SQLTable
 from pydantic import Field, SecretStr
 from sqlalchemy import create_engine, engine, text
 from sqlalchemy.engine.base import Connection
+from sqlalchemy.engine.cursor import CursorResult
 
 from aind_data_access_api.credentials import CoreCredentials, EnvVarKeys
 
@@ -38,7 +39,7 @@ class Client:
         self.credentials = credentials
 
     @property
-    def engine(self) -> sqlalchemy.engine.Engine:
+    def _engine(self) -> sqlalchemy.engine.Engine:
         """Create a sqlalechemy engine:
         https://docs.sqlalchemy.org/en/20/core/engines.html
 
@@ -115,7 +116,7 @@ class Client:
         # noinspection PyTypeChecker
         df.to_sql(
             name=table_name,
-            con=self.engine,
+            con=self._engine,
             method=self.__psql_insert_copy,
             if_exists="append",
             index=index,
@@ -143,7 +144,7 @@ class Client:
         # noinspection PyTypeChecker
         df.to_sql(
             name=table_name,
-            con=self.engine,
+            con=self._engine,
             method=self.__psql_insert_copy,
             if_exists="replace",
             index=index,
@@ -151,16 +152,16 @@ class Client:
         return None
 
     def read_table(
-        self, table_name: str, custom_query: Optional[str] = None
+        self, table_name: str, where_clause: Optional[str] = None
     ) -> pd.DataFrame:
         """
         Import sql table as a pandas dataframe.
         Parameters
         ----------
         table_name : str
-        custom_query : Optional[str]
-          If None, this method will pull the entire down. The user can set a
-          custom query if additional filtering is desired. Default is None.
+        where_clause : Optional[str]
+          If None, this method will pull the entire table. The user can set a
+          custom clause if additional filtering is desired. Default is None.
 
         Returns
         -------
@@ -168,11 +169,28 @@ class Client:
           A pandas dataframe created from the sql table.
 
         """
-        with self.engine.begin() as conn:
+        with self._engine.begin() as conn:
             query = (
                 f'SELECT * FROM "{table_name}"'
-                if custom_query is None
-                else custom_query
+                if where_clause is None
+                else f'SELECT * FROM "{table_name}" WHERE {where_clause}'
             )
             df = pd.read_sql_query(sql=text(query), con=conn)
         return df
+
+    def execute_query(self, query: str) -> CursorResult:
+        """
+        Run a sql query against the database
+        Parameters
+        ----------
+        query : str
+
+        Returns
+        -------
+        CursorResult
+          The result of the query.
+
+        """
+        with self._engine.begin() as conn:
+            result = conn.execute(text(query))
+        return result
