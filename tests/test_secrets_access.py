@@ -46,11 +46,9 @@ class TestSecretAccess(unittest.TestCase):
                 "get_secret_value",
             )
         )
-        # Call the method to get the secret
-        result = get_secret("my_secret")
-
-        # Check that the method returns None
-        self.assertIsNone(result)
+        # Assert that ClientError is raised
+        with self.assertRaises(ClientError):
+            get_secret('my_secret')
 
     @patch("boto3.client")
     def test_get_parameter_success(self, mock_boto3_client):
@@ -88,8 +86,6 @@ class TestSecretAccess(unittest.TestCase):
                 "get_parameter",
             )
         )
-        # Call the method to get the secret
-        result = get_parameter("my/parameter")
-
-        # Check that the method returns None
-        self.assertIsNone(result)
+        # Assert that ClientError is raised
+        with self.assertRaises(ClientError):
+            get_parameter('my_parameter')

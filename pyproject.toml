@@ -36,9 +36,7 @@ dev = [
     'furo'
 ]
 secrets = [
-    'boto3',
-    'json',
-    'botocore'
+    'boto3'
 ]
 [tool.setuptools.packages.find]
 where = ["src"]
