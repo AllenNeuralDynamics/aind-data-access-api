@@ -77,7 +77,7 @@ class TestSecretAccess(unittest.TestCase):
     @patch("boto3.client")
     def test_get_parameter_permission_denied(self, mock_boto3_client):
         """Tests parameter retrieval fails with incorrect aws permissions"""
-        mock_boto3_client.return_value.get_secret_value.side_effect = (
+        mock_boto3_client.return_value.get_parameter.side_effect = (
             ClientError(
                 {
                     "Error": {
