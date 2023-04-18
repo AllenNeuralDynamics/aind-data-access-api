@@ -24,7 +24,7 @@ class TestSecretAccess(unittest.TestCase):
         secret_name = "my_secret"
         secret_value = get_secret(secret_name)
 
-        # Assert that the Secrets Manager client was called with the correct arguments
+        # Assert that the client was called with the correct arguments
         mock_boto3_client.assert_called_with("secretsmanager")
         mock_client.get_secret_value.assert_called_with(SecretId=secret_name)
 
@@ -34,7 +34,7 @@ class TestSecretAccess(unittest.TestCase):
 
     @patch("boto3.client")
     def test_get_secret_permission_denied(self, mock_boto3_client):
-        """Tests that secret is not returned when incorrect aws permissions"""
+        """Tests  secret retrieval fails with incorrect aws permissions"""
         mock_boto3_client.return_value.get_secret_value.side_effect = (
             ClientError(
                 {
@@ -66,7 +66,7 @@ class TestSecretAccess(unittest.TestCase):
         parameter_name = "/my/parameter/name"
         parameter_value = get_parameter(parameter_name)
 
-        # Assert that the Systems Manager client was called with the correct arguments
+        # Assert that the client was called with the correct arguments
         mock_boto3_client.assert_called_with("ssm")
         mock_client.get_parameter.assert_called_with(Name=parameter_name)
 
@@ -76,7 +76,7 @@ class TestSecretAccess(unittest.TestCase):
 
     @patch("boto3.client")
     def test_get_parameter_permission_denied(self, mock_boto3_client):
-        """Tests that parameter is not returned when incorrect aws permissions"""
+        """Tests parameter retrieval fails with incorrect aws permissions"""
         mock_boto3_client.return_value.get_secret_value.side_effect = (
             ClientError(
                 {
