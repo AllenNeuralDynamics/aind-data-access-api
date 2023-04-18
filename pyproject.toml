@@ -35,7 +35,11 @@ dev = [
     'Sphinx',
     'furo'
 ]
-
+secrets = [
+    'boto3',
+    'json',
+    'botocore'
+]
 [tool.setuptools.packages.find]
 where = ["src"]
 
