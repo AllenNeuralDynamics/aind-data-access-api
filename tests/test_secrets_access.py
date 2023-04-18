@@ -85,11 +85,11 @@ class TestSecretAccess(unittest.TestCase):
                         "HTTPStatusCode": 403,
                     }
                 },
-                "get__parameter",
+                "get_parameter",
             )
         )
         # Call the method to get the secret
-        result = get_secret("my_secret")
+        result = get_parameter("my/parameter")
 
         # Check that the method returns None
         self.assertIsNone(result)
