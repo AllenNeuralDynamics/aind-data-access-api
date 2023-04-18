@@ -12,8 +12,10 @@ def get_secret(secret_name: str):
     """
     # Create a Secrets Manager client
     client = boto3.client("secretsmanager")
-    response = client.get_secret_value(SecretId=secret_name)
-    client.close()
+    try:
+        response = client.get_secret_value(SecretId=secret_name)
+    finally:
+        client.close()
     return json.loads(response["SecretString"])["password"]
 
 
@@ -26,6 +28,8 @@ def get_parameter(parameter_name: str):
     """
     # Create a Systems Manager client
     client = boto3.client("ssm")
-    response = client.get_parameter(Name=parameter_name)
-    client.close()
+    try:
+        response = client.get_parameter(Name=parameter_name)
+    finally:
+        client.close()
     return response["Parameter"]["Value"]
