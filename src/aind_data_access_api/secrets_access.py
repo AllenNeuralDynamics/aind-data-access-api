@@ -29,8 +29,10 @@ def get_secret(secret_name: str):
             print("The request was invalid due to:", e)
         elif e.response['Error']['Code'] == ClientExceptions.INVALID_PARAMETER.value:
             print("The request had invalid parameters:", e)
+        elif e.response['Error']['Code'] == ClientExceptions.ACCESS_DENIED.value:
+            print("User does not have permission to access the secret.")
         else:
-            print("Unknown error occurred:", e)
+            print("An error has occurred:", e)
         return None
     else:
         # Return the secret value
