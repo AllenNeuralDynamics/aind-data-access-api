@@ -1,7 +1,6 @@
 import unittest
 from unittest.mock import patch, Mock
 from botocore.exceptions import ClientError
-import aind_data_access_api.secrets_access as secrets_access
 from aind_data_access_api.secrets_access import get_secret, get_parameter
 
 
@@ -62,3 +61,15 @@ class TestMyModule(unittest.TestCase):
         expected_value = 'my_parameter_value'
         self.assertEqual(parameter_value, expected_value)
 
+    @patch('boto3.client')
+    def test_get_parameter_permission_denied(self, mock_boto3_client):
+        mock_boto3_client.return_value.get_secret_value.side_effect = \
+            ClientError(
+                {'Error': {'Code': 'AccessDeniedException', 'HTTPStatusCode': 403}},
+                'get__parameter'
+            )
+        # Call the method to get the secret
+        result = get_secret('my_secret')
+
+        # Check that the method returns None
+        self.assertIsNone(result)
