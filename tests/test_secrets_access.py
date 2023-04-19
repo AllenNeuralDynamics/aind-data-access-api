@@ -72,7 +72,7 @@ class TestSecretAccess(unittest.TestCase):
 
         # Assert that the client was called with the correct arguments
         mock_boto3_client.assert_called_with("ssm")
-        mock_client.get_parameter.assert_called_with(Name=parameter_name)
+        mock_client.get_parameter.assert_called_with(Name=parameter_name, WithDecryption=False)
 
         # Assert that the parameter value returned matches the expected value
         expected_value = "my_parameter_value"

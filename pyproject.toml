@@ -28,7 +28,8 @@ dev = [
     'interrogate',
     'isort',
     'Sphinx',
-    'furo'
+    'furo',
+    'aind-data-access-api[full]'
 ]
 secrets = []
 full = [
