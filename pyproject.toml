@@ -38,6 +38,9 @@ dev = [
 secrets = [
     'boto3'
 ]
+full = [
+    'aind-data-access-api[secrets]'
+]
 [tool.setuptools.packages.find]
 where = ["src"]
 
