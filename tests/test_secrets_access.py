@@ -2,7 +2,7 @@
 import unittest
 from unittest.mock import patch, Mock
 from botocore.exceptions import ClientError
-from aind_data_access_api.secrets_access import get_secret, get_parameter
+from aind_data_access_api.secrets import get_secret, get_parameter
 
 
 class TestSecretAccess(unittest.TestCase):
@@ -15,7 +15,10 @@ class TestSecretAccess(unittest.TestCase):
         mock_client = Mock()
         mock_boto3_client.return_value = mock_client
         mock_secret_string = (
-            '{"username": "admin", "password": "secret_password"}'
+            '{"username": "admin",'
+            ' "password": "secret_password",'
+            ' "host": "some host",'
+            ' "database": "some database"}'
         )
         mock_response = {"SecretString": mock_secret_string}
         mock_client.get_secret_value.return_value = mock_response
@@ -29,7 +32,10 @@ class TestSecretAccess(unittest.TestCase):
         mock_client.get_secret_value.assert_called_with(SecretId=secret_name)
 
         # Assert that the secret value returned matches the expected value
-        expected_value = "secret_password"
+        expected_value = {"username": "admin",
+                          "password": "secret_password",
+                          "host": "some host",
+                          "database": "some database"}
         self.assertEqual(secret_value, expected_value)
 
     @patch("boto3.client")

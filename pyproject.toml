@@ -17,12 +17,7 @@ readme = "README.md"
 dynamic = ["version"]
 
 dependencies = [
-    "boto3",
-    "pandas",
-    "psycopg2-binary",
-    "pydantic",
-    "pymongo",
-    "SQLAlchemy",
+    "boto3"
 ]
 
 [project.optional-dependencies]
@@ -35,11 +30,14 @@ dev = [
     'Sphinx',
     'furo'
 ]
-secrets = [
-    'boto3'
-]
+secrets = []
 full = [
-    'aind-data-access-api[secrets]'
+    'aind-data-access-api[secrets]',
+    "pandas",
+    "psycopg2-binary",
+    "pydantic",
+    "pymongo",
+    "SQLAlchemy",
 ]
 [tool.setuptools.packages.find]
 where = ["src"]
