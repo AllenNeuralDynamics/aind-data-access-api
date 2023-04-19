@@ -1,6 +1,7 @@
 """Module to access secrets and parameters"""
-import boto3
 import json
+
+import boto3
 
 
 def get_secret(secret_name: str) -> dict:
@@ -27,7 +28,9 @@ def get_parameter(parameter_name: str, with_decryption=False) -> str:
     # Create a Systems Manager client
     client = boto3.client("ssm")
     try:
-        response = client.get_parameter(Name=parameter_name, WithDecryption=with_decryption)
+        response = client.get_parameter(
+            Name=parameter_name, WithDecryption=with_decryption
+        )
     finally:
         client.close()
     return response["Parameter"]["Value"]
