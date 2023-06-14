@@ -186,7 +186,7 @@ class TestClient(unittest.TestCase):
                 database="db",
             ),
             collection_name="coll",
-            retry_writes=False
+            retry_writes=False,
         )
 
         self.assertTrue(

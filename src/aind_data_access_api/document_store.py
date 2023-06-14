@@ -27,7 +27,7 @@ class Client:
         self,
         credentials: DocumentStoreCredentials,
         collection_name: Optional[str] = None,
-        retry_writes: Optional[bool] = True
+        retry_writes: Optional[bool] = True,
     ):
         """
         Construct a client to interface with a document store.
@@ -47,7 +47,7 @@ class Client:
             port=credentials.port,
             username=credentials.username,
             password=credentials.password.get_secret_value(),
-            retryWrites=retry_writes
+            retryWrites=retry_writes,
         )
 
     @property

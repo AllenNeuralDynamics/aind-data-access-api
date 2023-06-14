@@ -1,8 +1,10 @@
 """Test secrets_access module."""
 import unittest
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
+
 from botocore.exceptions import ClientError
-from aind_data_access_api.secrets import get_secret, get_parameter
+
+from aind_data_access_api.secrets import get_parameter, get_secret
 
 
 class TestSecretAccess(unittest.TestCase):
