@@ -27,6 +27,7 @@ class Client:
         self,
         credentials: DocumentStoreCredentials,
         collection_name: Optional[str] = None,
+        retry_writes: Optional[bool] = True
     ):
         """
         Construct a client to interface with a document store.
@@ -34,6 +35,10 @@ class Client:
         ----------
         credentials: CoreCredentials
         collection_name : Optional[str]
+        retry_writes : Optional[bool]
+          Whether supported write operations executed within the MongoClient
+          will be retried once after a network error. Default is True. Set to
+          False if writing to AWS DocumentDB.
         """
         self.credentials = credentials
         self.collection_name = collection_name
@@ -42,6 +47,7 @@ class Client:
             port=credentials.port,
             username=credentials.username,
             password=credentials.password.get_secret_value(),
+            retryWrites=retry_writes
         )
 
     @property

@@ -167,6 +167,35 @@ class TestClient(unittest.TestCase):
 
         mock_log_info.assert_called_once_with("Documents Upserted")
 
+    def test_retry_writes(self):
+        """Tests that the retryWrites option can be set."""
+        ds_client1 = Client(
+            credentials=DocumentStoreCredentials(
+                username="user",
+                password="password",
+                host="localhost",
+                database="db",
+            ),
+            collection_name="coll",
+        )
+        ds_client2 = Client(
+            credentials=DocumentStoreCredentials(
+                username="user",
+                password="password",
+                host="localhost",
+                database="db",
+            ),
+            collection_name="coll",
+            retry_writes=False
+        )
+
+        self.assertTrue(
+            ds_client1._client._MongoClient__options._options["retryWrites"]
+        )
+        self.assertFalse(
+            ds_client2._client._MongoClient__options._options["retryWrites"]
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
