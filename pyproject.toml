@@ -17,28 +17,36 @@ readme = "README.md"
 dynamic = ["version"]
 
 dependencies = [
-    "boto3"
+    "pydantic==1.10.6"
 ]
 
 [project.optional-dependencies]
 dev = [
-    'black',
-    'coverage',
-    'flake8',
-    'interrogate',
-    'isort',
-    'Sphinx',
-    'furo',
-    'aind-data-access-api[full]'
+    "black",
+    "coverage",
+    "flake8",
+    "interrogate",
+    "isort",
+    "Sphinx",
+    "furo",
+    "aind-data-access-api[full]"
 ]
-secrets = []
+secrets = [
+    "boto3==1.26.94",
+    "botocore==1.29.94"
+]
+docdb = [
+    "pymongo==4.3.3"
+]
+rds = [
+    "psycopg2-binary==2.9.5",
+    "pandas==1.5.3 ",
+    "SQLAlchemy==2.0.7"
+]
 full = [
-    'aind-data-access-api[secrets]',
-    "pandas",
-    "psycopg2-binary",
-    "pydantic",
-    "pymongo",
-    "SQLAlchemy",
+    "aind-data-access-api[secrets]",
+    "aind-data-access-api[docdb]",
+    "aind-data-access-api[rds]",
 ]
 [tool.setuptools.packages.find]
 where = ["src"]
