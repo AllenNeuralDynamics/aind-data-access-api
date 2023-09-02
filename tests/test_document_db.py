@@ -236,7 +236,7 @@ class TestMetadataDbClient(unittest.TestCase):
                     "UpdateOne": {
                         "filter": {"_id": "abc-123"},
                         "update": {
-                            "$set": (
+                            "$set": json.loads(
                                 '{"_id": "abc-123",'
                                 ' "_name": "modal_00000_2000-10-10_10-10-10",'
                                 ' "_created": "2000-10-10T10:10:10",'
@@ -252,7 +252,7 @@ class TestMetadataDbClient(unittest.TestCase):
                     "UpdateOne": {
                         "filter": {"_id": "abc-125"},
                         "update": {
-                            "$set": (
+                            "$set": json.loads(
                                 '{"_id": "abc-125",'
                                 ' "_name": "modal_00001_2000-10-10_10-10-10",'
                                 ' "_created": "2000-10-10T10:10:10",'

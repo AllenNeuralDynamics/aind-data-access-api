@@ -154,7 +154,9 @@ class MetadataDbClient(Client):
                 {
                     "UpdateOne": {
                         "filter": {"_id": rec.id},
-                        "update": {"$set": rec.json(by_alias=True)},
+                        "update": {
+                            "$set": json.loads(rec.json(by_alias=True))
+                        },
                         "upsert": "True",
                     }
                 }
