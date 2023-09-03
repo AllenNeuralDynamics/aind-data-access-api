@@ -1,15 +1,11 @@
 """Module to interface with the Relational Database"""
 
-import csv
-from io import StringIO
-from typing import Iterator, List, Optional
+from typing import Optional
 
 import pandas as pd
 import sqlalchemy.engine
-from pandas.io.sql import SQLTable
 from pydantic import Field, SecretStr
 from sqlalchemy import create_engine, engine, text
-from sqlalchemy.engine.base import Connection
 from sqlalchemy.engine.cursor import CursorResult
 
 from aind_data_access_api.credentials import CoreCredentials, EnvVarKeys
@@ -40,7 +36,7 @@ class Client:
 
     @property
     def _engine(self) -> sqlalchemy.engine.Engine:
-        """Create a sqlalechemy engine:
+        """Create a sqlalchemy engine:
         https://docs.sqlalchemy.org/en/20/core/engines.html
 
         Returns: sqlalchemy.engine.Engine
@@ -56,55 +52,13 @@ class Client:
         )
         return create_engine(connection_url)
 
-    @staticmethod
-    def __psql_insert_copy(
-        table: SQLTable, conn: Connection, keys: List[str], data_iter: Iterator
-    ) -> None:
-        """
-        SQL insertion clause. Please see:
-        https://pandas.pydata.org/docs/user_guide/io.html#io-sql-method
-        Parameters
-        ----------
-        table : SQLTable
-        conn : Connection
-        keys : List[str]
-        data_iter : Iterator
-
-        Returns
-        -------
-        None
-          Inserts pandas df into sql table
-        """
-        # gets a DBAPI connection that can provide a cursor
-        dbapi_conn = conn.connection
-        with dbapi_conn.cursor() as cur:
-            s_buf = StringIO()
-            writer = csv.writer(s_buf)
-            writer.writerows(data_iter)
-            s_buf.seek(0)
-
-            columns = ", ".join('"{}"'.format(k) for k in keys)
-            if table.schema:
-                table_name = "{}.{}".format(table.schema, table.name)
-            else:
-                table_name = table.name
-
-            sql = "COPY {} ({}) FROM STDIN WITH CSV".format(
-                table_name, columns
-            )
-            cur.copy_expert(sql=sql, file=s_buf)
-
-    def append_df_to_table(
-        self, df: pd.DataFrame, table_name: str, index: Optional[bool] = False
-    ) -> None:
+    def append_df_to_table(self, df: pd.DataFrame, table_name: str) -> None:
         """
         Append a dataframe to an existing table.
         Parameters
         ----------
         df : pd.Dataframe
         table_name : str
-        index : Optional[bool]
-          Whether to include the dataframe index. The default is False.
 
         Returns
         -------
@@ -117,14 +71,14 @@ class Client:
         df.to_sql(
             name=table_name,
             con=self._engine,
-            method=self.__psql_insert_copy,
+            method="multi",
             if_exists="append",
-            index=index,
+            index=False,  # Redshift doesn't support index=True
         )
         return None
 
     def overwrite_table_with_df(
-        self, df: pd.DataFrame, table_name: str, index=False
+        self, df: pd.DataFrame, table_name: str
     ) -> None:
         """
         Overwrite an existing table with a dataframe.
@@ -132,8 +86,6 @@ class Client:
         ----------
         df : pd.Dataframe
         table_name : str
-        index : Optional[bool]
-          Whether to include the dataframe index. The default is False.
 
         Returns
         -------
@@ -145,9 +97,9 @@ class Client:
         df.to_sql(
             name=table_name,
             con=self._engine,
-            method=self.__psql_insert_copy,
+            method="multi",
             if_exists="replace",
-            index=index,
+            index=False,  # Redshift doesn't support index=True
         )
         return None
 
