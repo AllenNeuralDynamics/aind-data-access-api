@@ -69,14 +69,13 @@ class TestClient(unittest.TestCase):
         )
 
         df1 = pd.DataFrame([["a", 1], ["b", 2]], columns=["foo", "bar"])
-        func = getattr(rds_client, "_Client__psql_insert_copy")
         mock_engine.return_value = MagicMock()
 
         rds_client.overwrite_table_with_df(df1, "some_table")
         mock_to_sql.assert_called_once_with(
             name="some_table",
             con=rds_client._engine,
-            method=func,
+            method='multi',
             if_exists="replace",
             index=False,
         )
@@ -97,51 +96,16 @@ class TestClient(unittest.TestCase):
         )
 
         df1 = pd.DataFrame([["a", 1], ["b", 2]], columns=["foo", "bar"])
-        func = getattr(rds_client, "_Client__psql_insert_copy")
         mock_engine.return_value = MagicMock()
 
         rds_client.append_df_to_table(df1, "some_table")
         mock_to_sql.assert_called_once_with(
             name="some_table",
             con=rds_client._engine,
-            method=func,
+            method='multi',
             if_exists="append",
             index=False,
         )
-
-    @patch("pandas.io.sql.SQLTable")
-    @patch("sqlalchemy.engine.base.Connection")
-    @patch("csv.writer")
-    def test_psql_insert_copy(
-        self,
-        mock_write: MagicMock,
-        mock_sql_table: MagicMock,
-        mock_conn: MagicMock,
-    ):
-        """Test pandas to sql insertion method"""
-        rds_client = Client(
-            credentials=RDSCredentials(
-                username="user",
-                password="password",
-                host="localhost",
-                database="db",
-            ),
-        )
-        writer: MagicMock = mock_write.return_value.writerows
-        func = getattr(rds_client, "_Client__psql_insert_copy")
-        data = [["a", 1], ["b", 2]]
-
-        func(
-            mock_sql_table, conn=mock_conn, keys=["foo", "bar"], data_iter=data
-        )
-
-        mock_sql_table.schema = None
-
-        func(
-            mock_sql_table, conn=mock_conn, keys=["foo", "bar"], data_iter=data
-        )
-
-        writer.assert_has_calls([call(data), call(data)])
 
     @patch("sqlalchemy.engine.Engine.begin")
     def test_execute_query(self, mock_engine: MagicMock):
