@@ -75,7 +75,8 @@ class TestClient(unittest.TestCase):
         mock_to_sql.assert_called_once_with(
             name="some_table",
             con=rds_client._engine,
-            method='multi',
+            dtype=None,
+            method="multi",
             if_exists="replace",
             index=False,
         )
@@ -102,7 +103,8 @@ class TestClient(unittest.TestCase):
         mock_to_sql.assert_called_once_with(
             name="some_table",
             con=rds_client._engine,
-            method='multi',
+            dtype=None,
+            method="multi",
             if_exists="append",
             index=False,
         )

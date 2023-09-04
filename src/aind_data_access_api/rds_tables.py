@@ -1,6 +1,6 @@
 """Module to interface with the Relational Database"""
 
-from typing import Optional
+from typing import Optional, Union
 
 import pandas as pd
 import sqlalchemy.engine
@@ -52,13 +52,19 @@ class Client:
         )
         return create_engine(connection_url)
 
-    def append_df_to_table(self, df: pd.DataFrame, table_name: str) -> None:
+    def append_df_to_table(
+        self,
+        df: pd.DataFrame,
+        table_name: str,
+        dtype: Optional[Union[dict, str]] = None,
+    ) -> None:
         """
         Append a dataframe to an existing table.
         Parameters
         ----------
         df : pd.Dataframe
         table_name : str
+        dtype: Optional[Union[dict, str]]
 
         Returns
         -------
@@ -71,6 +77,7 @@ class Client:
         df.to_sql(
             name=table_name,
             con=self._engine,
+            dtype=dtype,
             method="multi",
             if_exists="append",
             index=False,  # Redshift doesn't support index=True
@@ -78,7 +85,10 @@ class Client:
         return None
 
     def overwrite_table_with_df(
-        self, df: pd.DataFrame, table_name: str
+        self,
+        df: pd.DataFrame,
+        table_name: str,
+        dtype: Optional[Union[dict, str]] = None,
     ) -> None:
         """
         Overwrite an existing table with a dataframe.
@@ -86,6 +96,7 @@ class Client:
         ----------
         df : pd.Dataframe
         table_name : str
+        dtype: Optional[Union[dict, str]]
 
         Returns
         -------
@@ -97,6 +108,7 @@ class Client:
         df.to_sql(
             name=table_name,
             con=self._engine,
+            dtype=dtype,
             method="multi",
             if_exists="replace",
             index=False,  # Redshift doesn't support index=True
