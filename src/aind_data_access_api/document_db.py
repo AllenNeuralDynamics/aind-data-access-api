@@ -140,7 +140,7 @@ class MetadataDbClient(Client):
 
         response = self._upsert_one_record(
             record_filter={"_id": data_asset_record.id},
-            update={"$set": data_asset_record.json(by_alias=True)},
+            update={"$set": json.loads(data_asset_record.json(by_alias=True))},
         )
         return response
 
