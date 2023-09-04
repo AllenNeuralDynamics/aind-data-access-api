@@ -202,7 +202,7 @@ class TestMetadataDbClient(unittest.TestCase):
         self.assertEqual({"message": "success"}, response)
         mock_upsert.assert_called_once_with(
             record_filter={"_id": "abc-123"},
-            update={"$set": data_asset_record.json(by_alias=True)},
+            update={"$set": json.loads(data_asset_record.json(by_alias=True))},
         )
 
     @patch("aind_data_access_api.document_db.Client._bulk_write")
