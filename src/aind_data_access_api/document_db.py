@@ -1,7 +1,7 @@
 """Module to interface with the DocumentDB"""
 
 import json
-from typing import Iterator, List, Optional
+from typing import List, Optional
 
 import boto3
 import requests
@@ -83,13 +83,17 @@ class Client:
     def _get_records(self, query: Optional[dict] = None) -> List[dict]:
         """Retrieve records from collection."""
         if query is None:
-            foo = requests.get(self._base_url)
-            body = foo.json()["body"]
+            response = requests.get(self._base_url)
         else:
-            body = requests.get(
-                self._base_url, params={"filter": json.dumps(query)}
-            ).json()["body"]
-        return json.loads(body)
+            response = requests.get(
+                self._base_url, params={"filter": query}
+            )
+        response_json = response.json()
+        body = response_json.get("body")
+        if body is None:
+            raise KeyError("Body not found in json response")
+        else:
+            return json.loads(body)
 
     def _upsert_one_record(
         self, record_filter: dict, update: dict
@@ -126,12 +130,14 @@ class MetadataDbClient(Client):
 
     def retrieve_data_asset_records(
         self, query: Optional[dict] = None
-    ) -> Iterator[DataAssetRecord]:
+    ) -> List[DataAssetRecord]:
         """Retrieve data asset records"""
 
         docdb_records = self._get_records(query=query)
+        data_asset_records = []
         for record in docdb_records:
-            yield DataAssetRecord(**record)
+            data_asset_records.append(DataAssetRecord(**record))
+        return data_asset_records
 
     def upsert_one_record(
         self, data_asset_record: DataAssetRecord
@@ -145,23 +151,29 @@ class MetadataDbClient(Client):
         return response
 
     def upsert_list_of_records(
-        self, data_asset_records: List[DataAssetRecord]
-    ) -> Response:
-        """Upsert a list of records"""
-
-        operations = [
-            (
-                {
-                    "UpdateOne": {
-                        "filter": {"_id": rec.id},
-                        "update": {
-                            "$set": json.loads(rec.json(by_alias=True))
-                        },
-                        "upsert": "True",
+        self, data_asset_records: List[DataAssetRecord], chunk_size=30
+    ) -> Optional[Response]:
+        """Upsert a list of records. There's a limit to the size of the
+        request that can be sent, so we chunk the requests."""
+        start = 0
+        end = len(data_asset_records)
+        step = chunk_size
+        last_response = None
+        for i in range(start, end, step):
+            chunked_records = data_asset_records[i: i + step]
+            operations = [
+                (
+                    {
+                        "UpdateOne": {
+                            "filter": {"_id": rec.id},
+                            "update": {
+                                "$set": json.loads(rec.json(by_alias=True))
+                            },
+                            "upsert": "True",
+                        }
                     }
-                }
-            )
-            for rec in data_asset_records
-        ]
-        response = self._bulk_write(operations)
-        return response
+                )
+                for rec in chunked_records
+            ]
+            last_response = self._bulk_write(operations)
+        return last_response
