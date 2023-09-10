@@ -152,13 +152,13 @@ class MetadataDbClient(Client):
 
     def upsert_list_of_records(
         self, data_asset_records: List[DataAssetRecord], chunk_size=30
-    ) -> Optional[Response]:
+    ) -> List[Response]:
         """Upsert a list of records. There's a limit to the size of the
         request that can be sent, so we chunk the requests."""
         start = 0
         end = len(data_asset_records)
         step = chunk_size
-        last_response = None
+        responses = []
         for i in range(start, end, step):
             chunked_records = data_asset_records[i: i + step]
             operations = [
@@ -175,5 +175,6 @@ class MetadataDbClient(Client):
                 )
                 for rec in chunked_records
             ]
-            last_response = self._bulk_write(operations)
-        return last_response
+            response = self._bulk_write(operations)
+            responses.append(response)
+        return responses
