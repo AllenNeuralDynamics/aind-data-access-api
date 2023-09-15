@@ -1,6 +1,7 @@
 """Module to interface with the DocumentDB"""
 
 import json
+from sys import getsizeof
 from typing import List, Optional
 
 import boto3
@@ -85,9 +86,7 @@ class Client:
         if query is None:
             response = requests.get(self._base_url)
         else:
-            response = requests.get(
-                self._base_url, params={"filter": query}
-            )
+            response = requests.get(self._base_url, params={"filter": query})
         response_json = response.json()
         body = response_json.get("body")
         if body is None:
@@ -150,31 +149,63 @@ class MetadataDbClient(Client):
         )
         return response
 
+    @staticmethod
+    def _record_to_operation(record: str, record_id: str) -> dict:
+        return {
+            "UpdateOne": {
+                "filter": {"_id": record_id},
+                "update": {"$set": json.loads(record)},
+                "upsert": "True",
+            }
+        }
+
     def upsert_list_of_records(
-        self, data_asset_records: List[DataAssetRecord], chunk_size=30
+        self, data_asset_records: List[DataAssetRecord], max_payload_size=10e6
     ) -> List[Response]:
         """Upsert a list of records. There's a limit to the size of the
-        request that can be sent, so we chunk the requests."""
-        start = 0
-        end = len(data_asset_records)
-        step = chunk_size
-        responses = []
-        for i in range(start, end, step):
-            chunked_records = data_asset_records[i: i + step]
+        request that can be sent, so we chunk the requests into 5MB."""
+        if len(data_asset_records) == 0:
+            return []
+        else:
+            first_index = 0
+            end_index = len(data_asset_records)
+            second_index = 1
+            responses = []
+            record_json = data_asset_records[first_index].json(by_alias=True)
+            total_size = getsizeof(record_json)
             operations = [
-                (
-                    {
-                        "UpdateOne": {
-                            "filter": {"_id": rec.id},
-                            "update": {
-                                "$set": json.loads(rec.json(by_alias=True))
-                            },
-                            "upsert": "True",
-                        }
-                    }
+                self._record_to_operation(
+                    record=record_json,
+                    record_id=data_asset_records[first_index].id,
                 )
-                for rec in chunked_records
             ]
-            response = self._bulk_write(operations)
-            responses.append(response)
+            while second_index < end_index + 1:
+                if second_index == end_index:
+                    response = self._bulk_write(operations)
+                    responses.append(response)
+                else:
+                    record_json = data_asset_records[second_index].json(
+                        by_alias=True
+                    )
+                    record_size = getsizeof(record_json)
+                    if total_size + record_size > max_payload_size:
+                        response = self._bulk_write(operations)
+                        responses.append(response)
+                        first_index = second_index
+                        operations = [
+                            self._record_to_operation(
+                                record=record_json,
+                                record_id=data_asset_records[first_index].id,
+                            )
+                        ]
+                        total_size = record_size
+                    else:
+                        operations.append(
+                            self._record_to_operation(
+                                record=record_json,
+                                record_id=data_asset_records[second_index].id,
+                            )
+                        )
+                        total_size += record_size
+                second_index = second_index + 1
         return responses
