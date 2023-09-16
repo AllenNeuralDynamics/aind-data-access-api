@@ -151,6 +151,7 @@ class MetadataDbClient(Client):
 
     @staticmethod
     def _record_to_operation(record: str, record_id: str) -> dict:
+        """Maps a record into an operation"""
         return {
             "UpdateOne": {
                 "filter": {"_id": record_id},
@@ -160,10 +161,29 @@ class MetadataDbClient(Client):
         }
 
     def upsert_list_of_records(
-        self, data_asset_records: List[DataAssetRecord], max_payload_size=10e6
+        self,
+        data_asset_records: List[DataAssetRecord],
+        max_payload_size: int = 2e6,
     ) -> List[Response]:
-        """Upsert a list of records. There's a limit to the size of the
-        request that can be sent, so we chunk the requests into 5MB."""
+        """
+        Upsert a list of records. There's a limit to the size of the
+        request that can be sent, so we chunk the requests.
+        Parameters
+        ----------
+        data_asset_records : List[DataAssetRecord]
+          List of records to upsert into the DocDB database
+        max_payload_size : int
+          Chunk requests into smaller lists no bigger than this value in bytes.
+          If a single record is larger than this value in bytes, an attempt
+          will be made to upsert the record but will most likely receive a 413
+          status code. The Default is 2e6 bytes. The max payload for the API
+          Gateway including headers is 10MB.
+
+        Returns
+        -------
+        List[Response]
+          A list of responses from the API Gateway.
+        """
         if len(data_asset_records) == 0:
             return []
         else:

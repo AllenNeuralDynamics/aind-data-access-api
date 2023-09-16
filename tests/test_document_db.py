@@ -3,7 +3,7 @@
 import json
 import unittest
 from datetime import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 from requests import Response
 
@@ -55,10 +55,16 @@ class TestClient(unittest.TestCase):
         mock_response2.status_code = 200
         body2 = json.dumps([{"_id": "abc123", "message": "hi"}])
         mock_response2._content = json.dumps({"body": body2}).encode("utf-8")
+        mock_response3 = Response()
+        mock_response3.status_code = 200
+        body3 = json.dumps([{"_id": "abc123", "message": "hi"}])
+        mock_response3._content = json.dumps({"miss": body3}).encode("utf-8")
 
-        mock_get.side_effect = [mock_response, mock_response2]
+        mock_get.side_effect = [mock_response, mock_response2, mock_response3]
         records1 = client._get_records()
         records2 = client._get_records(query={"_id": "abc123"})
+        with self.assertRaises(KeyError) as e:
+            client._get_records(query={"_id": "4532654"})
         self.assertEqual(
             [
                 {"_id": "abc123", "message": "hi"},
@@ -67,6 +73,9 @@ class TestClient(unittest.TestCase):
             records1,
         )
         self.assertEqual([{"_id": "abc123", "message": "hi"}], records2)
+        self.assertEqual(
+            "KeyError('Body not found in json response')", repr(e.exception)
+        )
 
     @patch("boto3.session.Session")
     @patch("botocore.auth.SigV4Auth.add_auth")
@@ -229,7 +238,7 @@ class TestMetadataDbClient(unittest.TestCase):
         ]
 
         response = client.upsert_list_of_records(data_asset_records)
-        self.assertEqual({"message": "success"}, response)
+        self.assertEqual([{"message": "success"}], response)
         mock_bulk_write.assert_called_once_with(
             [
                 {
@@ -264,6 +273,99 @@ class TestMetadataDbClient(unittest.TestCase):
                         "upsert": "True",
                     }
                 },
+            ]
+        )
+
+    @patch("aind_data_access_api.document_db.Client._bulk_write")
+    def test_upsert_empty_list_of_records(self, mock_bulk_write: MagicMock):
+        """Tests upserting an empty list of data asset records"""
+
+        client = MetadataDbClient(**self.example_client_args)
+        data_asset_records = []
+
+        response = client.upsert_list_of_records(data_asset_records)
+        self.assertEqual([], response)
+        mock_bulk_write.assert_not_called()
+
+    @patch("aind_data_access_api.document_db.Client._bulk_write")
+    def test_upsert_chunked_list_of_records(self, mock_bulk_write: MagicMock):
+        """Tests upserting a list of data asset records in chunks"""
+
+        client = MetadataDbClient(**self.example_client_args)
+        mock_bulk_write.return_value = {"message": "success"}
+        data_asset_records = [
+            DataAssetRecord(
+                _id="abc-123",
+                _name="modal_00000_2000-10-10_10-10-10",
+                _created=datetime(2000, 10, 10, 10, 10, 10),
+                _location="some_url",
+                subject={"subject_id": "00000", "sex": "Female"},
+            ),
+            DataAssetRecord(
+                _id="abc-125",
+                _name="modal_00001_2000-10-10_10-10-10",
+                _created=datetime(2000, 10, 10, 10, 10, 10),
+                _location="some_url",
+                subject={"subject_id": "00000", "sex": "Male"},
+            ),
+        ]
+
+        response = client.upsert_list_of_records(
+            data_asset_records, max_payload_size=1
+        )
+        self.assertEqual(
+            [{"message": "success"}, {"message": "success"}], response
+        )
+        mock_bulk_write.assert_has_calls(
+            [
+                call(
+                    [
+                        {
+                            "UpdateOne": {
+                                "filter": {"_id": "abc-123"},
+                                "update": {
+                                    "$set": {
+                                        "_id": "abc-123",
+                                        "_name": (
+                                            "modal_00000_2000-10-10_10-10-10"
+                                        ),
+                                        "_created": "2000-10-10T10:10:10",
+                                        "_location": "some_url",
+                                        "subject": {
+                                            "subject_id": "00000",
+                                            "sex": "Female",
+                                        },
+                                    }
+                                },
+                                "upsert": "True",
+                            }
+                        }
+                    ]
+                ),
+                call(
+                    [
+                        {
+                            "UpdateOne": {
+                                "filter": {"_id": "abc-125"},
+                                "update": {
+                                    "$set": {
+                                        "_id": "abc-125",
+                                        "_name": (
+                                            "modal_00001_2000-10-10_10-10-10"
+                                        ),
+                                        "_created": "2000-10-10T10:10:10",
+                                        "_location": "some_url",
+                                        "subject": {
+                                            "subject_id": "00000",
+                                            "sex": "Male",
+                                        },
+                                    }
+                                },
+                                "upsert": "True",
+                            }
+                        }
+                    ]
+                ),
             ]
         )
 
