@@ -81,15 +81,39 @@ class Client:
         ).add_auth(aws_request)
         return aws_request
 
-    def _get_records(self, query: Optional[dict] = None) -> List[dict]:
+    def _count_records(self, filter_query: Optional[dict] = None):
+        params = {
+            "count_records": str(True),
+        }
+        if filter_query is not None:
+            params["filter"] = json.dumps(filter_query)
+        response = requests.get(self._base_url, params=params)
+        response_json = response.json()
+        body = response_json.get("body")
+        return json.loads(body)
+
+    def _get_records(
+        self,
+        filter_query: Optional[dict] = None,
+        projection: Optional[dict] = None,
+        sort: Optional[dict] = None,
+        limit: int = 0,
+        skip: int = 0,
+    ) -> List[dict]:
         """Retrieve records from collection."""
-        if query is None:
-            response = requests.get(self._base_url)
-        else:
-            response = requests.get(self._base_url, params={"filter": query})
+        params = {"limit": str(limit), "skip": str(skip)}
+        if filter_query is not None:
+            params["filter"] = json.dumps(filter_query)
+        if projection is not None:
+            params["projection"] = json.dumps(projection)
+        if sort is not None:
+            params["sort"] = json.dumps(sort)
+
+        response = requests.get(self._base_url, params=params)
         response_json = response.json()
         body = response_json.get("body")
         if body is None:
+            print(response_json)
             raise KeyError("Body not found in json response")
         else:
             return json.loads(body)
@@ -128,13 +152,60 @@ class MetadataDbClient(Client):
     """Class to manage reading and writing to metadata db"""
 
     def retrieve_data_asset_records(
-        self, query: Optional[dict] = None
+        self,
+        filter_query: Optional[dict] = None,
+        projection: Optional[dict] = None,
+        sort: Optional[dict] = None,
+        limit=0,
+        paginate=True,
     ) -> List[DataAssetRecord]:
         """Retrieve data asset records"""
+        if paginate is False:
+            records = self._get_records(
+                filter_query=filter_query,
+                projection=projection,
+                sort=sort,
+                limit=limit,
+            )
+        else:
+            BATCH_SIZE = 10
+            MAX_ITER = 20000
+            # Get record count
+            record_counts = self._count_records(filter_query)
+            total_record_count = record_counts["total_record_count"]
+            filtered_record_count = record_counts["filtered_record_count"]
+            if filtered_record_count <= BATCH_SIZE:
+                records = self._get_records(
+                    filter_query=filter_query, projection=projection, sort=sort
+                )
+            else:
+                records = []
+                num_of_records_collected = 0
+                limit = filtered_record_count if limit == 0 else limit
+                skip = 0
+                iter_count = 0
+                while (
+                    skip < total_record_count
+                    and num_of_records_collected
+                    < min(filtered_record_count, limit)
+                    and iter_count < MAX_ITER
+                ):
+                    batched_records = self._get_records(
+                        filter_query=filter_query,
+                        projection=projection,
+                        sort=sort,
+                        limit=BATCH_SIZE,
+                        skip=skip,
+                    )
+                    num_of_records_collected += len(batched_records)
+                    records.extend(batched_records)
+                    skip = skip + BATCH_SIZE
+                    iter_count += 1
+                    # TODO: Add optional progress bar?
+                records = records[0:limit]
 
-        docdb_records = self._get_records(query=query)
         data_asset_records = []
-        for record in docdb_records:
+        for record in records:
             data_asset_records.append(DataAssetRecord(**record))
         return data_asset_records
 
