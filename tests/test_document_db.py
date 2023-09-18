@@ -38,6 +38,26 @@ class TestClient(unittest.TestCase):
         )
 
     @patch("requests.get")
+    def test_count_records(self, mock_get: MagicMock):
+        """Tests get_records method"""
+
+        client = Client(**self.example_client_args)
+        mock_response = Response()
+        mock_response.status_code = 200
+        mock_records_counts = {
+            "total_record_count": 1234,
+            "filtered_record_count": 47,
+        }
+        body = json.dumps(mock_records_counts)
+        mock_response._content = json.dumps({"body": body}).encode("utf-8")
+        mock_get.return_value = mock_response
+        record_count = client._count_records(filter_query={"_id": "abc"})
+        self.assertEqual(
+            mock_records_counts,
+            record_count,
+        )
+
+    @patch("requests.get")
     def test_get_records(self, mock_get: MagicMock):
         """Tests get_records method"""
 
@@ -62,9 +82,13 @@ class TestClient(unittest.TestCase):
 
         mock_get.side_effect = [mock_response, mock_response2, mock_response3]
         records1 = client._get_records()
-        records2 = client._get_records(query={"_id": "abc123"})
+        records2 = client._get_records(
+            filter_query={"_id": "abc123"},
+            projection={"_id": 1, "message": 1},
+            sort=[("message", 1)],
+        )
         with self.assertRaises(KeyError) as e:
-            client._get_records(query={"_id": "4532654"})
+            client._get_records(filter_query={"_id": "4532654"})
         self.assertEqual(
             [
                 {"_id": "abc123", "message": "hi"},
@@ -170,11 +194,16 @@ class TestMetadataDbClient(unittest.TestCase):
     }
 
     @patch("aind_data_access_api.document_db.Client._get_records")
-    def test_retrieve_data_asset_records(self, mock_response: MagicMock):
+    @patch("aind_data_access_api.document_db.Client._count_records")
+    def test_retrieve_data_asset_records(
+        self,
+        mock_count_record_response: MagicMock,
+        mock_get_record_response: MagicMock,
+    ):
         """Tests retrieving data asset records"""
 
         client = MetadataDbClient(**self.example_client_args)
-        mock_response.return_value = [
+        mock_get_record_response.return_value = [
             {
                 "_id": "abc-123",
                 "_name": "modal_00000_2000-10-10_10-10-10",
@@ -183,6 +212,10 @@ class TestMetadataDbClient(unittest.TestCase):
                 "subject": {"subject_id": "00000", "sex": "Female"},
             }
         ]
+        mock_count_record_response.return_value = {
+            "total_record_count": 1,
+            "filtered_record_count": 1,
+        }
         expected_response = [
             DataAssetRecord(
                 _id="abc-123",
@@ -193,6 +226,57 @@ class TestMetadataDbClient(unittest.TestCase):
             )
         ]
         records = client.retrieve_data_asset_records()
+        paginate_records = client.retrieve_data_asset_records(paginate=False)
+        self.assertEqual(expected_response, list(records))
+        self.assertEqual(expected_response, list(paginate_records))
+
+    @patch("aind_data_access_api.document_db.Client._get_records")
+    @patch("aind_data_access_api.document_db.Client._count_records")
+    @patch("logging.error")
+    def test_retrieve_many_data_asset_records(
+        self,
+        mock_log_error: MagicMock,
+        mock_count_record_response: MagicMock,
+        mock_get_record_response: MagicMock,
+    ):
+        """Tests retrieving many data asset records"""
+
+        client = MetadataDbClient(**self.example_client_args)
+        mocked_record_list = [
+            {
+                "_id": f"{id_num}",
+                "_name": "modal_00000_2000-10-10_10-10-10",
+                "_location": "some_url",
+                "_created": datetime(2000, 10, 10, 10, 10, 10),
+                "subject": {"subject_id": "00000", "sex": "Female"},
+            }
+            for id_num in range(0, 10)
+        ]
+        mock_get_record_response.side_effect = [
+            mocked_record_list[0:2],
+            Exception("Test"),
+            mocked_record_list[4:6],
+            mocked_record_list[6:8],
+            mocked_record_list[8:10],
+        ]
+        mock_count_record_response.return_value = {
+            "total_record_count": len(mocked_record_list),
+            "filtered_record_count": len(mocked_record_list),
+        }
+        expected_response = [
+            DataAssetRecord(
+                _id=f"{id_num}",
+                _name="modal_00000_2000-10-10_10-10-10",
+                _created=datetime(2000, 10, 10, 10, 10, 10),
+                _location="some_url",
+                subject={"subject_id": "00000", "sex": "Female"},
+            )
+            for id_num in [0, 1, 4, 5, 6, 7, 8, 9]
+        ]
+        records = client.retrieve_data_asset_records(paginate_batch_size=2)
+        mock_log_error.assert_called_once_with(
+            "There were errors retrieving records. [\"Exception('Test')\"]"
+        )
         self.assertEqual(expected_response, list(records))
 
     @patch("aind_data_access_api.document_db.Client._upsert_one_record")
