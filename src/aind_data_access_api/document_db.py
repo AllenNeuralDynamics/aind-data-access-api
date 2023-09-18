@@ -1,6 +1,7 @@
 """Module to interface with the DocumentDB"""
 
 import json
+import logging
 from sys import getsizeof
 from typing import List, Optional
 
@@ -82,6 +83,7 @@ class Client:
         return aws_request
 
     def _count_records(self, filter_query: Optional[dict] = None):
+        """Methods to count the number of records in a collection."""
         params = {
             "count_records": str(True),
         }
@@ -113,7 +115,6 @@ class Client:
         response_json = response.json()
         body = response_json.get("body")
         if body is None:
-            print(response_json)
             raise KeyError("Body not found in json response")
         else:
             return json.loads(body)
@@ -180,6 +181,7 @@ class MetadataDbClient(Client):
                 )
             else:
                 records = []
+                errors = []
                 num_of_records_collected = 0
                 limit = filtered_record_count if limit == 0 else limit
                 skip = 0
@@ -190,15 +192,19 @@ class MetadataDbClient(Client):
                     < min(filtered_record_count, limit)
                     and iter_count < MAX_ITER
                 ):
-                    batched_records = self._get_records(
-                        filter_query=filter_query,
-                        projection=projection,
-                        sort=sort,
-                        limit=BATCH_SIZE,
-                        skip=skip,
-                    )
-                    num_of_records_collected += len(batched_records)
-                    records.extend(batched_records)
+                    try:
+                        batched_records = self._get_records(
+                            filter_query=filter_query,
+                            projection=projection,
+                            sort=sort,
+                            limit=BATCH_SIZE,
+                            skip=skip,
+                        )
+                        num_of_records_collected += len(batched_records)
+                        records.extend(batched_records)
+                    except Exception as e:
+                        logging.error(repr(e))
+                        errors.append(repr(e))
                     skip = skip + BATCH_SIZE
                     iter_count += 1
                     # TODO: Add optional progress bar?
