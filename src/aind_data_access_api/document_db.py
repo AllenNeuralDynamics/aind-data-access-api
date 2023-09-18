@@ -3,7 +3,7 @@
 import json
 import logging
 from sys import getsizeof
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import boto3
 import requests
@@ -83,7 +83,20 @@ class Client:
         return aws_request
 
     def _count_records(self, filter_query: Optional[dict] = None):
-        """Methods to count the number of records in a collection."""
+        """
+        Methods to count the number of records in a collection.
+        Parameters
+        ----------
+        filter_query : Optional[dict]
+          If passed, will return the number of records and number of records
+          returned by the filter query.
+
+        Returns
+        -------
+        dict
+          Has keys {"total_record_count": int, "filtered_record_count": int}
+
+        """
         params = {
             "count_records": str(True),
         }
@@ -98,18 +111,38 @@ class Client:
         self,
         filter_query: Optional[dict] = None,
         projection: Optional[dict] = None,
-        sort: Optional[dict] = None,
+        sort: Optional[List[Tuple[str, int]]] = None,
         limit: int = 0,
         skip: int = 0,
     ) -> List[dict]:
-        """Retrieve records from collection."""
+        """
+        Retrieve records from collection.
+        Parameters
+        ----------
+        filter_query : Optional[dict]
+          Filter to apply to the records being returned. Default is None.
+        projection : Optional[dict]
+          Subset of document fields to return. Default is None.
+        sort : Optional[List[Tuple[str, int]]]
+          Sort records when returned. Default is None.
+        limit : int
+          Return a smaller set of records. 0 for all records. Default is 0.
+        skip : int
+          Skip this amount of records in index when applying search.
+
+        Returns
+        -------
+        List[dict]
+          The list of records returned from the API Gateway.
+
+        """
         params = {"limit": str(limit), "skip": str(skip)}
         if filter_query is not None:
             params["filter"] = json.dumps(filter_query)
         if projection is not None:
             params["projection"] = json.dumps(projection)
         if sort is not None:
-            params["sort"] = json.dumps(sort)
+            params["sort"] = str(sort)
 
         response = requests.get(self._base_url, params=params)
         response_json = response.json()
@@ -157,10 +190,38 @@ class MetadataDbClient(Client):
         filter_query: Optional[dict] = None,
         projection: Optional[dict] = None,
         sort: Optional[dict] = None,
-        limit=0,
-        paginate=True,
+        limit: int = 0,
+        paginate: bool = True,
+        paginate_batch_size: int = 10,
+        paginate_max_iterations: int = 20000,
     ) -> List[DataAssetRecord]:
-        """Retrieve data asset records"""
+        """
+        Retrieve data asset records
+        Parameters
+        ----------
+        filter_query : Optional[dict]
+          Filter to apply to the records being returned. Default is None.
+        projection : Optional[dict]
+          Subset of document fields to return. Default is None.
+        sort : Optional[dict]
+          Sort records when returned. Default is None.
+        limit : int
+          Return a smaller set of records. 0 for all records. Default is 0.
+        paginate : bool
+          If set to true, will batch the queries to the API Gateway. It may
+          be faster to set to false if the number of records expected to be
+          returned is small.
+        paginate_batch_size : int
+          Number of records to return at a time. Default is 10.
+        paginate_max_iterations : int
+          Max number of iterations to run to prevent indefinite calls to the
+          API Gateway. Default is 20000.
+
+        Returns
+        -------
+        List[DataAssetRecord]
+
+        """
         if paginate is False:
             records = self._get_records(
                 filter_query=filter_query,
@@ -169,13 +230,11 @@ class MetadataDbClient(Client):
                 limit=limit,
             )
         else:
-            BATCH_SIZE = 10
-            MAX_ITER = 20000
             # Get record count
             record_counts = self._count_records(filter_query)
             total_record_count = record_counts["total_record_count"]
             filtered_record_count = record_counts["filtered_record_count"]
-            if filtered_record_count <= BATCH_SIZE:
+            if filtered_record_count <= paginate_batch_size:
                 records = self._get_records(
                     filter_query=filter_query, projection=projection, sort=sort
                 )
@@ -190,25 +249,28 @@ class MetadataDbClient(Client):
                     skip < total_record_count
                     and num_of_records_collected
                     < min(filtered_record_count, limit)
-                    and iter_count < MAX_ITER
+                    and iter_count < paginate_max_iterations
                 ):
                     try:
                         batched_records = self._get_records(
                             filter_query=filter_query,
                             projection=projection,
                             sort=sort,
-                            limit=BATCH_SIZE,
+                            limit=paginate_batch_size,
                             skip=skip,
                         )
                         num_of_records_collected += len(batched_records)
                         records.extend(batched_records)
                     except Exception as e:
-                        logging.error(repr(e))
                         errors.append(repr(e))
-                    skip = skip + BATCH_SIZE
+                    skip = skip + paginate_batch_size
                     iter_count += 1
                     # TODO: Add optional progress bar?
                 records = records[0:limit]
+                if len(errors) > 0:
+                    logging.error(
+                        f"There were errors retrieving records. {errors}"
+                    )
         data_asset_records = []
         for record in records:
             data_asset_records.append(DataAssetRecord(**record))
