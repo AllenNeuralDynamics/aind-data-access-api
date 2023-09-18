@@ -209,7 +209,6 @@ class MetadataDbClient(Client):
                     iter_count += 1
                     # TODO: Add optional progress bar?
                 records = records[0:limit]
-
         data_asset_records = []
         for record in records:
             data_asset_records.append(DataAssetRecord(**record))
