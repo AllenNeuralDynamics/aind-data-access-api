@@ -1,7 +1,8 @@
 """Module to interface with the DocumentDB"""
 
 import json
-from typing import Iterator, List, Optional
+from sys import getsizeof
+from typing import List, Optional
 
 import boto3
 import requests
@@ -83,13 +84,15 @@ class Client:
     def _get_records(self, query: Optional[dict] = None) -> List[dict]:
         """Retrieve records from collection."""
         if query is None:
-            foo = requests.get(self._base_url)
-            body = foo.json()["body"]
+            response = requests.get(self._base_url)
         else:
-            body = requests.get(
-                self._base_url, params={"filter": json.dumps(query)}
-            ).json()["body"]
-        return json.loads(body)
+            response = requests.get(self._base_url, params={"filter": query})
+        response_json = response.json()
+        body = response_json.get("body")
+        if body is None:
+            raise KeyError("Body not found in json response")
+        else:
+            return json.loads(body)
 
     def _upsert_one_record(
         self, record_filter: dict, update: dict
@@ -126,12 +129,14 @@ class MetadataDbClient(Client):
 
     def retrieve_data_asset_records(
         self, query: Optional[dict] = None
-    ) -> Iterator[DataAssetRecord]:
+    ) -> List[DataAssetRecord]:
         """Retrieve data asset records"""
 
         docdb_records = self._get_records(query=query)
+        data_asset_records = []
         for record in docdb_records:
-            yield DataAssetRecord(**record)
+            data_asset_records.append(DataAssetRecord(**record))
+        return data_asset_records
 
     def upsert_one_record(
         self, data_asset_record: DataAssetRecord
@@ -144,24 +149,83 @@ class MetadataDbClient(Client):
         )
         return response
 
-    def upsert_list_of_records(
-        self, data_asset_records: List[DataAssetRecord]
-    ) -> Response:
-        """Upsert a list of records"""
+    @staticmethod
+    def _record_to_operation(record: str, record_id: str) -> dict:
+        """Maps a record into an operation"""
+        return {
+            "UpdateOne": {
+                "filter": {"_id": record_id},
+                "update": {"$set": json.loads(record)},
+                "upsert": "True",
+            }
+        }
 
-        operations = [
-            (
-                {
-                    "UpdateOne": {
-                        "filter": {"_id": rec.id},
-                        "update": {
-                            "$set": json.loads(rec.json(by_alias=True))
-                        },
-                        "upsert": "True",
-                    }
-                }
-            )
-            for rec in data_asset_records
-        ]
-        response = self._bulk_write(operations)
-        return response
+    def upsert_list_of_records(
+        self,
+        data_asset_records: List[DataAssetRecord],
+        max_payload_size: int = 2e6,
+    ) -> List[Response]:
+        """
+        Upsert a list of records. There's a limit to the size of the
+        request that can be sent, so we chunk the requests.
+        Parameters
+        ----------
+        data_asset_records : List[DataAssetRecord]
+          List of records to upsert into the DocDB database
+        max_payload_size : int
+          Chunk requests into smaller lists no bigger than this value in bytes.
+          If a single record is larger than this value in bytes, an attempt
+          will be made to upsert the record but will most likely receive a 413
+          status code. The Default is 2e6 bytes. The max payload for the API
+          Gateway including headers is 10MB.
+
+        Returns
+        -------
+        List[Response]
+          A list of responses from the API Gateway.
+        """
+        if len(data_asset_records) == 0:
+            return []
+        else:
+            first_index = 0
+            end_index = len(data_asset_records)
+            second_index = 1
+            responses = []
+            record_json = data_asset_records[first_index].json(by_alias=True)
+            total_size = getsizeof(record_json)
+            operations = [
+                self._record_to_operation(
+                    record=record_json,
+                    record_id=data_asset_records[first_index].id,
+                )
+            ]
+            while second_index < end_index + 1:
+                if second_index == end_index:
+                    response = self._bulk_write(operations)
+                    responses.append(response)
+                else:
+                    record_json = data_asset_records[second_index].json(
+                        by_alias=True
+                    )
+                    record_size = getsizeof(record_json)
+                    if total_size + record_size > max_payload_size:
+                        response = self._bulk_write(operations)
+                        responses.append(response)
+                        first_index = second_index
+                        operations = [
+                            self._record_to_operation(
+                                record=record_json,
+                                record_id=data_asset_records[first_index].id,
+                            )
+                        ]
+                        total_size = record_size
+                    else:
+                        operations.append(
+                            self._record_to_operation(
+                                record=record_json,
+                                record_id=data_asset_records[second_index].id,
+                            )
+                        )
+                        total_size += record_size
+                second_index = second_index + 1
+        return responses
