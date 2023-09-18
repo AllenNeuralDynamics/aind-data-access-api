@@ -85,7 +85,7 @@ class TestClient(unittest.TestCase):
         records2 = client._get_records(
             filter_query={"_id": "abc123"},
             projection={"_id": 1, "message": 1},
-            sort=[("message", 1)]
+            sort=[("message", 1)],
         )
         with self.assertRaises(KeyError) as e:
             client._get_records(filter_query={"_id": "4532654"})
@@ -242,24 +242,23 @@ class TestMetadataDbClient(unittest.TestCase):
         """Tests retrieving many data asset records"""
 
         client = MetadataDbClient(**self.example_client_args)
-        mocked_record_list = ([
+        mocked_record_list = [
             {
                 "_id": f"{id_num}",
                 "_name": "modal_00000_2000-10-10_10-10-10",
                 "_location": "some_url",
                 "_created": datetime(2000, 10, 10, 10, 10, 10),
                 "subject": {"subject_id": "00000", "sex": "Female"},
-            } for id_num in range(0, 10)
-        ])
-        mock_get_record_response.side_effect = (
-            [
-                mocked_record_list[0:2],
-                Exception("Test"),
-                mocked_record_list[4:6],
-                mocked_record_list[6:8],
-                mocked_record_list[8:10]
-            ]
-        )
+            }
+            for id_num in range(0, 10)
+        ]
+        mock_get_record_response.side_effect = [
+            mocked_record_list[0:2],
+            Exception("Test"),
+            mocked_record_list[4:6],
+            mocked_record_list[6:8],
+            mocked_record_list[8:10],
+        ]
         mock_count_record_response.return_value = {
             "total_record_count": len(mocked_record_list),
             "filtered_record_count": len(mocked_record_list),
@@ -271,7 +270,8 @@ class TestMetadataDbClient(unittest.TestCase):
                 _created=datetime(2000, 10, 10, 10, 10, 10),
                 _location="some_url",
                 subject={"subject_id": "00000", "sex": "Female"},
-            ) for id_num in [0, 1, 4, 5, 6, 7, 8, 9]
+            )
+            for id_num in [0, 1, 4, 5, 6, 7, 8, 9]
         ]
         records = client.retrieve_data_asset_records(paginate_batch_size=2)
         mock_log_error.assert_called_once_with(
