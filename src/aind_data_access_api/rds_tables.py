@@ -25,14 +25,26 @@ class Client:
     """Class to establish a relational database client. Includes methods to
     read/write pandas dataframes to backend."""
 
-    def __init__(self, credentials: RDSCredentials):
+    def __init__(
+        self,
+        credentials: RDSCredentials,
+        drivername: Optional[str] = "postgresql",
+    ):
         """
         Construct a client to interface with relational database.
         Parameters
         ----------
         credentials : CoreCredentials
+
+        drivername: Optional[str]
+            Combination of dialect[+driver] where the dialect is
+            the database name such as ``mysql``, ``oracle``, ``postgresql``,
+            etc. and the optional driver name is a DBAPI such as
+            ``psycopg2``, ``pyodbc``, ``cx_oracle``, etc.
+
         """
         self.credentials = credentials
+        self.drivername = drivername
 
     @property
     def _engine(self) -> sqlalchemy.engine.Engine:
@@ -43,7 +55,7 @@ class Client:
         """
 
         connection_url = engine.URL.create(
-            drivername="postgresql",
+            drivername=self.drivername,
             username=self.credentials.username,
             password=self.credentials.password.get_secret_value(),
             host=self.credentials.host,
