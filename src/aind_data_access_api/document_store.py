@@ -1,23 +1,33 @@
 """Module to interface with the Document Store"""
-
+import json
 import logging
 from typing import Iterator, List, Optional
 
-from pydantic import Field, SecretStr
+from pydantic import AliasChoices, Field, SecretStr
+from pydantic_settings import SettingsConfigDict
 from pymongo import MongoClient, UpdateOne
 
-from aind_data_access_api.credentials import CoreCredentials, EnvVarKeys
+from aind_data_access_api.credentials import CoreCredentials
 from aind_data_access_api.models import DataAssetRecord
 
 
 class DocumentStoreCredentials(CoreCredentials):
     """Document Store credentials"""
 
-    username: str = Field(..., env=EnvVarKeys.DOC_STORE_USER.value)
-    password: SecretStr = Field(..., env=EnvVarKeys.DOC_STORE_PASSWORD.value)
-    host: str = Field(..., env=EnvVarKeys.DOC_STORE_HOST.value)
-    port: int = Field(default=27017, env=EnvVarKeys.DOC_STORE_PORT.value)
-    database: str = Field(..., env=EnvVarKeys.DOC_STORE_DATABASE.value)
+    model_config = SettingsConfigDict(env_prefix="DOC_STORE_")
+
+    # Setting validation aliases for legacy purposes. Allows users
+    # to use DOC_STORE_USER in addition to DOC_STORE_USERNAME as env vars
+    username: str = Field(
+        ...,
+        validation_alias=AliasChoices(
+            "username", "DOC_STORE_USER", "DOC_STORE_USERNAME"
+        ),
+    )
+    password: SecretStr = Field(...)
+    host: str = Field(...)
+    port: int = Field(default=27017)
+    database: str = Field(...)
 
 
 class Client:
@@ -102,7 +112,11 @@ class Client:
         # TODO: Add error handling
         upsert_response = self.collection.update_one(
             {"_id": data_asset_record.id},
-            {"$set": data_asset_record.dict(by_alias=True)},
+            {
+                "$set": json.loads(
+                    data_asset_record.model_dump_json(by_alias=True)
+                )
+            },
             upsert=True,
         )
         logging.info(upsert_response)
@@ -124,7 +138,9 @@ class Client:
         # TODO: Add error handling
         operations = [
             UpdateOne(
-                {"_id": rec.id}, {"$set": rec.dict(by_alias=True)}, upsert=True
+                {"_id": rec.id},
+                {"$set": json.loads(rec.model_dump_json(by_alias=True))},
+                upsert=True,
             )
             for rec in data_asset_records
         ]
