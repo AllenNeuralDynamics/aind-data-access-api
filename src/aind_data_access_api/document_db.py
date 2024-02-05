@@ -283,7 +283,11 @@ class MetadataDbClient(Client):
 
         response = self._upsert_one_record(
             record_filter={"_id": data_asset_record.id},
-            update={"$set": json.loads(data_asset_record.json(by_alias=True))},
+            update={
+                "$set": json.loads(
+                    data_asset_record.model_dump_json(by_alias=True)
+                )
+            },
         )
         return response
 
@@ -329,7 +333,9 @@ class MetadataDbClient(Client):
             end_index = len(data_asset_records)
             second_index = 1
             responses = []
-            record_json = data_asset_records[first_index].json(by_alias=True)
+            record_json = data_asset_records[first_index].model_dump_json(
+                by_alias=True
+            )
             total_size = getsizeof(record_json)
             operations = [
                 self._record_to_operation(
@@ -342,9 +348,9 @@ class MetadataDbClient(Client):
                     response = self._bulk_write(operations)
                     responses.append(response)
                 else:
-                    record_json = data_asset_records[second_index].json(
-                        by_alias=True
-                    )
+                    record_json = data_asset_records[
+                        second_index
+                    ].model_dump_json(by_alias=True)
                     record_size = getsizeof(record_json)
                     if total_size + record_size > max_payload_size:
                         response = self._bulk_write(operations)

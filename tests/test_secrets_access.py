@@ -99,3 +99,7 @@ class TestSecretAccess(unittest.TestCase):
         # Assert that ClientError is raised
         with self.assertRaises(ClientError):
             get_parameter("my_parameter")
+
+
+if __name__ == "__main__":
+    unittest.main()

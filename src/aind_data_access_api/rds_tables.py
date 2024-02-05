@@ -4,21 +4,29 @@ from typing import Optional, Union
 
 import pandas as pd
 import sqlalchemy.engine
-from pydantic import Field, SecretStr
+from pydantic import AliasChoices, Field, SecretStr
+from pydantic_settings import SettingsConfigDict
 from sqlalchemy import create_engine, engine, text
 from sqlalchemy.engine.cursor import CursorResult
 
-from aind_data_access_api.credentials import CoreCredentials, EnvVarKeys
+from aind_data_access_api.credentials import CoreCredentials
 
 
 class RDSCredentials(CoreCredentials):
     """RDS db credentials"""
 
-    username: str = Field(..., env=EnvVarKeys.RDS_USER.value)
-    password: SecretStr = Field(..., env=EnvVarKeys.RDS_PASSWORD.value)
-    host: str = Field(..., env=EnvVarKeys.RDS_HOST.value)
-    port: int = Field(default=5432, env=EnvVarKeys.RDS_PORT.value)
-    database: str = Field(..., env=EnvVarKeys.RDS_DATABASE.value)
+    model_config = SettingsConfigDict(env_prefix="RDS_")
+
+    # Setting validation aliases for legacy purposes. Allows users
+    # to use RDS_USER in addition to RDS_USERNAME as env vars
+    username: str = Field(
+        ...,
+        validation_alias=AliasChoices("username", "RDS_USER", "RDS_USERNAME"),
+    )
+    password: SecretStr = Field(...)
+    host: str = Field(...)
+    port: int = Field(default=5432)
+    database: str = Field(...)
 
 
 class Client:

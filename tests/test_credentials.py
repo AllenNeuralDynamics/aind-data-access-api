@@ -5,44 +5,9 @@ import os
 import unittest
 from unittest.mock import MagicMock, patch
 
-from aind_data_access_api.credentials import CoreCredentials, EnvVarKeys
+from aind_data_access_api.credentials import CoreCredentials
 from aind_data_access_api.document_store import DocumentStoreCredentials
 from aind_data_access_api.rds_tables import RDSCredentials
-
-
-class TestEnvVarKeys(unittest.TestCase):
-    """Tests that the env var keys enums are sound"""
-
-    def test_env_var_keys(self):
-        """Test that the string representation is same as value."""
-
-        self.assertEqual(
-            EnvVarKeys.DOC_STORE_PASSWORD.value,
-            str(EnvVarKeys.DOC_STORE_PASSWORD),
-        )
-        self.assertEqual(
-            EnvVarKeys.DOC_STORE_USER.value, str(EnvVarKeys.DOC_STORE_USER)
-        )
-        self.assertEqual(
-            EnvVarKeys.DOC_STORE_HOST.value, str(EnvVarKeys.DOC_STORE_HOST)
-        )
-        self.assertEqual(
-            EnvVarKeys.DOC_STORE_PORT.value, str(EnvVarKeys.DOC_STORE_PORT)
-        )
-        self.assertEqual(
-            EnvVarKeys.DOC_STORE_DATABASE.value,
-            str(EnvVarKeys.DOC_STORE_DATABASE),
-        )
-        self.assertEqual(
-            EnvVarKeys.RDS_PASSWORD.value,
-            str(EnvVarKeys.RDS_PASSWORD),
-        )
-        self.assertEqual(EnvVarKeys.RDS_USER.value, str(EnvVarKeys.RDS_USER))
-        self.assertEqual(EnvVarKeys.RDS_HOST.value, str(EnvVarKeys.RDS_HOST))
-        self.assertEqual(EnvVarKeys.RDS_PORT.value, str(EnvVarKeys.RDS_PORT))
-        self.assertEqual(
-            EnvVarKeys.RDS_DATABASE.value, str(EnvVarKeys.RDS_DATABASE)
-        )
 
 
 class TestCoreCredentials(unittest.TestCase):
@@ -177,20 +142,26 @@ class TestDocumentStoreCredentials(unittest.TestCase):
         )
         creds4 = DocumentStoreCredentials(host="my_host", database="my_db")
 
-        self.assertEqual("fake_user", creds1.username)
-        self.assertEqual("fake_password", creds1.password.get_secret_value())
+        self.assertEqual("user_from_aws", creds1.username)
+        self.assertEqual(
+            "password_from_aws", creds1.password.get_secret_value()
+        )
         self.assertEqual("host_from_aws", creds1.host)
-        self.assertEqual(12346, creds1.port)
+        self.assertEqual(12345, creds1.port)
         self.assertEqual("db_from_aws", creds1.database)
 
         self.assertEqual("my_user", creds2.username)
-        self.assertEqual("fake_password", creds2.password.get_secret_value())
+        self.assertEqual(
+            "password_from_aws", creds2.password.get_secret_value()
+        )
         self.assertEqual("host_from_aws", creds2.host)
-        self.assertEqual(12346, creds2.port)
+        self.assertEqual(12345, creds2.port)
         self.assertEqual("db_from_aws", creds2.database)
 
         self.assertEqual("my_user", creds3.username)
-        self.assertEqual("fake_password", creds3.password.get_secret_value())
+        self.assertEqual(
+            "password_from_aws", creds3.password.get_secret_value()
+        )
         self.assertEqual("host_from_aws", creds3.host)
         self.assertEqual(5678, creds3.port)
         self.assertEqual("db_from_aws", creds3.database)

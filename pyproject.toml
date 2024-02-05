@@ -18,7 +18,9 @@ dynamic = ["version"]
 
 dependencies = [
     "requests",
-    "pydantic==1.10.6"
+    "aind-codeocean-api>=0.4.0",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0"
 ]
 
 [project.optional-dependencies]
@@ -33,8 +35,7 @@ dev = [
     "aind-data-access-api[full]"
 ]
 secrets = [
-    "boto3==1.26.94",
-    "botocore==1.29.94"
+    "boto3",
 ]
 docdb = [
     "pymongo==4.3.3"

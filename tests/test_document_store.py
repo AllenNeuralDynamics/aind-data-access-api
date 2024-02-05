@@ -1,5 +1,5 @@
 """Test document_store module."""
-
+import json
 import unittest
 from datetime import datetime
 from unittest.mock import MagicMock, patch
@@ -84,7 +84,11 @@ class TestClient(unittest.TestCase):
 
         mock_update_one.assert_called_once_with(
             {"_id": data_asset_record._id},
-            {"$set": data_asset_record.dict(by_alias=True)},
+            {
+                "$set": json.loads(
+                    data_asset_record.model_dump_json(by_alias=True)
+                )
+            },
             upsert=True,
         )
 
@@ -135,7 +139,7 @@ class TestClient(unittest.TestCase):
                     "$set": {
                         "_id": "abc-123",
                         "_name": "modal_00000_2000-10-10_10-10-10",
-                        "_created": datetime(2000, 10, 10, 10, 10, 10),
+                        "_created": "2000-10-10T10:10:10",
                         "_location": "some_url",
                         "subject": {"subject_id": "00000", "sex": "Female"},
                     }
@@ -151,7 +155,7 @@ class TestClient(unittest.TestCase):
                     "$set": {
                         "_id": "abc-125",
                         "_name": "modal_00001_2000-10-10_10-10-10",
-                        "_created": datetime(2000, 10, 10, 10, 10, 10),
+                        "_created": "2000-10-10T10:10:10",
                         "_location": "some_url",
                         "subject": {"subject_id": "00000", "sex": "Male"},
                     }
