@@ -183,6 +183,58 @@ class TestClient(unittest.TestCase):
             ),
         )
 
+    @patch("boto3.session.Session")
+    @patch("botocore.auth.SigV4Auth.add_auth")
+    @patch("requests.delete")
+    def test_delete_one_record(
+        self,
+        mock_delete: MagicMock,
+        mock_auth: MagicMock,
+        mock_session: MagicMock,
+    ):
+        """Tests delete_one method"""
+        mock_creds = MagicMock()
+        mock_creds.access_key = "abc"
+        mock_creds.secret_key = "efg"
+        mock_session.return_value.region_name = "us-west-2"
+        mock_session.get_credentials.return_value = mock_creds
+
+        client = Client(**self.example_client_args)
+        client._delete_one_record(record_filter={"_id": "123"})
+        mock_auth.assert_called_once()
+        mock_delete.assert_called_once_with(
+            url="https://acmecorp.com/v1/db/coll/delete_one",
+            headers={"Content-Type": "application/json"},
+            data=('{"filter": {"_id": "123"}}'),
+        )
+
+    @patch("boto3.session.Session")
+    @patch("botocore.auth.SigV4Auth.add_auth")
+    @patch("requests.delete")
+    def test_delete_many_records(
+        self,
+        mock_delete: MagicMock,
+        mock_auth: MagicMock,
+        mock_session: MagicMock,
+    ):
+        """Tests delete_many_records method"""
+        mock_creds = MagicMock()
+        mock_creds.access_key = "abc"
+        mock_creds.secret_key = "efg"
+        mock_session.return_value.region_name = "us-west-2"
+        mock_session.get_credentials.return_value = mock_creds
+
+        client = Client(**self.example_client_args)
+        client._delete_many_records(
+            record_filter={"_id": {"$in": ["123", "456"]}}
+        )
+        mock_auth.assert_called_once()
+        mock_delete.assert_called_once_with(
+            url="https://acmecorp.com/v1/db/coll/delete_many",
+            headers={"Content-Type": "application/json"},
+            data=('{"filter": {"_id": {"$in": ["123", "456"]}}}'),
+        )
+
 
 class TestMetadataDbClient(unittest.TestCase):
     """Test methods in MetadataDbClient class."""
@@ -455,6 +507,52 @@ class TestMetadataDbClient(unittest.TestCase):
                     ]
                 ),
             ]
+        )
+
+    @patch("aind_data_access_api.document_db.Client._delete_one_record")
+    def test_delete_one_record(self, mock_delete: MagicMock):
+        """Tests deleting one data asset record"""
+        client = MetadataDbClient(**self.example_client_args)
+        successful_response = Response()
+        successful_response.status_code = 200
+        # n is the number of records removed. It will be 0 if the id does
+        # exist
+        response_message = {
+            "n": 1,
+            "ok": 1.0,
+            "operationTime": {"$timestamp": {"t": 1707262037, "i": 1}},
+        }
+        successful_response._content = json.dumps(response_message).encode(
+            "utf-8"
+        )
+        mock_delete.return_value = successful_response
+        response = client.delete_one_record("abc-123")
+        self.assertEqual(successful_response.json(), response.json())
+        mock_delete.assert_called_once_with(
+            record_filter={"_id": "abc-123"},
+        )
+
+    @patch("aind_data_access_api.document_db.Client._delete_many_records")
+    def test_delete_many_records(self, mock_delete: MagicMock):
+        """Tests deleting many data asset records"""
+        client = MetadataDbClient(**self.example_client_args)
+        successful_response = Response()
+        successful_response.status_code = 200
+        # n is the number of records removed. It will be 0 if the id does
+        # exist
+        response_message = {
+            "n": 2,
+            "ok": 1.0,
+            "operationTime": {"$timestamp": {"t": 1707262037, "i": 1}},
+        }
+        successful_response._content = json.dumps(response_message).encode(
+            "utf-8"
+        )
+        mock_delete.return_value = successful_response
+        response = client.delete_many_records(["abc-123", "def-456"])
+        self.assertEqual(successful_response.json(), response.json())
+        mock_delete.assert_called_once_with(
+            record_filter={"_id": {"$in": ["abc-123", "def-456"]}},
         )
 
 
