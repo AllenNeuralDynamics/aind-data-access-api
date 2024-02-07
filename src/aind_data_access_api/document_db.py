@@ -2,6 +2,7 @@
 
 import json
 import logging
+from functools import cached_property
 from sys import getsizeof
 from typing import List, Optional, Tuple
 
@@ -50,6 +51,22 @@ class Client:
         )
 
     @property
+    def _delete_one_url(self):
+        """Url to update one record"""
+        return (
+            f"https://{self.host}/{self.version}/{self.database}/"
+            f"{self.collection}/delete_one"
+        )
+
+    @property
+    def _delete_many_url(self):
+        """Url to update one record"""
+        return (
+            f"https://{self.host}/{self.version}/{self.database}/"
+            f"{self.collection}/delete_many"
+        )
+
+    @property
     def _bulk_write_url(self):
         """Url to bulk write many records."""
         return (
@@ -57,7 +74,7 @@ class Client:
             f"{self.collection}/bulk_write"
         )
 
-    @property
+    @cached_property
     def __boto_session(self):
         """Boto3 session"""
         if self._boto_session is None:
@@ -164,6 +181,30 @@ class Client:
         )
         return requests.post(
             url=self._update_one_url,
+            headers=dict(signed_header.headers),
+            data=data,
+        )
+
+    def _delete_one_record(self, record_filter: dict) -> Response:
+        """Upsert a single record into the collection."""
+        data = json.dumps({"filter": record_filter})
+        signed_header = self._signed_request(
+            method="DELETE", url=self._delete_one_url, data=data
+        )
+        return requests.delete(
+            url=self._delete_one_url,
+            headers=dict(signed_header.headers),
+            data=data,
+        )
+
+    def _delete_many_records(self, record_filter: dict) -> Response:
+        """Upsert a single record into the collection."""
+        data = json.dumps({"filter": record_filter})
+        signed_header = self._signed_request(
+            method="DELETE", url=self._delete_many_url, data=data
+        )
+        return requests.delete(
+            url=self._delete_many_url,
             headers=dict(signed_header.headers),
             data=data,
         )
@@ -288,6 +329,24 @@ class MetadataDbClient(Client):
                     data_asset_record.model_dump_json(by_alias=True)
                 )
             },
+        )
+        return response
+
+    def delete_one_record(self, data_asset_record_id: str) -> Response:
+        """Delete one record by id"""
+
+        response = self._delete_one_record(
+            record_filter={"_id": data_asset_record_id},
+        )
+        return response
+
+    def delete_many_records(
+        self, data_asset_record_ids: List[str]
+    ) -> Response:
+        """Delete many records by their ids"""
+
+        response = self._delete_many_records(
+            record_filter={"_id": {"$in": data_asset_record_ids}},
         )
         return response
 
