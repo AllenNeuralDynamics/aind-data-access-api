@@ -23,7 +23,7 @@ class CoreCredentials(BaseSettings):
     password: SecretStr = Field(...)
     host: str = Field(...)
     port: int = Field(...)
-    database: str = Field(...)
+    database: Optional[str] = Field(default=None)
 
     @classmethod
     def settings_customise_sources(

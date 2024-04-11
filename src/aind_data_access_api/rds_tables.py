@@ -1,10 +1,10 @@
 """Module to interface with the Relational Database"""
 
 from typing import Optional, Union
-
+from typing_extensions import Self
 import pandas as pd
 import sqlalchemy.engine
-from pydantic import AliasChoices, Field, SecretStr
+from pydantic import AliasChoices, Field, SecretStr, model_validator
 from pydantic_settings import SettingsConfigDict
 from sqlalchemy import create_engine, engine, text
 from sqlalchemy.engine.cursor import CursorResult
@@ -26,7 +26,18 @@ class RDSCredentials(CoreCredentials):
     password: SecretStr = Field(...)
     host: str = Field(...)
     port: int = Field(default=5432)
-    database: str = Field(...)
+    dbname: Optional[str] = Field(default=None)
+
+    @model_validator(mode='after')
+    def validate_database_name(self) -> Self:
+        """Sets database to db_name"""
+        if self.database is None and self.dbname is None:
+            raise ValueError(
+                "At least one of dbname or database needs to be set"
+            )
+        elif self.database is None:
+            self.database = self.dbname
+        return self
 
 
 class Client:
@@ -61,7 +72,6 @@ class Client:
 
         Returns: sqlalchemy.engine.Engine
         """
-
         connection_url = engine.URL.create(
             drivername=self.drivername,
             username=self.credentials.username,
