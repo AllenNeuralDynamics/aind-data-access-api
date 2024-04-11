@@ -9,6 +9,39 @@ from sqlalchemy import text
 from aind_data_access_api.rds_tables import Client, RDSCredentials
 
 
+class TestRDSCredentials(unittest.TestCase):
+    """Tests RDSCredentials class"""
+
+    def test_validate_database_name(self):
+        """Tests that database is set from dbname as expected."""
+        creds = RDSCredentials(
+            username="user",
+            password="password",
+            host="localhost",
+            port=5432,
+            dbname="test_db",
+        )
+        self.assertEqual(creds.database, "test_db")
+
+        creds2 = RDSCredentials(
+            username="user",
+            password="password",
+            host="localhost",
+            port=5432,
+            database="test_db",
+        )
+        self.assertEqual(creds2.database, "test_db")
+        self.assertIsNone(creds2.dbname)
+
+        with self.assertRaises(ValueError):
+            RDSCredentials(
+                username="user",
+                password="password",
+                host="localhost",
+                port=5432,
+            )
+
+
 class TestClient(unittest.TestCase):
     """Tests methods in the Client class."""
 

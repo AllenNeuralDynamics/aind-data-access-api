@@ -28,7 +28,7 @@ class RDSCredentials(CoreCredentials):
     port: int = Field(default=5432)
     dbname: Optional[str] = Field(default=None)
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def validate_database_name(self) -> Self:
         """Sets database to db_name"""
         if self.database is None and self.dbname is None:
