@@ -3,12 +3,10 @@
 from typing import Optional, Union
 from typing_extensions import Self
 import pandas as pd
-import sqlalchemy.engine
 from pydantic import AliasChoices, Field, SecretStr, model_validator
 from pydantic_settings import SettingsConfigDict
-from sqlalchemy import create_engine, engine, text
-from sqlalchemy.engine.cursor import CursorResult
-
+import redshift_connector
+import boto3
 from aind_data_access_api.credentials import CoreCredentials
 
 
@@ -47,46 +45,38 @@ class Client:
     def __init__(
         self,
         credentials: RDSCredentials,
-        drivername: Optional[str] = "postgresql",
+        s3_bucket_name: str,
+        s3_key: str
     ):
         """
         Construct a client to interface with relational database.
         Parameters
         ----------
         credentials : CoreCredentials
-
-        drivername: Optional[str]
-            Combination of dialect[+driver] where the dialect is
-            the database name such as ``mysql``, ``oracle``, ``postgresql``,
-            etc. and the optional driver name is a DBAPI such as
-            ``psycopg2``, ``pyodbc``, ``cx_oracle``, etc.
-
         """
         self.credentials = credentials
-        self.drivername = drivername
+        # TODO: s3_configs class and input with all this info
+        self.s3_bucket_name = s3_bucket_name
+        self.s3_key = s3_key
+        self.s3_client = boto3.client('s3')
 
     @property
-    def _engine(self) -> sqlalchemy.engine.Engine:
-        """Create a sqlalchemy engine:
-        https://docs.sqlalchemy.org/en/20/core/engines.html
-
-        Returns: sqlalchemy.engine.Engine
+    def _conn(self):
+        """Create a redshift connector cursor.
         """
-        connection_url = engine.URL.create(
-            drivername=self.drivername,
-            username=self.credentials.username,
-            password=self.credentials.password.get_secret_value(),
+        connection = redshift_connector.connect(
             host=self.credentials.host,
             database=self.credentials.database,
             port=self.credentials.port,
+            user=self.credentials.username,
+            password=self.credentials.password.get_secret_value()
         )
-        return create_engine(connection_url)
+        return connection
 
     def append_df_to_table(
         self,
         df: pd.DataFrame,
         table_name: str,
-        dtype: Optional[Union[dict, str]] = None,
     ) -> None:
         """
         Append a dataframe to an existing table.
@@ -101,48 +91,33 @@ class Client:
         None
 
         """
-        # to_sql method has types str | None, but also allows for callable
-        # Suppressing type check warning.
-        # noinspection PyTypeChecker
-        df.to_sql(
-            name=table_name,
-            con=self._engine,
-            dtype=dtype,
-            method="multi",
-            if_exists="append",
-            index=False,  # Redshift doesn't support index=True
-        )
-        return None
+        with self._conn.cursor() as cursor:
+            cursor.write_dataframe(df, table_name)
 
     def overwrite_table_with_df(
         self,
         df: pd.DataFrame,
         table_name: str,
-        dtype: Optional[Union[dict, str]] = None,
     ) -> None:
         """
         Overwrite an existing table with a dataframe.
+        Otherwise, creates table if it does not exist.
         Parameters
         ----------
         df : pd.Dataframe
         table_name : str
-        dtype: Optional[Union[dict, str]]
-
         Returns
         -------
         None
         """
-        # to_sql method has types str | None, but also allows for callable
-        # Suppressing type check warning.
-        # noinspection PyTypeChecker
-        df.to_sql(
-            name=table_name,
-            con=self._engine,
-            dtype=dtype,
-            method="multi",
-            if_exists="replace",
-            index=False,  # Redshift doesn't support index=True
-        )
+        # copy dataframe to staging bucket
+        csv_buffer = df.to_csv(index=False)  # Convert DataFrame to CSV string
+        self.s3_client.put_object(Bucket=self.s3_bucket_name, Key=self.s3_key, Body=csv_buffer)
+        self.execute_query(query=f"DROP TABLE IF EXISTS {table_name}")
+        self.execute_query(query=f"CREATE TABLE {table_name}")
+        copy_query = f"COPY {table_name} FROM 's3://{self.s3_bucket_name}/{self.s3_key}' DELIMITER ',' CSV IGNOREHEADER 1;"
+        self.execute_query(copy_query)
+        # TODO: remove object from staging bucket
         return None
 
     def read_table(
@@ -163,16 +138,19 @@ class Client:
           A pandas dataframe created from the sql table.
 
         """
-        with self._engine.begin() as conn:
+        with self._conn.cursor() as cursor:
             query = (
                 f'SELECT * FROM "{table_name}"'
                 if where_clause is None
                 else f'SELECT * FROM "{table_name}" WHERE {where_clause}'
             )
-            df = pd.read_sql_query(sql=text(query), con=conn)
+            cursor.execute(query)
+            data = cursor.fetchall()
+        columns = [desc[0] for desc in cursor.description]
+        df = pd.DataFrame(data, columns=columns)
         return df
 
-    def execute_query(self, query: str) -> CursorResult:
+    def execute_query(self, query: str) -> redshift_connector.Cursor:
         """
         Run a sql query against the database
         Parameters
@@ -181,10 +159,11 @@ class Client:
 
         Returns
         -------
-        CursorResult
+        Cursor
           The result of the query.
 
         """
-        with self._engine.begin() as conn:
-            result = conn.execute(text(query))
+        with self._conn.cursor() as cursor:
+            result = cursor.execute(query)
+        cursor.close()
         return result
