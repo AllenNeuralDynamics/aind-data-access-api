@@ -1,5 +1,5 @@
-from pydantic import SecretStr
-from pydantic_settings import BaseSettings
+from pydantic import Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from pymongo import MongoClient
 from sshtunnel import SSHTunnelForwarder
 
@@ -7,17 +7,36 @@ from aind_data_access_api.secrets import get_secret
 
 
 class DocumentDBSSHCredentials(BaseSettings):
-    doc_db_host: str
-    doc_db_port: int
-    doc_db_username: str
-    doc_db_password: SecretStr
-    doc_db_db_name: str = "metadata_index"
-    doc_db_collection_name: str = "data_assets"
+    model_config = SettingsConfigDict(
+        env_prefix="DOC_DB_", env_file=".env", extra="ignore"
+    )
 
-    ssh_host: str
-    ssh_port: int = 22
-    ssh_username: str
-    ssh_password: SecretStr
+    host: str = Field(..., description="The host of the document database")
+    port: int = Field(
+        default=27017, description="The port of the document database"
+    )
+    username: str = Field(..., description="The username for authentication")
+    password: SecretStr = Field(
+        ..., description="The password for authentication"
+    )
+    db_name: str = Field(
+        default="metadata_index", description="The name of the database"
+    )
+    collection_name: str = Field(
+        default="data_assets", description="The name of the collection"
+    )
+    ssh_local_bind_address: str = Field(
+        default="localhost",
+        description="The local bind address for SSH tunneling",
+    )
+    ssh_host: str = Field(..., description="The host of the SSH server")
+    ssh_port: int = Field(default=22, description="The port of the SSH server")
+    ssh_username: str = Field(
+        ..., description="The username for SSH authentication"
+    )
+    ssh_password: SecretStr = Field(
+        ..., description="The password for SSH authentication"
+    )
 
     @classmethod
     def from_secrets_manager(cls, doc_db_secret_name: str, ssh_secret_name: str):
@@ -36,45 +55,48 @@ class DocumentDBSSHCredentials(BaseSettings):
         docdb_secret = get_secret(doc_db_secret_name)
         ssh_secret = get_secret(ssh_secret_name)
         return DocumentDBSSHCredentials(
-            doc_db_host=docdb_secret["host"],
-            doc_db_port=docdb_secret["port"],
-            doc_db_username=docdb_secret["username"],
-            doc_db_password=SecretStr(docdb_secret["password"]),
-            ssh_host=ssh_secret["host"],
-            ssh_username=ssh_secret["username"],
-            ssh_password=SecretStr(ssh_secret["password"]),
+            **docdb_secret, **{"ssh_" + k: v for k, v in ssh_secret.items()}
         )
 
 class DocumentDBSSHClient:
     def __init__(self, credentials: DocumentDBSSHCredentials):
         self.credentials = credentials
-        self.start_ssh_tunnel()
         self._client = self.create_doc_db_client()
+        self._ssh_server = self.create_ssh_tunnel()
+        self.start_ssh_tunnel()
         self.test_connection()
+
+    def create_ssh_tunnel(self):
+        return SSHTunnelForwarder(
+            ssh_address_or_host=(
+                self.credentials.ssh_host,
+                self.credentials.ssh_port,
+            ),
+            ssh_username=self.credentials.ssh_username,
+            ssh_password=self.credentials.ssh_password.get_secret_value(),
+            remote_bind_address=(self.credentials.host, self.credentials.port),
+            local_bind_address=(
+                self.credentials.ssh_local_bind_address,
+                self.credentials.port,
+            ),
+        )
     
     def start_ssh_tunnel(self):
-        try:
-            self._ssh_server = SSHTunnelForwarder(
-                (self.credentials.ssh_host, self.credentials.ssh_port),
-                ssh_username=self.credentials.ssh_username,
-                ssh_password=self.credentials.ssh_password.get_secret_value(),
-                remote_bind_address=(self.credentials.doc_db_host, self.credentials.doc_db_port),
-                local_bind_address=('localhost', self.credentials.doc_db_port)
-            )
+        if not self._ssh_server.is_active:
             self._ssh_server.start()
-            print(f"SSH tunnel started on localhost:{self.credentials.ssh_port}")
-        except Exception as e:
-            raise ValueError(f"Failed to start SSH tunnel: {e}")
+        else:
+            logging.info("SSH tunnel is already active")
 
     def create_doc_db_client(self):
         return MongoClient(
-            host="localhost",
-            port=self.credentials.doc_db_port,
+            host=self.credentials.ssh_local_bind_address,
+            port=self.credentials.port,
             retryWrites=False,
             directConnection=True,
-            username=self.credentials.doc_db_username,
-            password=self.credentials.doc_db_password.get_secret_value(),
+            username=self.credentials.username,
+            password=self.credentials.password.get_secret_value(),
             authSource="admin",
+            authMechanism="SCRAM-SHA-1",
         )
     
     def test_connection(self):
