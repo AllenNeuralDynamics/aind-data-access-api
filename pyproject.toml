@@ -38,7 +38,8 @@ secrets = [
     "boto3",
 ]
 docdb = [
-    "pymongo==4.3.3"
+    "pymongo==4.3.3",
+    "sshtunnel"
 ]
 rds = [
     "psycopg2-binary==2.9.5",
