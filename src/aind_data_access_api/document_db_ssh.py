@@ -83,8 +83,6 @@ class DocumentDBSSHClient:
         self.collection_name = credentials.collection_name
         self._client = self.create_doc_db_client()
         self._ssh_server = self.create_ssh_tunnel()
-        self.start_ssh_tunnel()
-        self.test_connection()
 
     @property
     def collection(self):
@@ -153,4 +151,12 @@ class DocumentDBSSHClient:
         """Close the DocumentDB client and the SSH tunnel."""
         self._client.close()
         self._ssh_server.stop()
-        pass
+        logging.info("DocDB SSH session closed.")
+
+    def __enter__(self):
+        self.start_ssh_tunnel()
+        self.test_connection()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()

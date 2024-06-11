@@ -9,8 +9,10 @@ API to interact with a few AIND databases.
 ## Usage
 We have two primary databases. A Document store to keep unstructured json documents, and a relational database to store structured tables.
 
-### Document Store using SSH Tunnel
+### Document Store
 We have some convenience methods to interact with our Document Store. You can create a client by explicitly setting credentials, or downloading from AWS Secrets Manager.
+
+__To connect from outside of our VPC:__
 
 1. If using credentials from environment, please configure:
 ```sh
@@ -21,33 +23,58 @@ DOC_DB_SSH_HOST=ssh_host
 DOC_DB_SSH_USERNAME=ssh_username
 DOC_DB_SSH_PASSWORD=ssh_password
 ```
-
-2. If using shared credentials, please ensure the DocDB and SSH secrets include "host", "username", and "password".
+2. Usage:
 ```python
 from aind_data_access_api.document_db_ssh import DocumentDBSSHClient, DocumentDBSSHCredentials
 
-# Method one if credentials are set in environment
-ds_client = DocumentDBSSHClient(
-    credentials=DocumentDBSSHCredentials()
+# Method 1) if credentials are set in environment
+credentials = DocumentDBSSHCredentials()
+
+# Method 2) if you have permissions to AWS Secrets Manager
+# Each secret must contain corresponding "host", "username", and "password"
+credentials = DocumentDBSSHCredentials.from_secrets_manager(
+    doc_db_secret_name="/doc/db/secret/name", ssh_secret_name="/ssh/tunnel/secret/name"
 )
+
+with DocumentDBSSHClient(credentials=credentials) as doc_db_client:
+    # To get all records
+    count = ds_client.collection.count_documents({})
+    response = list(ds_client.collection.find({}))
+
+    # To get a list of filtered records:
+    count = ds_client.collection.count_documents({"subject.subject_id": "123456"})
+    response = list(ds_client.collection.find({"subject.subject_id": "123456"}))
+```
+
+__To connect from within our VPC:__
+```python
+from aind_data_access_api.credentials import DocumentStoreCredentials
+from aind_data_access_api.document_store import Client
+
+# Method one assuming user, password, and host are known
+ds_client = Client(
+            credentials=DocumentStoreCredentials(
+                username="user",
+                password="password",
+                host="host",
+                database="metadata",
+            ),
+            collection_name="data_assets",
+        )
 
 # Method two if you have permissions to AWS Secrets Manager
-ds_client = DocumentDBSSHClient(
-    credentials=DocumentDBSSHCredentials.from_secrets_manager(
-        doc_db_secret_name="/doc/db/secret/name", ssh_secret_name="/ssh/tunnel/secret/name"
-    )
-)
+ds_client = Client(
+            credentials=DocumentStoreCredentials(
+                aws_secrets_name="aind/data/access/api/document_store/metadata"
+            ),
+            collection_name="data_assets",
+        )
 
 # To get all records
-count = ds_client.collection.count_documents({})
-response = list(ds_client.collection.find({}))
+response = list(ds_client.retrieve_data_asset_records())
 
 # To get a list of filtered records:
-count = ds_client.collection.count_documents({"subject.subject_id": "123456"})
-response = list(ds_client.collection.find({"subject.subject_id": "123456"}))
-
-# Close the client
-ds_client.close()
+response = list(ds_client.retrieve_data_asset_records({"subject.subject_id": "123456"}))
 ```
 
 ### RDS Tables
@@ -110,22 +137,22 @@ coverage run -m unittest discover && coverage report
 - Use **interrogate** to check that modules, methods, etc. have been documented thoroughly:
 
 ```bash
-interrogate .
+interrogate ./src ./tests
 ```
 
 - Use **flake8** to check that code is up to standards (no unused imports, etc.):
 ```bash
-flake8 .
+flake8 ./src ./tests
 ```
 
 - Use **black** to automatically format the code into PEP standards:
 ```bash
-black .
+black ./src ./tests
 ```
 
 - Use **isort** to automatically sort import statements:
 ```bash
-isort .
+isort ./src ./tests
 ```
 
 ### Pull requests
