@@ -9,36 +9,45 @@ API to interact with a few AIND databases.
 ## Usage
 We have two primary databases. A Document store to keep unstructured json documents, and a relational database to store structured tables.
 
-### Document Store
+### Document Store using SSH Tunnel
 We have some convenience methods to interact with our Document Store. You can create a client by explicitly setting credentials, or downloading from AWS Secrets Manager.
-```
-from aind_data_access_api.credentials import DocumentStoreCredentials
-from aind_data_access_api.document_store import Client
 
-# Method one assuming user, password, and host are known
-ds_client = Client(
-            credentials=DocumentStoreCredentials(
-                username="user",
-                password="password",
-                host="host",
-                database="metadata",
-            ),
-            collection_name="data_assets",
-        )
+1. If using credentials from environment, please configure:
+```sh
+DOC_DB_HOST=docdb-us-west-2-****.cluster-************.us-west-2.docdb.amazonaws.com
+DOC_DB_USERNAME=doc_db_username
+DOC_DB_PASSWORD=doc_db_password
+DOC_DB_SSH_HOST=ssh_host
+DOC_DB_SSH_USERNAME=ssh_username
+DOC_DB_SSH_PASSWORD=ssh_password
+```
+
+2. If using shared credentials, please ensure the DocDB and SSH secrets include "host", "username", and "password".
+```python
+from aind_data_access_api.document_db_ssh import DocumentDBSSHClient, DocumentDBSSHCredentials
+
+# Method one if credentials are set in environment
+ds_client = DocumentDBSSHClient(
+    credentials=DocumentDBSSHCredentials()
+)
 
 # Method two if you have permissions to AWS Secrets Manager
-ds_client = Client(
-            credentials=DocumentStoreCredentials(
-                aws_secrets_name="aind/data/access/api/document_store/metadata"
-            ),
-            collection_name="data_assets",
-        )
+ds_client = DocumentDBSSHClient(
+    credentials=DocumentDBSSHCredentials.from_secrets_manager(
+        doc_db_secret_name="/doc/db/secret/name", ssh_secret_name="/ssh/tunnel/secret/name"
+    )
+)
 
 # To get all records
-response = list(ds_client.retrieve_data_asset_records())
+count = ds_client.collection.count_documents({})
+response = list(ds_client.collection.find({}))
 
 # To get a list of filtered records:
-response = list(ds_client.retrieve_data_asset_records({"subject.subject_id": "123456"}))
+count = ds_client.collection.count_documents({"subject.subject_id": "123456"})
+response = list(ds_client.collection.find({"subject.subject_id": "123456"}))
+
+# Close the client
+ds_client.close()
 ```
 
 ### RDS Tables

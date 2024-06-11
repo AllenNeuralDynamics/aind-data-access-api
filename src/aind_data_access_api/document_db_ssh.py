@@ -1,3 +1,5 @@
+"""Module to interface with the Document Database using SSH tunneling."""
+
 import logging
 
 from pydantic import Field, SecretStr
@@ -9,6 +11,8 @@ from aind_data_access_api.secrets import get_secret
 
 
 class DocumentDBSSHCredentials(BaseSettings):
+    """Document Database credentials with SSH tunneling."""
+
     model_config = SettingsConfigDict(
         env_prefix="DOC_DB_", env_file=".env", extra="ignore"
     )
@@ -41,18 +45,20 @@ class DocumentDBSSHCredentials(BaseSettings):
     )
 
     @classmethod
-    def from_secrets_manager(cls, doc_db_secret_name: str, ssh_secret_name: str):
+    def from_secrets_manager(
+        cls, doc_db_secret_name: str, ssh_secret_name: str
+    ):
         """
-        Construct class from aws secrets manager
+        Construct class from AWS Secrets Manager
 
         Parameters
         ----------
         doc_db_secret_name : str
-            The name of the secret in AWS Secrets Manager that contains the
-            document db credentials (host, port, username, password).
+            The name of the secret that contains the document db credentials
+            (host, port, username, password).
         ssh_secret_name : str
-            The name of the secret in AWS Secrets Manager that contains the
-            ssh credentials (host, username, password).
+            The name of the secret that contains the ssh credentials
+            (host, username, password).
         """
         docdb_secret = get_secret(doc_db_secret_name)
         ssh_secret = get_secret(ssh_secret_name)
@@ -60,8 +66,18 @@ class DocumentDBSSHCredentials(BaseSettings):
             **docdb_secret, **{"ssh_" + k: v for k, v in ssh_secret.items()}
         )
 
+
 class DocumentDBSSHClient:
+    """Class to establish a Document Database client with SSH tunneling."""
+
     def __init__(self, credentials: DocumentDBSSHCredentials):
+        """
+        Construct a client to interface with a Document Database.
+
+        Parameters
+        ----------
+        credentials : DocumentDBSSHCredentials
+        """
         self.credentials = credentials
         self.db_name = credentials.db_name
         self.collection_name = credentials.collection_name
@@ -72,11 +88,17 @@ class DocumentDBSSHClient:
 
     @property
     def collection(self):
+        """Collection of metadata records in Document Database."""
         db = self._client[self.db_name]
         collection = db[self.collection_name]
         return collection
 
     def create_doc_db_client(self):
+        """
+        Create a MongoClient to connect to the Document Database.
+        Uses retryWrites=False to enable writing to AWS DocumentDB.
+        Uses authMechanism="SCRAM-SHA-1" for complex usernames.
+        """
         return MongoClient(
             host=self.credentials.ssh_local_bind_address,
             port=self.credentials.port,
@@ -89,6 +111,7 @@ class DocumentDBSSHClient:
         )
 
     def create_ssh_tunnel(self):
+        """Create an SSH tunnel to the Document Database."""
         return SSHTunnelForwarder(
             ssh_address_or_host=(
                 self.credentials.ssh_host,
@@ -102,14 +125,16 @@ class DocumentDBSSHClient:
                 self.credentials.port,
             ),
         )
-    
+
     def start_ssh_tunnel(self):
+        """Start the SSH tunnel."""
         if not self._ssh_server.is_active:
             self._ssh_server.start()
         else:
             logging.info("SSH tunnel is already active")
 
     def test_connection(self):
+        """Test the connection to the Document Database."""
         server_info = self._client.server_info()
         logging.info(server_info)
         collections = self._client.list_database_names()
@@ -125,6 +150,7 @@ class DocumentDBSSHClient:
         )
 
     def close(self):
+        """Close the DocumentDB client and the SSH tunnel."""
         self._client.close()
         self._ssh_server.stop()
         pass
