@@ -1,3 +1,5 @@
+import logging
+
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pymongo import MongoClient
@@ -61,10 +63,30 @@ class DocumentDBSSHCredentials(BaseSettings):
 class DocumentDBSSHClient:
     def __init__(self, credentials: DocumentDBSSHCredentials):
         self.credentials = credentials
+        self.db_name = credentials.db_name
+        self.collection_name = credentials.collection_name
         self._client = self.create_doc_db_client()
         self._ssh_server = self.create_ssh_tunnel()
         self.start_ssh_tunnel()
         self.test_connection()
+
+    @property
+    def collection(self):
+        db = self._client[self.db_name]
+        collection = db[self.collection_name]
+        return collection
+
+    def create_doc_db_client(self):
+        return MongoClient(
+            host=self.credentials.ssh_local_bind_address,
+            port=self.credentials.port,
+            retryWrites=False,
+            directConnection=True,
+            username=self.credentials.username,
+            password=self.credentials.password.get_secret_value(),
+            authSource="admin",
+            authMechanism="SCRAM-SHA-1",
+        )
 
     def create_ssh_tunnel(self):
         return SSHTunnelForwarder(
@@ -87,25 +109,21 @@ class DocumentDBSSHClient:
         else:
             logging.info("SSH tunnel is already active")
 
-    def create_doc_db_client(self):
-        return MongoClient(
-            host=self.credentials.ssh_local_bind_address,
-            port=self.credentials.port,
-            retryWrites=False,
-            directConnection=True,
-            username=self.credentials.username,
-            password=self.credentials.password.get_secret_value(),
-            authSource="admin",
-            authMechanism="SCRAM-SHA-1",
-        )
-    
     def test_connection(self):
-        try:
-            server_info = self._client.server_info()
-            print(server_info)
-        except Exception as e:
-            raise ValueError(f"Failed to connect to document db: {e}")
-    
+        server_info = self._client.server_info()
+        logging.info(server_info)
+        collections = self._client.list_database_names()
+        if self.db_name not in collections:
+            raise ValueError(f"Database {self.db_name} not found")
+        if (
+            self.collection_name
+            not in self._client[self.db_name].list_collection_names()
+        ):
+            raise ValueError(f"Collection {self.collection_name} not found")
+        logging.info(
+            f"Connected to {self.credentials.host}:{self.credentials.port} as {self.credentials.username}"
+        )
+
     def close(self):
         self._client.close()
         self._ssh_server.stop()
