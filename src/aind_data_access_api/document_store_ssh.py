@@ -80,8 +80,6 @@ class DocumentStoreSSHClient:
         self.credentials = credentials
         self.database_name = credentials.database
         self.collection_name = credentials.collection
-        self._client = self.create_mongo_client()
-        self._ssh_server = self.create_ssh_tunnel()
 
     @property
     def collection(self):
@@ -90,7 +88,7 @@ class DocumentStoreSSHClient:
         collection = db[self.collection_name]
         return collection
 
-    def create_mongo_client(self):
+    def _create_mongo_client(self):
         """
         Create a MongoClient to connect to the Document Store.
         Uses retryWrites=False to enable writing to AWS DocumentDB.
@@ -107,7 +105,7 @@ class DocumentStoreSSHClient:
             authMechanism="SCRAM-SHA-1",
         )
 
-    def create_ssh_tunnel(self):
+    def _create_ssh_tunnel(self):
         """Create an SSH tunnel to the Document Database."""
         return SSHTunnelForwarder(
             ssh_address_or_host=(
@@ -123,14 +121,14 @@ class DocumentStoreSSHClient:
             ),
         )
 
-    def start_ssh_tunnel(self):
+    def _start_ssh_tunnel(self):
         """Start the SSH tunnel."""
         if not self._ssh_server.is_active:
             self._ssh_server.start()
         else:
             logging.info("SSH tunnel is already active")
 
-    def test_connection(self):
+    def check_connection(self):
         """Test the connection to the Document Database."""
         server_info = self._client.server_info()
         logging.info(server_info)
@@ -146,6 +144,13 @@ class DocumentStoreSSHClient:
             f"Connected to {self.credentials.host}:{self.credentials.port} as "
             f"{self.credentials.username}"
         )
+    
+    def start(self):
+        """Start the client and SSH tunnel."""
+        self._client = self._create_mongo_client()
+        self._ssh_server = self._create_ssh_tunnel()
+        self._start_ssh_tunnel()
+        self.check_connection()
 
     def close(self):
         """Close the client and SSH tunnel."""
@@ -155,8 +160,7 @@ class DocumentStoreSSHClient:
 
     def __enter__(self):
         """Enter the context manager."""
-        self.start_ssh_tunnel()
-        self.test_connection()
+        self.start()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
