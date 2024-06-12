@@ -16,27 +16,27 @@ __To connect from outside of our VPC:__
 
 1. If using credentials from environment, please configure:
 ```sh
-DOC_DB_HOST=docdb-us-west-2-****.cluster-************.us-west-2.docdb.amazonaws.com
-DOC_DB_USERNAME=doc_db_username
-DOC_DB_PASSWORD=doc_db_password
-DOC_DB_SSH_HOST=ssh_host
-DOC_DB_SSH_USERNAME=ssh_username
-DOC_DB_SSH_PASSWORD=ssh_password
+DOC_STORE_HOST=docdb-us-west-2-****.cluster-************.us-west-2.docdb.amazonaws.com
+DOC_STORE_USERNAME=doc_store_username
+DOC_STORE_PASSWORD=doc_store_password
+DOC_STORE_SSH_HOST=ssh_host
+DOC_STORE_SSH_USERNAME=ssh_username
+DOC_STORE_SSH_PASSWORD=ssh_password
 ```
 2. Usage:
 ```python
-from aind_data_access_api.document_db_ssh import DocumentDBSSHClient, DocumentDBSSHCredentials
+from aind_data_access_api.document_store_ssh import DocumentStoreSSHClient, DocumentStoreSSHCredentials
 
 # Method 1) if credentials are set in environment
-credentials = DocumentDBSSHCredentials()
+credentials = DocumentStoreSSHCredentials()
 
 # Method 2) if you have permissions to AWS Secrets Manager
 # Each secret must contain corresponding "host", "username", and "password"
-credentials = DocumentDBSSHCredentials.from_secrets_manager(
-    doc_db_secret_name="/doc/db/secret/name", ssh_secret_name="/ssh/tunnel/secret/name"
+credentials = DocumentStoreSSHCredentials.from_secrets_manager(
+    doc_store_secret_name="/doc/store/secret/name", ssh_secret_name="/ssh/tunnel/secret/name"
 )
 
-with DocumentDBSSHClient(credentials=credentials) as doc_db_client:
+with DocumentStoreSSHClient(credentials=credentials) as ds_client:
     # To get all records
     count = ds_client.collection.count_documents({})
     response = list(ds_client.collection.find({}))
@@ -137,22 +137,22 @@ coverage run -m unittest discover && coverage report
 - Use **interrogate** to check that modules, methods, etc. have been documented thoroughly:
 
 ```bash
-interrogate ./src ./tests
+interrogate .
 ```
 
 - Use **flake8** to check that code is up to standards (no unused imports, etc.):
 ```bash
-flake8 ./src ./tests
+flake8 .
 ```
 
 - Use **black** to automatically format the code into PEP standards:
 ```bash
-black ./src ./tests
+black .
 ```
 
 - Use **isort** to automatically sort import statements:
 ```bash
-isort ./src ./tests
+isort .
 ```
 
 ### Pull requests
