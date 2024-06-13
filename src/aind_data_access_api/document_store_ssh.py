@@ -121,36 +121,17 @@ class DocumentStoreSSHClient:
             ),
         )
 
-    def _start_ssh_tunnel(self):
-        """Start the SSH tunnel."""
-        if not self._ssh_server.is_active:
-            self._ssh_server.start()
-        else:
-            logging.info("SSH tunnel is already active")
-
-    def check_connection(self):
-        """Test the connection to the Document Database."""
-        server_info = self._client.server_info()
-        logging.info(server_info)
-        collections = self._client.list_database_names()
-        if self.database_name not in collections:
-            raise ValueError(f"Database {self.database_name} not found")
-        if (
-            self.collection_name
-            not in self._client[self.database_name].list_collection_names()
-        ):
-            raise ValueError(f"Collection {self.collection_name} not found")
-        logging.info(
-            f"Connected to {self.credentials.host}:{self.credentials.port} as "
-            f"{self.credentials.username}"
-        )
-    
     def start(self):
         """Start the client and SSH tunnel."""
         self._client = self._create_mongo_client()
         self._ssh_server = self._create_ssh_tunnel()
-        self._start_ssh_tunnel()
-        self.check_connection()
+        self._ssh_server.start()
+        server_info = self._client.server_info()
+        logging.info(server_info)
+        logging.info(
+            f"Connected to {self.credentials.host}:{self.credentials.port} as "
+            f"{self.credentials.username}"
+        )
 
     def close(self):
         """Close the client and SSH tunnel."""

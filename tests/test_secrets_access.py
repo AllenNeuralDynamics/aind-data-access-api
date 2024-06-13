@@ -1,4 +1,5 @@
 """Test secrets_access module."""
+
 import unittest
 from unittest.mock import Mock, patch
 

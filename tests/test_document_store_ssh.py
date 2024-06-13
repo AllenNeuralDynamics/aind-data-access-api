@@ -2,7 +2,7 @@
 
 import os
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 from bson import Timestamp
 from pymongo import MongoClient
@@ -11,6 +11,7 @@ from aind_data_access_api.document_store_ssh import (
     DocumentStoreSSHClient,
     DocumentStoreSSHCredentials,
 )
+
 
 class TestDocumentStoreSSHCredentials(unittest.TestCase):
     """Tests the DocumentStoreSSHCredentials class."""
@@ -28,7 +29,9 @@ class TestDocumentStoreSSHCredentials(unittest.TestCase):
         self.assertEqual("doc_store_host", creds.host)
         self.assertEqual(27017, creds.port)
         self.assertEqual("doc_store_username", creds.username)
-        self.assertEqual("doc_store_password", creds.password.get_secret_value())
+        self.assertEqual(
+            "doc_store_password", creds.password.get_secret_value()
+        )
         self.assertEqual("metadata_index", creds.database)
         self.assertEqual("data_assets", creds.collection)
         self.assertEqual("localhost", creds.ssh_local_bind_address)
@@ -36,7 +39,7 @@ class TestDocumentStoreSSHCredentials(unittest.TestCase):
         self.assertEqual(22, creds.ssh_port)
         self.assertEqual("ssh_username", creds.ssh_username)
         self.assertEqual("ssh_password", creds.ssh_password.get_secret_value())
-    
+
     @patch.dict(
         os.environ,
         {
@@ -56,10 +59,14 @@ class TestDocumentStoreSSHCredentials(unittest.TestCase):
         self.assertEqual("env_doc_store_host", creds.host)
         self.assertEqual(123, creds.port)
         self.assertEqual("env_doc_store_username", creds.username)
-        self.assertEqual("env_doc_store_password", creds.password.get_secret_value())
+        self.assertEqual(
+            "env_doc_store_password", creds.password.get_secret_value()
+        )
         self.assertEqual("123.456.789.0", creds.ssh_host)
         self.assertEqual("env_ssh_username", creds.ssh_username)
-        self.assertEqual("env_ssh_password", creds.ssh_password.get_secret_value())
+        self.assertEqual(
+            "env_ssh_password", creds.ssh_password.get_secret_value()
+        )
 
     @patch("aind_data_access_api.document_store_ssh.get_secret")
     def test_from_secrets_manager(self, mock_get_secret: MagicMock):
@@ -68,18 +75,18 @@ class TestDocumentStoreSSHCredentials(unittest.TestCase):
         ssh_secret_name = "ssh_secret_name"
         mock_get_secret.side_effect = [
             {
-                'admin_secrets': '/admin/secret/name',
-                'engine': 'mongo',
+                "admin_secrets": "/admin/secret/name",
+                "engine": "mongo",
                 "host": "aws_doc_store_host",
                 "password": "aws_doc_store_password",
                 "port": 456,
-                "username": "aws_doc_store_username",                
+                "username": "aws_doc_store_username",
             },
             {
-                'host': '123.456.789.0',
-                'username': 'aws_ssh_username',
-                'password': 'aws_ssh_password',
-            }
+                "host": "123.456.789.0",
+                "username": "aws_ssh_username",
+                "password": "aws_ssh_password",
+            },
         ]
         creds = DocumentStoreSSHCredentials.from_secrets_manager(
             doc_store_secret_name=doc_store_secret_name,
@@ -88,10 +95,14 @@ class TestDocumentStoreSSHCredentials(unittest.TestCase):
         self.assertEqual("aws_doc_store_host", creds.host)
         self.assertEqual(456, creds.port)
         self.assertEqual("aws_doc_store_username", creds.username)
-        self.assertEqual("aws_doc_store_password", creds.password.get_secret_value())
+        self.assertEqual(
+            "aws_doc_store_password", creds.password.get_secret_value()
+        )
         self.assertEqual("123.456.789.0", creds.ssh_host)
         self.assertEqual("aws_ssh_username", creds.ssh_username)
-        self.assertEqual("aws_ssh_password", creds.ssh_password.get_secret_value())
+        self.assertEqual(
+            "aws_ssh_password", creds.ssh_password.get_secret_value()
+        )
 
 
 class TestDocumentStoreSSHClient(unittest.TestCase):
@@ -109,7 +120,16 @@ class TestDocumentStoreSSHClient(unittest.TestCase):
             ssh_username="ssh_username",
             ssh_password="ssh_password",
         )
+        example_server_info = {
+            "version": "5.0.0",
+            "versionArray": [5, 0, 0, 0],
+            "bits": 64,
+            "maxBsonObjectSize": 16777216,
+            "ok": 1.0,
+            "operationTime": Timestamp(1718212689, 1),
+        }
         cls.credentials = credentials
+        cls.example_server_info = example_server_info
 
     def test_init(self):
         """Tests the class constructor."""
@@ -118,12 +138,24 @@ class TestDocumentStoreSSHClient(unittest.TestCase):
         self.assertEqual("metadata_index", client.database_name)
         self.assertEqual("data_assets", client.collection_name)
 
-    @patch("pymongo.MongoClient.__init__", return_value=None)
-    def test_create_mongo_client(self, mock_mongo_client: MagicMock):
-        """Tests _create_mongo_client method."""
+    @patch("aind_data_access_api.document_store_ssh.SSHTunnelForwarder")
+    @patch("aind_data_access_api.document_store_ssh.MongoClient")
+    @patch("logging.info")
+    def test_start(
+        self,
+        mock_log_info: MagicMock,
+        mock_create_mongo_client: MagicMock,
+        mock_create_ssh_tunnel: MagicMock,
+    ):
+        """Tests start method."""
+        mock_ssh_tunnel = MagicMock(is_active=False)
+        mock_create_ssh_tunnel.return_value = mock_ssh_tunnel
+        mock_create_mongo_client.return_value = MagicMock(
+            server_info=MagicMock(return_value=self.example_server_info),
+        )
         client = DocumentStoreSSHClient(credentials=self.credentials)
-        client._create_mongo_client()
-        mock_mongo_client.assert_called_once_with(
+        client.start()
+        mock_create_mongo_client.assert_called_once_with(
             host="localhost",
             port=27017,
             retryWrites=False,
@@ -133,40 +165,96 @@ class TestDocumentStoreSSHClient(unittest.TestCase):
             authSource="admin",
             authMechanism="SCRAM-SHA-1",
         )
-
-    @patch("aind_data_access_api.document_store_ssh.SSHTunnelForwarder")
-    def test_create_ssh_tunnel2(self, mock_ssh_tunnel: MagicMock):
-        """Tests _create_ssh_tunnel method."""
-        client = DocumentStoreSSHClient(credentials=self.credentials)
-        ssh_tunnel = client._create_ssh_tunnel()
-        mock_ssh_tunnel.assert_called_once_with(
+        mock_create_ssh_tunnel.assert_called_once_with(
             ssh_address_or_host=("123.456.789.0", 22),
             ssh_username="ssh_username",
             ssh_password="ssh_password",
             remote_bind_address=("doc_store_host", 27017),
             local_bind_address=("localhost", 27017),
         )
-        self.assertIsInstance(ssh_tunnel, MagicMock)
-    
-    def test_start_ssh_tunnel(self):
-        """Tests _start_ssh_tunnel method."""
-        mock_ssh_server = MagicMock()
-        mock_ssh_server.is_active = False
-        client = DocumentStoreSSHClient(credentials=self.credentials)
-        client._ssh_server = mock_ssh_server
-        client._start_ssh_tunnel()
-        client._ssh_server.start.assert_called_once()
-    
+        mock_ssh_tunnel.start.assert_called_once()
+        mock_log_info.assert_has_calls(
+            [
+                call(self.example_server_info),
+                call(
+                    "Connected to doc_store_host:27017 as doc_store_username"
+                ),
+            ]
+        )
+
     @patch("logging.info")
-    def test_start_ssh_tunnel_active(self, mock_log_info: MagicMock):
-        """Tests _start_ssh_tunnel method when already active."""
-        mock_ssh_server = MagicMock()
-        mock_ssh_server.is_active = True
+    def test_close(self, mock_log_info: MagicMock):
+        """Tests close method."""
+        mock_ssh_tunnel = MagicMock()
+        mock_mongo_client = MagicMock()
         client = DocumentStoreSSHClient(credentials=self.credentials)
-        client._ssh_server = mock_ssh_server
-        client._start_ssh_tunnel()
-        client._ssh_server.start.assert_not_called()
-        mock_log_info.assert_called_once_with("SSH tunnel is already active")
+        client._ssh_server = mock_ssh_tunnel
+        client._client = mock_mongo_client
+        client.close()
+        mock_ssh_tunnel.stop.assert_called_once()
+        mock_mongo_client.close.assert_called_once()
+        mock_log_info.assert_called_once_with("DocDB SSH session closed.")
+
+    @patch("aind_data_access_api.document_store_ssh.SSHTunnelForwarder")
+    @patch("aind_data_access_api.document_store_ssh.MongoClient")
+    @patch("logging.info")
+    def test_context_manager(
+        self,
+        mock_log_info: MagicMock,
+        mock_create_mongo_client: MagicMock,
+        mock_create_ssh_tunnel: MagicMock,
+    ):
+        """Tests using DocumentStoreSSHClient in context"""
+        mock_ssh_tunnel = MagicMock(is_active=False)
+        mock_collection = MagicMock()
+        mock_database = MagicMock(
+            __getitem__=MagicMock(return_value=mock_collection)
+        )
+        mock_mongo_client = MagicMock(
+            server_info=MagicMock(return_value=self.example_server_info),
+            __getitem__=MagicMock(return_value=mock_database),
+        )
+        mock_create_ssh_tunnel.return_value = mock_ssh_tunnel
+        mock_create_mongo_client.return_value = mock_mongo_client
+
+        with DocumentStoreSSHClient(credentials=self.credentials) as client:
+            client.collection.count_documents({})
+        # assert connections are created
+        mock_create_mongo_client.assert_called_once_with(
+            host="localhost",
+            port=27017,
+            retryWrites=False,
+            directConnection=True,
+            username="doc_store_username",
+            password="doc_store_password",
+            authSource="admin",
+            authMechanism="SCRAM-SHA-1",
+        )
+        mock_create_ssh_tunnel.assert_called_once_with(
+            ssh_address_or_host=("123.456.789.0", 22),
+            ssh_username="ssh_username",
+            ssh_password="ssh_password",
+            remote_bind_address=("doc_store_host", 27017),
+            local_bind_address=("localhost", 27017),
+        )
+        mock_ssh_tunnel.start.assert_called_once()
+        # assert correct database and collection are accessed
+        mock_mongo_client.__getitem__.assert_called_once_with("metadata_index")
+        mock_database.__getitem__.assert_called_once_with("data_assets")
+        mock_collection.count_documents.assert_called_once_with({})
+        # assert connections are closed
+        mock_ssh_tunnel.stop.assert_called_once()
+        mock_mongo_client.close.assert_called_once()
+        mock_log_info.assert_has_calls(
+            [
+                call(self.example_server_info),
+                call(
+                    "Connected to doc_store_host:27017 as doc_store_username"
+                ),
+                call("DocDB SSH session closed."),
+            ]
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

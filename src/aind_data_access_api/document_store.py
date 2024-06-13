@@ -1,4 +1,5 @@
 """Module to interface with the Document Store"""
+
 import json
 import logging
 from typing import Iterator, List, Optional
