@@ -5,7 +5,6 @@ import unittest
 from unittest.mock import MagicMock, call, patch
 
 from bson import Timestamp
-from pymongo import MongoClient
 
 from aind_data_access_api.document_store_ssh import (
     DocumentStoreSSHClient,
@@ -111,7 +110,6 @@ class TestDocumentStoreSSHClient(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         """Set up mock credentials for testing"""
-
         credentials = DocumentStoreSSHCredentials(
             host="doc_store_host",
             username="doc_store_username",
