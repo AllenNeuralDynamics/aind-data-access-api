@@ -1,13 +1,14 @@
 """Module to interface with the Relational Database"""
 
 from typing import Optional, Union
-from typing_extensions import Self
+
 import pandas as pd
 import sqlalchemy.engine
 from pydantic import AliasChoices, Field, SecretStr, model_validator
 from pydantic_settings import SettingsConfigDict
 from sqlalchemy import create_engine, engine, text
 from sqlalchemy.engine.cursor import CursorResult
+from typing_extensions import Self
 
 from aind_data_access_api.credentials import CoreCredentials
 

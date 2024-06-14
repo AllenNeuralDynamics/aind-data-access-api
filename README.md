@@ -11,7 +11,43 @@ We have two primary databases. A Document store to keep unstructured json docume
 
 ### Document Store
 We have some convenience methods to interact with our Document Store. You can create a client by explicitly setting credentials, or downloading from AWS Secrets Manager.
+
+__To connect from outside of our VPC:__
+
+1. If using credentials from environment, please configure:
+```sh
+DOC_DB_HOST=docdb-us-west-2-****.cluster-************.us-west-2.docdb.amazonaws.com
+DOC_DB_USERNAME=doc_db_username
+DOC_DB_PASSWORD=doc_db_password
+DOC_DB_SSH_HOST=ssh_host
+DOC_DB_SSH_USERNAME=ssh_username
+DOC_DB_SSH_PASSWORD=ssh_password
 ```
+2. Usage:
+```python
+from aind_data_access_api.document_db_ssh import DocumentDbSSHClient, DocumentDbSSHCredentials
+
+# Method 1) if credentials are set in environment
+credentials = DocumentDbSSHCredentials()
+
+# Method 2) if you have permissions to AWS Secrets Manager
+# Each secret must contain corresponding "host", "username", and "password"
+credentials = DocumentDbSSHCredentials.from_secrets_manager(
+    doc_db_secret_name="/doc/store/secret/name", ssh_secret_name="/ssh/tunnel/secret/name"
+)
+
+with DocumentDbSSHClient(credentials=credentials) as doc_db_client:
+    # To get a list of filtered records:
+    filter = {"subject.subject_id": "123456"}
+    projection = {
+        "name": 1, "created": 1, "location": 1, "subject.subject_id": 1, "subject.date_of_birth": 1,
+    }
+    count = doc_db_client.collection.count_documents(filter)
+    response = list(doc_db_client.collection.find(filter=filter, projection=projection))
+```
+
+__To connect from within our VPC:__
+```python
 from aind_data_access_api.credentials import DocumentStoreCredentials
 from aind_data_access_api.document_store import Client
 

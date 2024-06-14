@@ -1,4 +1,5 @@
 """Module to access secrets and parameters"""
+
 import json
 
 import boto3

@@ -1,4 +1,5 @@
 """Test document_store module."""
+
 import json
 import unittest
 from datetime import datetime
