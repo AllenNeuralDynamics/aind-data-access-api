@@ -11,10 +11,10 @@ from aind_data_access_api.credentials import CoreCredentials
 from aind_data_access_api.secrets import get_secret
 
 
-class DocumentStoreSSHCredentials(CoreCredentials):
+class DocumentDbSSHCredentials(CoreCredentials):
     """Document Store credentials with SSH tunneling."""
 
-    model_config = SettingsConfigDict(env_prefix="DOC_STORE_", extra="ignore")
+    model_config = SettingsConfigDict(env_prefix="DOC_DB_", extra="ignore")
 
     host: str = Field(..., description="The host of the document database")
     port: int = Field(
@@ -45,37 +45,37 @@ class DocumentStoreSSHCredentials(CoreCredentials):
 
     @classmethod
     def from_secrets_manager(
-        cls, doc_store_secret_name: str, ssh_secret_name: str
+        cls, doc_db_secret_name: str, ssh_secret_name: str
     ):
         """
         Construct class from AWS Secrets Manager
 
         Parameters
         ----------
-        doc_store_secret_name : str
+        doc_db_secret_name : str
             The name of the secret that contains the document store credentials
             (host, port, username, password).
         ssh_secret_name : str
             The name of the secret that contains the ssh credentials
             (host, username, password).
         """
-        docdb_secret = get_secret(doc_store_secret_name)
+        docdb_secret = get_secret(doc_db_secret_name)
         ssh_secret = get_secret(ssh_secret_name)
-        return DocumentStoreSSHCredentials(
+        return DocumentDbSSHCredentials(
             **docdb_secret, **{"ssh_" + k: v for k, v in ssh_secret.items()}
         )
 
 
-class DocumentStoreSSHClient:
+class DocumentDbSSHClient:
     """Class to establish a Document Store client with SSH tunneling."""
 
-    def __init__(self, credentials: DocumentStoreSSHCredentials):
+    def __init__(self, credentials: DocumentDbSSHCredentials):
         """
         Construct a client to interface with a Document Database.
 
         Parameters
         ----------
-        credentials : DocumentStoreSSHCredentials
+        credentials : DocumentDbSSHCredentials
         """
         self.credentials = credentials
         self.database_name = credentials.database

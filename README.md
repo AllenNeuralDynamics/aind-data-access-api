@@ -16,34 +16,34 @@ __To connect from outside of our VPC:__
 
 1. If using credentials from environment, please configure:
 ```sh
-DOC_STORE_HOST=docdb-us-west-2-****.cluster-************.us-west-2.docdb.amazonaws.com
-DOC_STORE_USERNAME=doc_store_username
-DOC_STORE_PASSWORD=doc_store_password
-DOC_STORE_SSH_HOST=ssh_host
-DOC_STORE_SSH_USERNAME=ssh_username
-DOC_STORE_SSH_PASSWORD=ssh_password
+DOC_DB_HOST=docdb-us-west-2-****.cluster-************.us-west-2.docdb.amazonaws.com
+DOC_DB_USERNAME=doc_db_username
+DOC_DB_PASSWORD=doc_db_password
+DOC_DB_SSH_HOST=ssh_host
+DOC_DB_SSH_USERNAME=ssh_username
+DOC_DB_SSH_PASSWORD=ssh_password
 ```
 2. Usage:
 ```python
-from aind_data_access_api.document_store_ssh import DocumentStoreSSHClient, DocumentStoreSSHCredentials
+from aind_data_access_api.document_db_ssh import DocumentDbSSHClient, DocumentDbSSHCredentials
 
 # Method 1) if credentials are set in environment
-credentials = DocumentStoreSSHCredentials()
+credentials = DocumentDbSSHCredentials()
 
 # Method 2) if you have permissions to AWS Secrets Manager
 # Each secret must contain corresponding "host", "username", and "password"
-credentials = DocumentStoreSSHCredentials.from_secrets_manager(
-    doc_store_secret_name="/doc/store/secret/name", ssh_secret_name="/ssh/tunnel/secret/name"
+credentials = DocumentDbSSHCredentials.from_secrets_manager(
+    doc_db_secret_name="/doc/store/secret/name", ssh_secret_name="/ssh/tunnel/secret/name"
 )
 
-with DocumentStoreSSHClient(credentials=credentials) as ds_client:
+with DocumentDbSSHClient(credentials=credentials) as doc_db_client:
     # To get all records
-    count = ds_client.collection.count_documents({})
-    response = list(ds_client.collection.find({}))
+    count = doc_db_client.collection.count_documents({})
+    response = list(doc_db_client.collection.find({}))
 
     # To get a list of filtered records:
-    count = ds_client.collection.count_documents({"subject.subject_id": "123456"})
-    response = list(ds_client.collection.find({"subject.subject_id": "123456"}))
+    count = doc_db_client.collection.count_documents({"subject.subject_id": "123456"})
+    response = list(doc_db_client.collection.find({"subject.subject_id": "123456"}))
 ```
 
 __To connect from within our VPC:__
