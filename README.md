@@ -37,13 +37,13 @@ credentials = DocumentDbSSHCredentials.from_secrets_manager(
 )
 
 with DocumentDbSSHClient(credentials=credentials) as doc_db_client:
-    # To get all records
-    count = doc_db_client.collection.count_documents({})
-    response = list(doc_db_client.collection.find({}))
-
     # To get a list of filtered records:
-    count = doc_db_client.collection.count_documents({"subject.subject_id": "123456"})
-    response = list(doc_db_client.collection.find({"subject.subject_id": "123456"}))
+    filter = {"subject.subject_id": "123456"}
+    projection = {
+        "name": 1, "created": 1, "location": 1, "subject.subject_id": 1, "subject.date_of_birth": 1,
+    }
+    count = doc_db_client.collection.count_documents(filter)
+    response = list(doc_db_client.collection.find(filter=filter, projection=projection))
 ```
 
 __To connect from within our VPC:__
