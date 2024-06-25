@@ -19,6 +19,7 @@ dynamic = ["version"]
 dependencies = [
     "requests",
     "aind-codeocean-api>=0.4.0",
+    "aind-data-schema==0.33.3",
     "pydantic>=2.0",
     "pydantic-settings>=2.0"
 ]
