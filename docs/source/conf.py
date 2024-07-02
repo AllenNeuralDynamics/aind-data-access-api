@@ -9,7 +9,14 @@ from datetime import date
 from os.path import abspath, dirname
 from pathlib import Path
 
+# Due to a bug, autodoc raises errors in certain situations with pydantic
+# A workaround is to import the problematic modules here
 from aind_data_access_api import __version__ as package_version
+from aind_data_access_api import (  # noqa: F401
+    document_db_ssh,
+    document_store,
+    rds_tables,
+)
 
 INSTITUTE_NAME = "Allen Institute for Neural Dynamics"
 

@@ -151,6 +151,7 @@ class Client:
     ) -> pd.DataFrame:
         """
         Import sql table as a pandas dataframe.
+
         Parameters
         ----------
         table_name : str
