@@ -1,10 +1,8 @@
 """Package for common methods used for interfacing with DocDB."""
 
-import re
 from typing import Dict, Iterator, List, Optional
 from urllib.parse import urlparse
 
-from aind_data_schema.core.data_description import DataRegex
 from pymongo import MongoClient
 
 
