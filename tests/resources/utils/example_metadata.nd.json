@@ -1,0 +1,116 @@
+{
+   "_id": "488bbe42-832b-4c37-8572-25eb87cc50e2",
+   "acquisition": null,
+   "created": "2024-05-13T22:01:56.035469",
+   "data_description": null,
+   "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/metadata.py",
+   "external_links": [],
+   "instrument": null,
+   "last_modified": "2024-05-13T22:01:56.035475",
+   "location": "s3://aind-ephys-data-dev-u5u0i5/ecephys_642478_2023-01-17_13-56-29",
+   "metadata_status": "Unknown",
+   "name": "ecephys_642478_2023-01-17_13-56-29",
+   "procedures": null,
+   "processing": {
+      "data_processes": [
+         {
+            "code_url": "https://github.com/AllenNeuralDynamics/aind-data-transfer",
+            "end_date_time": "2023-01-20T19:13:36.434644+00:00",
+            "input_location": "\\\\allen\\programs\\aind\\workgroups\\ephys\\data\\ephys\\642478_2023-01-17_13-56-29",
+            "name": "Ephys preprocessing",
+            "notes": null,
+            "output_location": "s3://aind-ephys-data/ecephys_642478_2023-01-17_13-56-29",
+            "parameters": {
+               "aws_secret_names": {
+                  "code_ocean_api_token_name": "codeocean-api-token",
+                  "region": "us-west-2",
+                  "video_encryption_password": "video_encryption_password"
+               },
+               "clip_data_job": {
+                  "clip_kwargs": {}
+               },
+               "compress_data_job": {
+                  "compressor": {
+                     "compressor_name": "wavpack",
+                     "kwargs": {
+                        "level": 3
+                     }
+                  },
+                  "format_kwargs": {},
+                  "scale_params": {},
+                  "write_kwargs": {
+                     "chunk_duration": "1s",
+                     "n_jobs": 24,
+                     "progress_bar": true
+                  }
+               },
+               "data": {
+                  "name": "openephys"
+               },
+               "endpoints": {
+                  "code_repo_location": "https://github.com/AllenNeuralDynamics/aind-data-transfer",
+                  "codeocean_domain": "https://codeocean.allenneuraldynamics.org",
+                  "dest_data_dir": "ecephys_642478_2023-01-17_13-56-29",
+                  "gcp_prefix": "ecephys_642478_2023-01-17_13-56-29",
+                  "metadata_service_url": "http://aind-metadata-service",
+                  "raw_data_dir": "\\\\allen\\programs\\aind\\workgroups\\ephys\\data\\ephys\\642478_2023-01-17_13-56-29",
+                  "s3_bucket": "aind-ephys-data",
+                  "s3_prefix": "ecephys_642478_2023-01-17_13-56-29"
+               },
+               "jobs": {
+                  "attach_metadata": true,
+                  "clip": true,
+                  "compress": true,
+                  "trigger_codeocean_job": true,
+                  "upload_to_gcp": false,
+                  "upload_to_s3": true
+               },
+               "logging": {
+                  "level": "INFO"
+               },
+               "trigger_codeocean_job": {
+                  "bucket": "aind-ephys-data",
+                  "capsule_id": "648473aa-791e-4372-bd25-205cc587ec56",
+                  "job_type": "openephys",
+                  "prefix": "ecephys_642478_2023-01-17_13-56-29"
+               },
+               "upload_data_job": {
+                  "dryrun": false
+               }
+            },
+            "start_date_time": "2023-01-20T19:06:02.945386+00:00",
+            "version": "0.2.9"
+         }
+      ],
+      "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/processing.py",
+      "pipeline_url": null,
+      "pipeline_version": null,
+      "schema_version": "0.1.0"
+   },
+   "rig": null,
+   "schema_version": "0.2.7",
+   "session": null,
+   "subject": {
+      "background_strain": null,
+      "breeding_group": "Chat-IRES-Cre-neo",
+      "date_of_birth": "2022-07-16",
+      "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/site-packages/aind_data_schema/subject.py",
+      "genotype": "Chat-IRES-Cre-neo/Chat-IRES-Cre-neo",
+      "home_cage_enrichment": null,
+      "light_cycle": null,
+      "maternal_genotype": "Chat-IRES-Cre-neo/Chat-IRES-Cre-neo",
+      "maternal_id": "624133",
+      "mgi_allele_ids": null,
+      "notes": null,
+      "paternal_genotype": "Chat-IRES-Cre-neo/Chat-IRES-Cre-neo",
+      "paternal_id": "624115",
+      "restrictions": null,
+      "rrid": null,
+      "schema_version": "0.2.2",
+      "sex": "Male",
+      "source": null,
+      "species": "Mus musculus",
+      "subject_id": "642478",
+      "wellness_reports": null
+   }
+}
