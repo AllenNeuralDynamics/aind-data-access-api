@@ -37,6 +37,7 @@ class CoreCredentials(BaseSettings):
         """
         Method to pull configs from a variety sources, such as a file or aws.
         Arguments are required and set by pydantic.
+
         Parameters
         ----------
         settings_cls : Type[BaseSettings]

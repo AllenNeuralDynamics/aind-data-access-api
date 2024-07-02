@@ -238,6 +238,7 @@ class MetadataDbClient(Client):
     ) -> List[DataAssetRecord]:
         """
         Retrieve data asset records
+
         Parameters
         ----------
         filter_query : Optional[dict]
@@ -369,8 +370,10 @@ class MetadataDbClient(Client):
         """
         Upsert a list of records. There's a limit to the size of the
         request that can be sent, so we chunk the requests.
+
         Parameters
         ----------
+
         data_asset_records : List[DataAssetRecord]
           List of records to upsert into the DocDB database
         max_payload_size : int
@@ -384,6 +387,7 @@ class MetadataDbClient(Client):
         -------
         List[Response]
           A list of responses from the API Gateway.
+
         """
         if len(data_asset_records) == 0:
             return []
