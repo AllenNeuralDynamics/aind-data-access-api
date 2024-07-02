@@ -82,6 +82,7 @@ class Client:
         Can add a query to filter the records. For example:
         retrieve_data_asset_records(query = {"subject.subject_id":"646253"})
         will retrieve records for that specific subject_id.
+
         Parameters
         ----------
         query : dict
