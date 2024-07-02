@@ -1,0 +1,131 @@
+{
+   "_id": "5ca4a951-d374-4f4b-8279-d570a35b2286",
+   "acquisition": null,
+   "created": "2024-05-15T17:41:26.697535",
+   "data_description": {
+      "creation_time": "2000-01-01T04:00:00",
+      "data_level": "raw",
+      "data_summary": null,
+      "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/data_description.py",
+      "funding_source": [
+         {
+            "fundee": null,
+            "funder": {
+               "abbreviation": "AIND",
+               "name": "Allen Institute for Neural Dynamics",
+               "registry": {
+                  "abbreviation": "ROR",
+                  "name": "Research Organization Registry"
+               },
+               "registry_identifier": "04szwah67"
+            },
+            "grant_number": null
+         }
+      ],
+      "group": null,
+      "institution": {
+         "abbreviation": "AIND",
+         "name": "Allen Institute for Neural Dynamics",
+         "registry": {
+            "abbreviation": "ROR",
+            "name": "Research Organization Registry"
+         },
+         "registry_identifier": "04szwah67"
+      },
+      "investigators": [],
+      "license": "CC-BY-4.0",
+      "modality": [
+         {
+            "abbreviation": "ecephys",
+            "name": "Extracellular electrophysiology"
+         }
+      ],
+      "name": "ecephys_567890_2000-01-01_04-00-00",
+      "platform": {
+         "abbreviation": "ecephys",
+         "name": "Electrophysiology platform"
+      },
+      "project_name": null,
+      "related_data": [],
+      "restrictions": null,
+      "schema_version": "0.10.0",
+      "subject_id": "567890"
+   },
+   "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/metadata.py",
+   "external_links": [],
+   "instrument": null,
+   "last_modified": "2024-05-15T17:41:26.697535",
+   "location": "s3://aind-ephys-data-dev-u5u0i5/ecephys_567890_2000-01-01_04-00-00",
+   "metadata_status": "Unknown",
+   "name": "ecephys_567890_2000-01-01_04-00-00",
+   "procedures": {
+      "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/procedures.py",
+      "notes": null,
+      "schema_version": "0.9.4",
+      "specimen_procedures": [],
+      "subject_procedures": []
+   },
+   "processing": {
+      "data_processes": [
+         {
+            "code_url": "https://github.com/AllenNeuralDynamics/aind-data-transfer",
+            "code_version": null,
+            "end_date_time": "2023-10-10T18:16:40.084257+00:00",
+            "input_location": "/allen/aind/scratch/svc_aind_upload/test_data_sets/ecephys/655019_2023-04-03_18-17-07",
+            "name": "Ephys preprocessing",
+            "notes": null,
+            "output_location": "s3://aind-ephys-data-dev-u5u0i5/ecephys_567890_2000-01-01_04-00-00",
+            "outputs": null,
+            "parameters": {
+               "compress_raw_data": true,
+               "extra_configs": null,
+               "modality": {
+                  "abbreviation": "ecephys",
+                  "name": "Extracellular electrophysiology"
+               },
+               "skip_staging": false,
+               "source": "/allen/aind/scratch/svc_aind_upload/test_data_sets/ecephys/655019_2023-04-03_18-17-07"
+            },
+            "start_date_time": "2023-10-10T18:09:09.707473+00:00",
+            "version": "0.29.3"
+         }
+      ],
+      "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/processing.py",
+      "pipeline_url": null,
+      "pipeline_version": null,
+      "schema_version": "0.2.5"
+   },
+   "rig": null,
+   "schema_version": "0.2.7",
+   "session": null,
+   "subject": {
+      "background_strain": null,
+      "breeding_group": "Gad2-IRES-Cre;Slc32a1-T2A-FlpO;Ai210-hyg",
+      "date_of_birth": "2021-01-06",
+      "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/subject.py",
+      "genotype": "Gad2-IRES-Cre/wt;Ai210(TITL-GC7f-ICF-IRES-tTA2)-hyg/wt",
+      "housing": null,
+      "maternal_genotype": "Gad2-IRES-Cre/Gad2-IRES-Cre",
+      "maternal_id": "561759",
+      "mgi_allele_ids": null,
+      "notes": null,
+      "paternal_genotype": null,
+      "paternal_id": "557009",
+      "restrictions": null,
+      "rrid": null,
+      "schema_version": "0.4.2",
+      "sex": "Male",
+      "source": null,
+      "species": {
+         "abbreviation": null,
+         "name": "Mus musculus",
+         "registry": {
+            "abbreviation": "NCBI",
+            "name": "National Center for Biotechnology Information"
+         },
+         "registry_identifier": "10090"
+      },
+      "subject_id": "567890",
+      "wellness_reports": null
+   }
+}

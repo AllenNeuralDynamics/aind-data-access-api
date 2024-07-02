@@ -1,0 +1,209 @@
+{
+   "_id": "7d0a4814-5a56-4497-a63c-b732f9e64af9",
+   "acquisition": null,
+   "created": "2024-05-15T17:41:30.131278",
+   "data_description": {
+      "creation_time": "2000-01-01T01:01:02",
+      "data_level": "raw",
+      "data_summary": null,
+      "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/data_description.py",
+      "funding_source": [
+         {
+            "fundee": null,
+            "funder": {
+               "abbreviation": "AIND",
+               "name": "Allen Institute for Neural Dynamics",
+               "registry": {
+                  "abbreviation": "ROR",
+                  "name": "Research Organization Registry"
+               },
+               "registry_identifier": "04szwah67"
+            },
+            "grant_number": null
+         }
+      ],
+      "group": null,
+      "institution": {
+         "abbreviation": "AIND",
+         "name": "Allen Institute for Neural Dynamics",
+         "registry": {
+            "abbreviation": "ROR",
+            "name": "Research Organization Registry"
+         },
+         "registry_identifier": "04szwah67"
+      },
+      "investigators": [],
+      "license": "CC-BY-4.0",
+      "modality": [
+         {
+            "abbreviation": "ecephys",
+            "name": "Extracellular electrophysiology"
+         }
+      ],
+      "name": "ecephys_655019_2000-01-01_01-01-02",
+      "platform": {
+         "abbreviation": "ecephys",
+         "name": "Electrophysiology platform"
+      },
+      "project_name": null,
+      "related_data": [],
+      "restrictions": null,
+      "schema_version": "0.10.2",
+      "subject_id": "655019"
+   },
+   "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/metadata.py",
+   "external_links": [],
+   "instrument": null,
+   "last_modified": "2024-05-15T17:41:30.131278",
+   "location": "s3://aind-ephys-data-dev-u5u0i5/ecephys_655019_2000-01-01_01-01-02",
+   "metadata_status": "Unknown",
+   "name": "ecephys_655019_2000-01-01_01-01-02",
+   "procedures": {
+      "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/procedures.py",
+      "notes": null,
+      "schema_version": "0.9.3",
+      "specimen_procedures": [],
+      "subject_id": "655019",
+      "subject_procedures": [
+         {
+            "anaesthesia": null,
+            "animal_weight_post": null,
+            "animal_weight_prior": null,
+            "end_date": "2023-04-10",
+            "experimenter_full_name": 30241,
+            "iacuc_protocol": "2109",
+            "notes": null,
+            "output_specimen_ids": [
+               655019
+            ],
+            "procedure_type": "Perfusion",
+            "start_date": "2023-04-10",
+            "weight_unit": "gram"
+         },
+         {
+            "anaesthesia": {
+               "duration": 135.0,
+               "duration_unit": "minute",
+               "level": 1.5,
+               "type": "isoflurane"
+            },
+            "animal_weight_post": 26.8,
+            "animal_weight_prior": 24.2,
+            "bregma_to_lambda_distance": 4.426,
+            "bregma_to_lambda_unit": "millimeter",
+            "craniotomy_coordinates_ap": null,
+            "craniotomy_coordinates_ml": null,
+            "craniotomy_coordinates_reference": null,
+            "craniotomy_coordinates_unit": "millimeter",
+            "craniotomy_hemisphere": null,
+            "craniotomy_size": null,
+            "craniotomy_size_unit": "millimeter",
+            "craniotomy_type": null,
+            "dura_removed": null,
+            "end_date": "2023-01-26",
+            "experimenter_full_name": "NSB-5011",
+            "iacuc_protocol": "2109",
+            "implant_part_number": null,
+            "notes": null,
+            "procedure_type": "Craniotomy",
+            "protective_material": null,
+            "recovery_time": 20.0,
+            "recovery_time_unit": "minute",
+            "start_date": "2023-01-26",
+            "weight_unit": "gram",
+            "workstation_id": "SWS 5"
+         },
+         {
+            "anaesthesia": {
+               "duration": 135.0,
+               "duration_unit": "minute",
+               "level": 1.5,
+               "type": "isoflurane"
+            },
+            "animal_weight_post": 26.8,
+            "animal_weight_prior": 24.2,
+            "end_date": "2023-01-26",
+            "experimenter_full_name": "NSB-5011",
+            "headframe_material": null,
+            "headframe_part_number": "0160-100-42",
+            "headframe_type": "WHC NP",
+            "iacuc_protocol": "2109",
+            "notes": null,
+            "procedure_type": "Headframe",
+            "start_date": "2023-01-26",
+            "weight_unit": "gram",
+            "well_part_number": "0160-055-08",
+            "well_type": "WHC NP"
+         }
+      ]
+   },
+   "processing": {
+      "analyses": null,
+      "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/processing.py",
+      "notes": null,
+      "processing_pipeline": {
+         "data_processes": [
+            {
+               "code_url": "https://github.com/AllenNeuralDynamics/aind-data-transfer",
+               "code_version": null,
+               "end_date_time": "2023-12-12T21:58:32.440692+00:00",
+               "input_location": "/allen/aind/scratch/svc_aind_upload/test_data_sets/ecephys/655019_2023-04-03_18-17-07",
+               "name": "Compression",
+               "notes": null,
+               "output_location": "s3://aind-ephys-data-dev-u5u0i5/ecephys_655019_2000-01-01_01-01-02",
+               "outputs": null,
+               "parameters": {
+                  "compress_raw_data": true,
+                  "extra_configs": null,
+                  "modality": {
+                     "abbreviation": "ecephys",
+                     "name": "Extracellular electrophysiology"
+                  },
+                  "skip_staging": false,
+                  "source": "/allen/aind/scratch/svc_aind_upload/test_data_sets/ecephys/655019_2023-04-03_18-17-07"
+               },
+               "software_version": "0.32.0",
+               "start_date_time": "2023-12-12T21:55:39.374709+00:00"
+            }
+         ],
+         "note": null,
+         "pipeline_url": null,
+         "pipeline_version": null,
+         "processor_full_name": "service"
+      },
+      "schema_version": "0.3.1"
+   },
+   "rig": null,
+   "schema_version": "0.2.7",
+   "session": null,
+   "subject": {
+      "background_strain": null,
+      "breeding_group": "Ai229(TIT2L-GC6m-IRES2-ChRmine-HA-WPRE-ISL-tTA2-WPRE)-hyg",
+      "date_of_birth": "2022-10-18",
+      "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/subject.py",
+      "genotype": "Ai229(TIT2L-GC6m-IRES2-ChRmine-HA-WPRE-ISL-tTA2-WPRE)-hyg/wt",
+      "housing": null,
+      "maternal_genotype": "wt/wt",
+      "maternal_id": "645737",
+      "mgi_allele_ids": null,
+      "notes": null,
+      "paternal_genotype": "Ai229(TIT2L-GC6m-IRES2-ChRmine-HA-WPRE-ISL-tTA2-WPRE)-hyg/wt",
+      "paternal_id": "643902",
+      "restrictions": null,
+      "rrid": null,
+      "schema_version": "0.4.2",
+      "sex": "Male",
+      "source": null,
+      "species": {
+         "abbreviation": null,
+         "name": "Mus musculus",
+         "registry": {
+            "abbreviation": "NCBI",
+            "name": "National Center for Biotechnology Information"
+         },
+         "registry_identifier": "10090"
+      },
+      "subject_id": "655019",
+      "wellness_reports": null
+   }
+}
