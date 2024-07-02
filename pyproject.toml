@@ -38,7 +38,6 @@ secrets = [
     "boto3",
 ]
 docdb = [
-    "aind-data-schema==0.33.3",
     "pymongo==4.3.3",
     "sshtunnel"
 ]
