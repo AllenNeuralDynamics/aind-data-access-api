@@ -63,8 +63,69 @@ REST API (Read-Only)
 
 Direct Connection (SSH) - Database UI (MongoDB Compass)
 ~~~~~~~~~~~~~~~~~~~~~~
-- TODO
 
+MongoDB Compass is a database GUI that can be used to query and interact
+with our document database.
+
+To connect:
+
+1. If provided a temporary SSH password, please first run ``ssh {ssh-username}@54.184.81.236``
+   and set a new password.
+2. Download the full version of `MongoDB Compass <https://www.mongodb.com/try/download/compass>`__.
+3. When connecting, click “Advanced Connection Options” and use the configurations below.
+   Leave any unspecified fields on their default setting.
+
+.. list-table::
+   :widths: 25 25 50
+   :header-rows: 1
+
+   * - Tab
+     - Config
+     - Value
+   * - General
+     - Host
+     - ``************.us-west-2.docdb.amazonaws.com``
+   * - Authentication
+     - Username
+     - ``doc_db_username``
+   * - 
+     - Password
+     - ``doc_db_password``
+   * - 
+     - Authentication Mechanism
+     - SCRAM-SHA-1
+   * - TLS/SSL
+     - SSL/TLS Connection
+     - OFF
+   * - Proxy/SSH
+     - SSH Tunnel/ Proxy Method	
+     - SSH with Password
+   * -
+     - SSH Hostname
+     - ``ssh_host``
+   * -
+     - SSH Port
+     - 22
+   * -
+     - SSH Username
+     - ``ssh_username``
+   * -
+     - SSH Username
+     - ``ssh_password``
+   
+4. You should be able to see the home page with the ``metadata-index`` database.
+   It should have 1 single collection called ``data_assets``.
+5. If provided with a temporary DocDB password, please change it using the embedded
+   mongo shell in Compass, and then reconnect.
+
+.. code:: bash
+   
+   db.updateUser(
+      "doc_db_username",
+      {
+         pwd: passwordPrompt()
+      }
+   )
 
 Direct Connection (SSH) - Python Client
 ~~~~~~~~~~~~~~~~~~~~~~
