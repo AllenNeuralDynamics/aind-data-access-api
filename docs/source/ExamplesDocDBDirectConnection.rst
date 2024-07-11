@@ -270,7 +270,7 @@ functions to update records in DocDB.
           
   if __name__ == "__main__":
       credentials = DocumentDbSSHCredentials()    # credentials in environment
-      dryrun = True                               # TODO: get from settings
+      dryrun = True
       filter = {"location": {"$regex": ".*s3://codeocean-s3datasetsbucket.*"}}
       projection = None
       
