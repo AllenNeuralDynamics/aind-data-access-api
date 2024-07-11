@@ -3,19 +3,32 @@ User Guide
 
 Thank you for using ``aind-data-access-api``! This guide is
 intended for scientists and engineers in AIND that wish to interface
-with AIND Metadata.
+with AIND databases.
 
 We have two primary databases:
-1. A document database (DocDB) to keep unstructured json documents. The DocDB contains AIND metadata.
-2. A relational database to store structured tables.
+
+1. A `document database (DocDB) <#document-database-docdb>`__ to store
+   unstructured json documents. The DocDB contains AIND metadata.
+2. A `relational database <#rds-tables>`__ to store structured tables.
 
 Document Database (DocDB)
 --------------------
 
-- If using the REST API (Read-Only), you do not need credentials.
-- If using any of the Direct Connection (SSH) methods, it is assumed that you have DocDB and
-  SSH credentials (or have access to AWS Secrets Manager).
+AIND metadata records stored in the DocDB describe the ``metadata.nd.json``
+for a data asset:
 
+- ``_id``: the unique ID of the data asset.
+- ``name``: the name of the data asset.
+- ``location``: the S3 location of the metadata, in the format
+  ``s3://{bucket_name}/{name}``. This is unique across records and can
+  be used to query or identify specific records.
+- Please see the `readthedocs for aind-data-schema 
+  <https://aind-data-schema.readthedocs.io/en/latest/aind_data_schema.core.html#module-aind_data_schema.core.metadata>`__
+  for more details.
+
+The DocDB can be accessed through a public read-only REST API or
+through a direct connection using SSH. For a direct connection,
+it is assumed you have the appropriate credentials.
 
 REST API (Read-Only)
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -133,18 +146,18 @@ Direct Connection (SSH) - Python Client
 We have some convenience methods to interact with our Document Store.
 You can create a client by explicitly setting credentials, or downloading from AWS Secrets Manager.
 
-1. If using credentials from environment, please configure:
+If using credentials from environment, please configure:
 
 .. code:: bash
 
-   DOC_DB_HOST=docdb-us-west-2-****.cluster-************.us-west-2.docdb.amazonaws.com
+   DOC_DB_HOST=************.us-west-2.docdb.amazonaws.com
    DOC_DB_USERNAME=doc_db_username
    DOC_DB_PASSWORD=doc_db_password
    DOC_DB_SSH_HOST=ssh_host
    DOC_DB_SSH_USERNAME=ssh_username
    DOC_DB_SSH_PASSWORD=ssh_password
 
-2. Usage:
+To use the client:
 
 .. code:: python
 
