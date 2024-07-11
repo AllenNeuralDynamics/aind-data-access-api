@@ -19,7 +19,46 @@ Document Database (DocDB)
 
 REST API (Read-Only)
 ~~~~~~~~~~~~~~~~~~~~~~
-- TODO
+
+1. A GET request to ``https://api.allenneuraldynamics.org/v1/metadata_index/data_assets``
+   with appropriate query parameters will return a list of records found.
+
+.. code:: python
+
+   import json
+   import requests
+
+   URL = "https://api.allenneuraldynamics.org/v1/metadata_index/data_assets"
+   filter = {"subject.subject_id": "123456"}
+   limit = 100
+   response = requests.get(URL, params={"filter": json.dumps(filter), "limit": limit})
+   print(response.json())
+
+2. Alternatively, we provide a Python client:
+
+.. code:: python
+
+   from aind_data_access_api.document_db import MetadataDbClient
+
+   API_GATEWAY_HOST = "api.allenneuraldynamics.org"
+   DATABASE = "metadata_index"
+   COLLECTION = "data_assets"
+
+   docdb_api_client = MetadataDbClient(
+      host=API_GATEWAY_HOST,
+      database=DATABASE,
+      collection=COLLECTION,
+   )
+
+   filter = {"subject.subject_id": "123456"}
+   limit = 1000
+   paginate_batch_size = 100
+   response = docdb_api_client.retrieve_data_asset_records(
+      filter_query=filter,
+      limit=limit,
+      paginate_batch_size=paginate_batch_size
+   )
+   print(response)
 
 
 Direct Connection (SSH) - Database UI (MongoDB Compass)
