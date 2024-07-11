@@ -11,6 +11,7 @@ Welcome to this repository's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   UserGuide
    modules
 
 
