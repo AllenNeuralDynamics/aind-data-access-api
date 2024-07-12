@@ -4,112 +4,13 @@
 ![Code Style](https://img.shields.io/badge/code%20style-black-black)
 [![semantic-release: angular](https://img.shields.io/badge/semantic--release-angular-e10079?logo=semantic-release)](https://github.com/semantic-release/semantic-release)
 
-API to interact with a few AIND databases.
+API to interact with a few AIND databases. We have two primary databases:
 
-## Usage
-We have two primary databases. A Document store to keep unstructured json documents, and a relational database to store structured tables.
+1. A document database (DocDB) to store
+   unstructured json documents. The DocDB contains AIND metadata.
+2. A relational database to store structured tables.
 
-### Document Store
-We have some convenience methods to interact with our Document Store. You can create a client by explicitly setting credentials, or downloading from AWS Secrets Manager.
-
-__To connect from outside of our VPC:__
-
-1. If using credentials from environment, please configure:
-```sh
-DOC_DB_HOST=docdb-us-west-2-****.cluster-************.us-west-2.docdb.amazonaws.com
-DOC_DB_USERNAME=doc_db_username
-DOC_DB_PASSWORD=doc_db_password
-DOC_DB_SSH_HOST=ssh_host
-DOC_DB_SSH_USERNAME=ssh_username
-DOC_DB_SSH_PASSWORD=ssh_password
-```
-2. Usage:
-```python
-from aind_data_access_api.document_db_ssh import DocumentDbSSHClient, DocumentDbSSHCredentials
-
-# Method 1) if credentials are set in environment
-credentials = DocumentDbSSHCredentials()
-
-# Method 2) if you have permissions to AWS Secrets Manager
-# Each secret must contain corresponding "host", "username", and "password"
-credentials = DocumentDbSSHCredentials.from_secrets_manager(
-    doc_db_secret_name="/doc/store/secret/name", ssh_secret_name="/ssh/tunnel/secret/name"
-)
-
-with DocumentDbSSHClient(credentials=credentials) as doc_db_client:
-    # To get a list of filtered records:
-    filter = {"subject.subject_id": "123456"}
-    projection = {
-        "name": 1, "created": 1, "location": 1, "subject.subject_id": 1, "subject.date_of_birth": 1,
-    }
-    count = doc_db_client.collection.count_documents(filter)
-    response = list(doc_db_client.collection.find(filter=filter, projection=projection))
-```
-
-__To connect from within our VPC:__
-```python
-from aind_data_access_api.credentials import DocumentStoreCredentials
-from aind_data_access_api.document_store import Client
-
-# Method one assuming user, password, and host are known
-ds_client = Client(
-            credentials=DocumentStoreCredentials(
-                username="user",
-                password="password",
-                host="host",
-                database="metadata",
-            ),
-            collection_name="data_assets",
-        )
-
-# Method two if you have permissions to AWS Secrets Manager
-ds_client = Client(
-            credentials=DocumentStoreCredentials(
-                aws_secrets_name="aind/data/access/api/document_store/metadata"
-            ),
-            collection_name="data_assets",
-        )
-
-# To get all records
-response = list(ds_client.retrieve_data_asset_records())
-
-# To get a list of filtered records:
-response = list(ds_client.retrieve_data_asset_records({"subject.subject_id": "123456"}))
-```
-
-### RDS Tables
-We have some convenience methods to interact with our Relational Database. You can create a client by explicitly setting credentials, or downloading from AWS Secrets Manager.
-```
-from aind_data_access_api.credentials import RDSCredentials
-from aind_data_access_api.rds_tables import Client
-
-# Method one assuming user, password, and host are known
-ds_client = Client(
-            credentials=RDSCredentials(
-                username="user",
-                password="password",
-                host="host",
-                database="metadata",
-            ),
-            collection_name="data_assets",
-        )
-
-# Method two if you have permissions to AWS Secrets Manager
-ds_client = Client(
-            credentials=RDSCredentials(
-                aws_secrets_name="aind/data/access/api/rds_tables"
-            ),
-        )
-
-# To retrieve a table as a pandas dataframe
-df = ds_client.read_table(table_name="spike_sorting_urls")
-
-# Can also pass in a custom sql query
-df = ds_client.read_table(query="SELECT * FROM spike_sorting_urls")
-
-# It's also possible to save a pandas dataframe as a table. Please check internal documentation for more details.
-ds_client.overwrite_table_with_df(df, table_name)
-```
+More information can be found at [readthedocs](https://aind-data-access-api.readthedocs.io).
 
 ## Installation
 To use the software, it can be installed from PyPI.

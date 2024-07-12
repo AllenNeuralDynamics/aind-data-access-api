@@ -60,6 +60,14 @@ aind\_data\_access\_api.secrets module
    :undoc-members:
    :show-inheritance:
 
+aind\_data\_access\_api.utils module
+------------------------------------
+
+.. automodule:: aind_data_access_api.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 
