@@ -2,6 +2,7 @@
 
 import json
 import logging
+import warnings
 from functools import cached_property
 from sys import getsizeof
 from typing import List, Optional, Tuple
@@ -316,7 +317,7 @@ class MetadataDbClient(Client):
                     )
         return records
 
-    # TODO: deprecate this method
+    # TODO: remove this method
     def retrieve_data_asset_records(
         self,
         filter_query: Optional[dict] = None,
@@ -328,6 +329,9 @@ class MetadataDbClient(Client):
         paginate_max_iterations: int = 20000,
     ) -> List[DataAssetRecord]:
         """
+        DEPRECATED: This method is deprecated. Use `retrieve_docdb_records`
+        instead.
+
         Retrieve data asset records
 
         Parameters
@@ -355,6 +359,13 @@ class MetadataDbClient(Client):
         List[DataAssetRecord]
 
         """
+        warnings.warn(
+            "retrieve_data_asset_records is deprecated. "
+            "Use retrieve_docdb_records instead."
+            "",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         if paginate is False:
             records = self._get_records(
                 filter_query=filter_query,
@@ -421,12 +432,23 @@ class MetadataDbClient(Client):
         )
         return response
 
-    # TODO: deprecate this method
+    # TODO: remove this method
     def upsert_one_record(
         self, data_asset_record: DataAssetRecord
     ) -> Response:
-        """Upsert one record"""
+        """
+        DEPRECATED: This method is deprecated. Use `upsert_one_docdb_record`
+        instead.
 
+        Upsert one record
+        """
+        warnings.warn(
+            "upsert_one_record is deprecated. "
+            "Use upsert_one_docdb_record instead."
+            "",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         response = self._upsert_one_record(
             record_filter={"_id": data_asset_record.id},
             update={
@@ -548,13 +570,16 @@ class MetadataDbClient(Client):
                 second_index = second_index + 1
         return responses
 
-    # TODO: deprecate this method
+    # TODO: remove this method
     def upsert_list_of_records(
         self,
         data_asset_records: List[DataAssetRecord],
         max_payload_size: int = 2e6,
     ) -> List[Response]:
         """
+        DEPRECATED: This method is deprecated. Use
+        `upsert_list_of_docdb_records` instead.
+
         Upsert a list of records. There's a limit to the size of the
         request that can be sent, so we chunk the requests.
 
@@ -576,6 +601,13 @@ class MetadataDbClient(Client):
           A list of responses from the API Gateway.
 
         """
+        warnings.warn(
+            "upsert_list_of_records is deprecated. "
+            "Use upsert_list_of_docdb_records instead."
+            "",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         if len(data_asset_records) == 0:
             return []
         else:

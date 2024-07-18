@@ -323,7 +323,7 @@ class TestMetadataDbClient(unittest.TestCase):
         )
         self.assertEqual(expected_response, records)
 
-    # TODO: Deprecate this test
+    # TODO: remove this test
     @patch("aind_data_access_api.document_db.Client._get_records")
     @patch("aind_data_access_api.document_db.Client._count_records")
     def test_retrieve_data_asset_records(
@@ -361,7 +361,7 @@ class TestMetadataDbClient(unittest.TestCase):
         self.assertEqual(expected_response, list(records))
         self.assertEqual(expected_response, list(paginate_records))
 
-    # TODO: Deprecate this test
+    # TODO: remove this test
     @patch("aind_data_access_api.document_db.Client._get_records")
     @patch("aind_data_access_api.document_db.Client._count_records")
     @patch("logging.error")
@@ -459,7 +459,7 @@ class TestMetadataDbClient(unittest.TestCase):
         )
         mock_upsert.assert_not_called()
 
-    # TODO: Deprecate this test
+    # TODO: remove this test
     @patch("aind_data_access_api.document_db.Client._upsert_one_record")
     def test_upsert_one_record(self, mock_upsert: MagicMock):
         """Tests upserting one data asset record"""
@@ -665,7 +665,7 @@ class TestMetadataDbClient(unittest.TestCase):
         )
         mock_bulk_write.assert_not_called()
 
-    # TODO: Deprecate this test
+    # TODO: remove this test
     @patch("aind_data_access_api.document_db.Client._bulk_write")
     def test_upsert_list_of_records(self, mock_bulk_write: MagicMock):
         """Tests upserting a list of data asset records"""
@@ -728,7 +728,7 @@ class TestMetadataDbClient(unittest.TestCase):
             ]
         )
 
-    # TODO: Deprecate this test
+    # TODO: remove this test
     @patch("aind_data_access_api.document_db.Client._bulk_write")
     def test_upsert_empty_list_of_records(self, mock_bulk_write: MagicMock):
         """Tests upserting an empty list of data asset records"""
@@ -740,7 +740,7 @@ class TestMetadataDbClient(unittest.TestCase):
         self.assertEqual([], response)
         mock_bulk_write.assert_not_called()
 
-    # TODO: Deprecate this test
+    # TODO: remove this test
     @patch("aind_data_access_api.document_db.Client._bulk_write")
     def test_upsert_chunked_list_of_records(self, mock_bulk_write: MagicMock):
         """Tests upserting a list of data asset records in chunks"""
