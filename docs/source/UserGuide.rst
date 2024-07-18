@@ -66,7 +66,7 @@ REST API (Read-Only)
    filter = {"subject.subject_id": "123456"}
    limit = 1000
    paginate_batch_size = 100
-   response = docdb_api_client.retrieve_data_asset_records(
+   response = docdb_api_client.retrieve_docdb_records(
       filter_query=filter,
       limit=limit,
       paginate_batch_size=paginate_batch_size
