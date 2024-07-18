@@ -247,6 +247,85 @@ class TestMetadataDbClient(unittest.TestCase):
 
     @patch("aind_data_access_api.document_db.Client._get_records")
     @patch("aind_data_access_api.document_db.Client._count_records")
+    def test_retrieve_docdb_records(
+        self,
+        mock_count_record_response: MagicMock,
+        mock_get_record_response: MagicMock,
+    ):
+        """Tests retrieving docdb records"""
+
+        client = MetadataDbClient(**self.example_client_args)
+        expected_response = [
+            {
+                "_id": "abc-123",
+                "name": "modal_00000_2000-10-10_10-10-10",
+                "location": "some_url",
+                "created": datetime(2000, 10, 10, 10, 10, 10),
+                "subject": {"subject_id": "00000", "sex": "Female"},
+            }
+        ]
+        mock_get_record_response.return_value = expected_response
+        mock_count_record_response.return_value = {
+            "total_record_count": 1,
+            "filtered_record_count": 1,
+        }
+        records = client.retrieve_docdb_records()
+        paginate_records = client.retrieve_docdb_records(paginate=False)
+        self.assertEqual(expected_response, records)
+        self.assertEqual(expected_response, paginate_records)
+
+    @patch("aind_data_access_api.document_db.Client._get_records")
+    @patch("aind_data_access_api.document_db.Client._count_records")
+    @patch("logging.error")
+    def test_retrieve_many_docdb_records(
+        self,
+        mock_log_error: MagicMock,
+        mock_count_record_response: MagicMock,
+        mock_get_record_response: MagicMock,
+    ):
+        """Tests retrieving many docdb records"""
+
+        client = MetadataDbClient(**self.example_client_args)
+        mocked_record_list = [
+            {
+                "_id": f"{id_num}",
+                "name": "modal_00000_2000-10-10_10-10-10",
+                "location": "some_url",
+                "created": datetime(2000, 10, 10, 10, 10, 10),
+                "subject": {"subject_id": "00000", "sex": "Female"},
+            }
+            for id_num in range(0, 10)
+        ]
+        mock_get_record_response.side_effect = [
+            mocked_record_list[0:2],
+            Exception("Test"),
+            mocked_record_list[4:6],
+            mocked_record_list[6:8],
+            mocked_record_list[8:10],
+        ]
+        mock_count_record_response.return_value = {
+            "total_record_count": len(mocked_record_list),
+            "filtered_record_count": len(mocked_record_list),
+        }
+        expected_response = [
+            {
+                "_id": f"{id_num}",
+                "name": "modal_00000_2000-10-10_10-10-10",
+                "location": "some_url",
+                "created": datetime(2000, 10, 10, 10, 10, 10),
+                "subject": {"subject_id": "00000", "sex": "Female"},
+            }
+            for id_num in [0, 1, 4, 5, 6, 7, 8, 9]
+        ]
+        records = client.retrieve_docdb_records(paginate_batch_size=2)
+        mock_log_error.assert_called_once_with(
+            "There were errors retrieving records. [\"Exception('Test')\"]"
+        )
+        self.assertEqual(expected_response, records)
+
+    # TODO: Deprecate this test
+    @patch("aind_data_access_api.document_db.Client._get_records")
+    @patch("aind_data_access_api.document_db.Client._count_records")
     def test_retrieve_data_asset_records(
         self,
         mock_count_record_response: MagicMock,
@@ -282,6 +361,7 @@ class TestMetadataDbClient(unittest.TestCase):
         self.assertEqual(expected_response, list(records))
         self.assertEqual(expected_response, list(paginate_records))
 
+    # TODO: Deprecate this test
     @patch("aind_data_access_api.document_db.Client._get_records")
     @patch("aind_data_access_api.document_db.Client._count_records")
     @patch("logging.error")
@@ -332,6 +412,55 @@ class TestMetadataDbClient(unittest.TestCase):
         self.assertEqual(expected_response, list(records))
 
     @patch("aind_data_access_api.document_db.Client._upsert_one_record")
+    def test_upsert_one_docdb_record(self, mock_upsert: MagicMock):
+        """Tests upserting one docdb record"""
+        client = MetadataDbClient(**self.example_client_args)
+        mock_upsert.return_value = {"message": "success"}
+        record = {
+            "_id": "abc-123",
+            "name": "modal_00000_2000-10-10_10-10-10",
+            "created": datetime(2000, 10, 10, 10, 10, 10),
+            "location": "some_url",
+            "subject": {"subject_id": "00000", "sex": "Female"},
+        }
+        response = client.upsert_one_docdb_record(record)
+        self.assertEqual({"message": "success"}, response)
+        mock_upsert.assert_called_once_with(
+            record_filter={"_id": "abc-123"},
+            update={"$set": json.loads(json.dumps(record, default=str))},
+        )
+
+    @patch("aind_data_access_api.document_db.Client._upsert_one_record")
+    def test_upsert_one_docdb_record_invalid_corrupt(
+        self, mock_upsert: MagicMock
+    ):
+        """Tests upserting one docdb record if record is invalid or corrupt"""
+        client = MetadataDbClient(**self.example_client_args)
+        record_no__id = {
+            "id": "abc-123",
+            "name": "modal_00000_2000-10-10_10-10-10",
+            "created": datetime(2000, 10, 10, 10, 10, 10),
+            "location": "some_url",
+            "subject": {"subject_id": "00000", "sex": "Female"},
+        }
+        record_corrupt = {
+            "_id": "abc-123",
+            "name.corrupt": "modal_00000_2000-10-10_10-10-10",
+        }
+        with self.assertRaises(ValueError) as e:
+            client.upsert_one_docdb_record(record_no__id)
+        self.assertEqual(
+            "Record does not have an _id field.", str(e.exception)
+        )
+        with self.assertRaises(ValueError) as e:
+            client.upsert_one_docdb_record(record_corrupt)
+        self.assertEqual(
+            "Record is corrupt and cannot be upserted.", str(e.exception)
+        )
+        mock_upsert.assert_not_called()
+
+    # TODO: Deprecate this test
+    @patch("aind_data_access_api.document_db.Client._upsert_one_record")
     def test_upsert_one_record(self, mock_upsert: MagicMock):
         """Tests upserting one data asset record"""
         client = MetadataDbClient(**self.example_client_args)
@@ -354,6 +483,189 @@ class TestMetadataDbClient(unittest.TestCase):
             },
         )
 
+    @patch("aind_data_access_api.document_db.Client._bulk_write")
+    def test_upsert_list_of_docdb_records(self, mock_bulk_write: MagicMock):
+        """Tests upserting a list of docdb records"""
+
+        client = MetadataDbClient(**self.example_client_args)
+        mock_bulk_write.return_value = {"message": "success"}
+        records = [
+            {
+                "_id": "abc-123",
+                "name": "modal_00000_2000-10-10_10-10-10",
+                "created": datetime(2000, 10, 10, 10, 10, 10),
+                "location": "some_url",
+                "subject": {"subject_id": "00000", "sex": "Female"},
+            },
+            {
+                "_id": "abc-125",
+                "name": "modal_00001_2000-10-10_10-10-10",
+                "created": datetime(2000, 10, 10, 10, 10, 10),
+                "location": "some_url",
+                "subject": {"subject_id": "00000", "sex": "Male"},
+            },
+        ]
+        response = client.upsert_list_of_docdb_records(records)
+        self.assertEqual([{"message": "success"}], response)
+        mock_bulk_write.assert_called_once_with(
+            [
+                {
+                    "UpdateOne": {
+                        "filter": {"_id": "abc-123"},
+                        "update": {
+                            "$set": json.loads(
+                                json.dumps(records[0], default=str)
+                            )
+                        },
+                        "upsert": "True",
+                    }
+                },
+                {
+                    "UpdateOne": {
+                        "filter": {"_id": "abc-125"},
+                        "update": {
+                            "$set": json.loads(
+                                json.dumps(records[1], default=str)
+                            )
+                        },
+                        "upsert": "True",
+                    }
+                },
+            ]
+        )
+
+    @patch("aind_data_access_api.document_db.Client._bulk_write")
+    def test_upsert_empty_list_of_docdb_records(
+        self, mock_bulk_write: MagicMock
+    ):
+        """Tests upserting an empty list of docdb records"""
+
+        client = MetadataDbClient(**self.example_client_args)
+        records = []
+
+        response = client.upsert_list_of_docdb_records(records)
+        self.assertEqual([], response)
+        mock_bulk_write.assert_not_called()
+
+    @patch("aind_data_access_api.document_db.Client._bulk_write")
+    def test_upsert_chunked_list_of_docdb_records(
+        self, mock_bulk_write: MagicMock
+    ):
+        """Tests upserting a list of docdb records in chunks"""
+
+        client = MetadataDbClient(**self.example_client_args)
+        mock_bulk_write.return_value = {"message": "success"}
+        records = [
+            {
+                "_id": "abc-123",
+                "name": "modal_00000_2000-10-10_10-10-10",
+                "created": datetime(2000, 10, 10, 10, 10, 10),
+                "location": "some_url",
+                "subject": {"subject_id": "00000", "sex": "Female"},
+            },
+            {
+                "_id": "abc-125",
+                "name": "modal_00001_2000-10-10_10-10-10",
+                "created": datetime(2000, 10, 10, 10, 10, 10),
+                "location": "some_url",
+                "subject": {"subject_id": "00000", "sex": "Male"},
+            },
+        ]
+
+        response = client.upsert_list_of_docdb_records(
+            records, max_payload_size=1
+        )
+        self.assertEqual(
+            [{"message": "success"}, {"message": "success"}], response
+        )
+        mock_bulk_write.assert_has_calls(
+            [
+                call(
+                    [
+                        {
+                            "UpdateOne": {
+                                "filter": {"_id": "abc-123"},
+                                "update": {
+                                    "$set": json.loads(
+                                        json.dumps(records[0], default=str)
+                                    )
+                                },
+                                "upsert": "True",
+                            }
+                        }
+                    ]
+                ),
+                call(
+                    [
+                        {
+                            "UpdateOne": {
+                                "filter": {"_id": "abc-125"},
+                                "update": {
+                                    "$set": json.loads(
+                                        json.dumps(records[1], default=str)
+                                    )
+                                },
+                                "upsert": "True",
+                            }
+                        }
+                    ]
+                ),
+            ]
+        )
+
+    @patch("aind_data_access_api.document_db.Client._bulk_write")
+    def test_upsert_list_of_docdb_records_invalid_corrupt(
+        self, mock_bulk_write: MagicMock
+    ):
+        """Tests upserting a list of docdb records if a record is invalid or
+        corrupt"""
+
+        client = MetadataDbClient(**self.example_client_args)
+        records_no__id = [
+            {
+                "_id": "abc-123",
+                "name": "modal_00000_2000-10-10_10-10-10",
+                "created": datetime(2000, 10, 10, 10, 10, 10),
+                "location": "some_url",
+                "subject": {"subject_id": "00000", "sex": "Female"},
+            },
+            {
+                "id": "abc-125",
+                "name": "modal_00001_2000-10-10_10-10-10",
+                "created": datetime(2000, 10, 10, 10, 10, 10),
+                "location": "some_url",
+                "subject": {"subject_id": "00000", "sex": "Male"},
+            },
+        ]
+        records_corrupt = [
+            {
+                "_id": "abc-123",
+                "name": "modal_00000_2000-10-10_10-10-10",
+                "created": datetime(2000, 10, 10, 10, 10, 10),
+                "location": "some_url",
+                "subject": {"subject_id": "00000", "sex": "Female"},
+            },
+            {
+                "_id": "abc-125",
+                "name.corrupt": "modal_00001_2000-10-10_10-10-10",
+                "created": datetime(2000, 10, 10, 10, 10, 10),
+                "location": "some_url",
+                "subject": {"subject_id": "00000", "sex": "Male"},
+            },
+        ]
+        with self.assertRaises(ValueError) as e:
+            client.upsert_list_of_docdb_records(records_no__id)
+        self.assertEqual(
+            "A record does not have an _id field.", str(e.exception)
+        )
+        with self.assertRaises(ValueError) as e:
+            client.upsert_list_of_docdb_records(records_corrupt)
+        self.assertEqual(
+            "A record is corrupt and cannot be upserted.", str(e.exception)
+        )
+        mock_bulk_write.assert_not_called()
+
+    # TODO: Deprecate this test
     @patch("aind_data_access_api.document_db.Client._bulk_write")
     def test_upsert_list_of_records(self, mock_bulk_write: MagicMock):
         """Tests upserting a list of data asset records"""
@@ -416,6 +728,7 @@ class TestMetadataDbClient(unittest.TestCase):
             ]
         )
 
+    # TODO: Deprecate this test
     @patch("aind_data_access_api.document_db.Client._bulk_write")
     def test_upsert_empty_list_of_records(self, mock_bulk_write: MagicMock):
         """Tests upserting an empty list of data asset records"""
@@ -427,6 +740,7 @@ class TestMetadataDbClient(unittest.TestCase):
         self.assertEqual([], response)
         mock_bulk_write.assert_not_called()
 
+    # TODO: Deprecate this test
     @patch("aind_data_access_api.document_db.Client._bulk_write")
     def test_upsert_chunked_list_of_records(self, mock_bulk_write: MagicMock):
         """Tests upserting a list of data asset records in chunks"""

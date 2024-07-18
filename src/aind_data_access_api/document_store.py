@@ -12,6 +12,7 @@ from aind_data_access_api.credentials import CoreCredentials
 from aind_data_access_api.models import DataAssetRecord
 
 
+# TODO: deprecate this class
 class DocumentStoreCredentials(CoreCredentials):
     """Document Store credentials"""
 
@@ -31,6 +32,7 @@ class DocumentStoreCredentials(CoreCredentials):
     database: str = Field(...)
 
 
+# TODO: deprecate this client
 class Client:
     """Class to establish a document store client."""
 
