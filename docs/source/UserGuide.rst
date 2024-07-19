@@ -82,7 +82,7 @@ with our document database.
 
 To connect:
 
-1. If provided a temporary SSH password, please first run ``ssh {ssh-username}@54.184.81.236``
+1. If provided a temporary SSH password, please first run ``ssh {ssh-username}@{ssh_host}``
    and set a new password.
 2. Download the full version of `MongoDB Compass <https://www.mongodb.com/try/download/compass>`__.
 3. When connecting, click “Advanced Connection Options” and use the configurations below.
