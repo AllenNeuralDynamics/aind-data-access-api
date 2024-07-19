@@ -12,7 +12,7 @@ We have two primary databases:
 2. A `relational database <#rds-tables>`__ to store structured tables.
 
 Document Database (DocDB)
---------------------
+-------------------------
 
 AIND metadata records stored in the DocDB describe the ``metadata.nd.json``
 for a data asset:
@@ -75,7 +75,7 @@ REST API (Read-Only)
 
 
 Direct Connection (SSH) - Database UI (MongoDB Compass)
-~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 MongoDB Compass is a database GUI that can be used to query and interact
 with our document database.
@@ -141,7 +141,7 @@ To connect:
    )
 
 Direct Connection (SSH) - Python Client
-~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We have some convenience methods to interact with our Document Store.
 You can create a client by explicitly setting credentials, or downloading from AWS Secrets Manager.
