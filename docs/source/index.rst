@@ -13,6 +13,7 @@ Welcome to this repository's documentation!
 
    UserGuide
    ExamplesDocDBDirectConnection
+   Contributing
    modules
 
 
