@@ -5,6 +5,7 @@ from datetime import datetime
 from pydantic import BaseModel, Extra, Field
 
 
+# TODO: remove this model
 class DataAssetRecord(BaseModel):
     """The records in the Data Asset Collection needs to contain certain fields
     to easily query and index the data."""

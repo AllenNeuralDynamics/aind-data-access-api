@@ -69,6 +69,9 @@ class DocumentDbSSHCredentials(CoreCredentials):
 class DocumentDbSSHClient:
     """Class to establish a Document Store client with SSH tunneling."""
 
+    # TODO: add retrieve_docdb_records, upsert_one_docdb_record,
+    # and upsert_list_of_docdb_records methods
+
     def __init__(self, credentials: DocumentDbSSHCredentials):
         """
         Construct a client to interface with a Document Database.

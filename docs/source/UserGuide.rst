@@ -12,7 +12,7 @@ We have two primary databases:
 2. A `relational database <#rds-tables>`__ to store structured tables.
 
 Document Database (DocDB)
---------------------
+-------------------------
 
 AIND metadata records stored in the DocDB describe the ``metadata.nd.json``
 for a data asset:
@@ -66,7 +66,7 @@ REST API (Read-Only)
    filter = {"subject.subject_id": "123456"}
    limit = 1000
    paginate_batch_size = 100
-   response = docdb_api_client.retrieve_data_asset_records(
+   response = docdb_api_client.retrieve_docdb_records(
       filter_query=filter,
       limit=limit,
       paginate_batch_size=paginate_batch_size
@@ -75,14 +75,14 @@ REST API (Read-Only)
 
 
 Direct Connection (SSH) - Database UI (MongoDB Compass)
-~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 MongoDB Compass is a database GUI that can be used to query and interact
 with our document database.
 
 To connect:
 
-1. If provided a temporary SSH password, please first run ``ssh {ssh-username}@54.184.81.236``
+1. If provided a temporary SSH password, please first run ``ssh {ssh-username}@{ssh_host}``
    and set a new password.
 2. Download the full version of `MongoDB Compass <https://www.mongodb.com/try/download/compass>`__.
 3. When connecting, click “Advanced Connection Options” and use the configurations below.
@@ -141,7 +141,7 @@ To connect:
    )
 
 Direct Connection (SSH) - Python Client
-~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We have some convenience methods to interact with our Document Store.
 You can create a client by explicitly setting credentials, or downloading from AWS Secrets Manager.

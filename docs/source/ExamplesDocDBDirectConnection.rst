@@ -1,5 +1,5 @@
 Examples - DocDB Direct Connection
-==========
+==================================
 
 This page provides examples for interact with the Document Database (DocDB)
 using the provided Python client.
@@ -12,7 +12,7 @@ Querying Metadata
 ~~~~~~~~~~~~~~~~~~~~~~
 
 Count Example 1: Get # of records with a certain subject_id
-------------------
+-----------------------------------------------------------
 
 .. code:: python
 
@@ -30,7 +30,7 @@ Count Example 1: Get # of records with a certain subject_id
       print(count)
 
 Filter Example 1: Get records with a certain subject_id
-------------------
+-------------------------------------------------------
 
 .. code:: python
 
@@ -62,7 +62,7 @@ With projection (recommended):
 
 
 Filter Example 2: Get records with a certain breeding group
-------------------
+-----------------------------------------------------------
 
 .. code:: python
 
@@ -97,7 +97,7 @@ With projection (recommended):
       print(json.dumps(records, indent=3))
 
 Aggregation Example 1: Get all subjects per breeding group
-------------------
+----------------------------------------------------------
 
 .. code:: python
 
