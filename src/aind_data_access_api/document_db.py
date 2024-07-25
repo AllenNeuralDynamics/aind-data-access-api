@@ -63,7 +63,7 @@ class Client:
 
         database = database if database is not None else self.database
         collection = collection if collection is not None else self.collection
-
+        print(self.host, self.version)
         return (
             f"https://{self.host}/{self.version}/{database}/" f"{collection}"
         )
