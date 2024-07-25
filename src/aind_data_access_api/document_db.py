@@ -22,12 +22,12 @@ class Client:
     Gateway."""
 
     def __init__(
-            self,
-            host: str,
-            database: str,
-            collection: str,
-            version: str = "v1",
-            boto_session=None,
+        self,
+        host: str,
+        database: str,
+        collection: str,
+        version: str = "v1",
+        boto_session=None,
     ):
         """Class constructor."""
         self.host = host.strip("/")
@@ -42,9 +42,9 @@ class Client:
         # return helper function
         return self._create_url()
 
-    def _create_url(self,
-                    database: Optional[str] = None,
-                    collection: Optional[str] = None):
+    def _create_url(
+        self, database: Optional[str] = None, collection: Optional[str] = None
+    ):
         """
         Create url based on input database and collection
         ----------
@@ -56,7 +56,8 @@ class Client:
         Returns
         -------
         str
-          String of url in https://{self.host}/{self.version}/{database}/{collection} format
+          String of url in
+          https://{self.host}/{self.version}/{database}/{collection} format
 
         """
 
@@ -64,10 +65,8 @@ class Client:
         collection = collection if collection is not None else self.collection
 
         return (
-            f"https://{self.host}/{self.version}/{database}/"
-            f"{collection}"
+            f"https://{self.host}/{self.version}/{database}/" f"{collection}"
         )
-
 
     @property
     def _update_one_url(self):
@@ -109,7 +108,7 @@ class Client:
         return self._boto_session
 
     def _signed_request(
-            self, url: str, method: str, data: Optional[str] = None
+        self, url: str, method: str, data: Optional[str] = None
     ) -> AWSRequest:
         """Create a signed request to write to the document store.
         Permissions are managed through AWS."""
@@ -126,10 +125,12 @@ class Client:
         ).add_auth(aws_request)
         return aws_request
 
-    def _count_records(self,
-                       database: Optional[str] = None,
-                       collection: Optional[str] = None,
-                       filter_query: Optional[dict] = None):
+    def _count_records(
+        self,
+        database: Optional[str] = None,
+        collection: Optional[str] = None,
+        filter_query: Optional[dict] = None,
+    ):
         """
         Methods to count the number of records in a collection.
         Parameters
@@ -160,14 +161,14 @@ class Client:
         return json.loads(body)
 
     def _get_records(
-            self,
-            database: Optional[str] = None,
-            collection: Optional[str] = None,
-            filter_query: Optional[dict] = None,
-            projection: Optional[dict] = None,
-            sort: Optional[List[Tuple[str, int]]] = None,
-            limit: int = 0,
-            skip: int = 0,
+        self,
+        database: Optional[str] = None,
+        collection: Optional[str] = None,
+        filter_query: Optional[dict] = None,
+        projection: Optional[dict] = None,
+        sort: Optional[List[Tuple[str, int]]] = None,
+        limit: int = 0,
+        skip: int = 0,
     ) -> List[dict]:
         """
         Retrieve records from collection.
@@ -212,7 +213,7 @@ class Client:
             return json.loads(body)
 
     def _upsert_one_record(
-            self, record_filter: dict, update: dict
+        self, record_filter: dict, update: dict
     ) -> Response:
         """Upsert a single record into the collection."""
         data = json.dumps(
@@ -269,14 +270,14 @@ class MetadataDbClient(Client):
     """Class to manage reading and writing to metadata db"""
 
     def retrieve_docdb_records(
-            self,
-            filter_query: Optional[dict] = None,
-            projection: Optional[dict] = None,
-            sort: Optional[dict] = None,
-            limit: int = 0,
-            paginate: bool = True,
-            paginate_batch_size: int = 10,
-            paginate_max_iterations: int = 20000,
+        self,
+        filter_query: Optional[dict] = None,
+        projection: Optional[dict] = None,
+        sort: Optional[dict] = None,
+        limit: int = 0,
+        paginate: bool = True,
+        paginate_batch_size: int = 10,
+        paginate_max_iterations: int = 20000,
     ) -> List[dict]:
         """
         Retrieve raw json records from DocDB API Gateway as a list of dicts.
@@ -330,10 +331,10 @@ class MetadataDbClient(Client):
                 skip = 0
                 iter_count = 0
                 while (
-                        skip < total_record_count
-                        and num_of_records_collected
-                        < min(filtered_record_count, limit)
-                        and iter_count < paginate_max_iterations
+                    skip < total_record_count
+                    and num_of_records_collected
+                    < min(filtered_record_count, limit)
+                    and iter_count < paginate_max_iterations
                 ):
                     try:
                         batched_records = self._get_records(
@@ -358,15 +359,15 @@ class MetadataDbClient(Client):
         return records
 
     def retrieve_schema_records(
-            self,
-            schema_type: Optional[str] = None,
-            filter_query: Optional[dict] = None,
-            projection: Optional[dict] = None,
-            sort: Optional[dict] = None,
-            limit: int = 0,
-            paginate: bool = True,
-            paginate_batch_size: int = 10,
-            paginate_max_iterations: int = 20000,
+        self,
+        schema_type: Optional[str] = None,
+        filter_query: Optional[dict] = None,
+        projection: Optional[dict] = None,
+        sort: Optional[dict] = None,
+        limit: int = 0,
+        paginate: bool = True,
+        paginate_batch_size: int = 10,
+        paginate_max_iterations: int = 20000,
     ) -> List[dict]:
         """
         Retrieve schemas records from DocDB API Gateway as a list of dicts.
@@ -400,7 +401,7 @@ class MetadataDbClient(Client):
         """
         if paginate is False:
             records = self._get_records(
-                database='schemas',
+                database="schemas",
                 collection=schema_type,
                 filter_query=filter_query,
                 projection=projection,
@@ -410,7 +411,7 @@ class MetadataDbClient(Client):
         else:
             # Get record count
             record_counts = self._count_records(
-                database='schemas',
+                database="schemas",
                 collection=schema_type,
                 filter_query=filter_query,
             )
@@ -418,11 +419,11 @@ class MetadataDbClient(Client):
             filtered_record_count = record_counts["filtered_record_count"]
             if filtered_record_count <= paginate_batch_size:
                 records = self._get_records(
-                    database='schemas',
+                    database="schemas",
                     collection=schema_type,
                     filter_query=filter_query,
                     projection=projection,
-                    sort=sort
+                    sort=sort,
                 )
             else:
                 records = []
@@ -432,14 +433,14 @@ class MetadataDbClient(Client):
                 skip = 0
                 iter_count = 0
                 while (
-                        skip < total_record_count
-                        and num_of_records_collected
-                        < min(filtered_record_count, limit)
-                        and iter_count < paginate_max_iterations
+                    skip < total_record_count
+                    and num_of_records_collected
+                    < min(filtered_record_count, limit)
+                    and iter_count < paginate_max_iterations
                 ):
                     try:
                         batched_records = self._get_records(
-                            database='schemas',
+                            database="schemas",
                             collection=schema_type,
                             filter_query=filter_query,
                             projection=projection,
@@ -463,16 +464,16 @@ class MetadataDbClient(Client):
 
     # TODO: remove this method
     def retrieve_data_asset_records(
-            self,
-            # add schmema type, string
-            # add collection
-            filter_query: Optional[dict] = None,
-            projection: Optional[dict] = None,
-            sort: Optional[dict] = None,
-            limit: int = 0,
-            paginate: bool = True,
-            paginate_batch_size: int = 10,
-            paginate_max_iterations: int = 20000,
+        self,
+        # add schmema type, string
+        # add collection
+        filter_query: Optional[dict] = None,
+        projection: Optional[dict] = None,
+        sort: Optional[dict] = None,
+        limit: int = 0,
+        paginate: bool = True,
+        paginate_batch_size: int = 10,
+        paginate_max_iterations: int = 20000,
     ) -> List[DataAssetRecord]:
         """
         DEPRECATED: This method is deprecated. Use `retrieve_docdb_records`
@@ -537,10 +538,10 @@ class MetadataDbClient(Client):
                 skip = 0
                 iter_count = 0
                 while (
-                        skip < total_record_count
-                        and num_of_records_collected
-                        < min(filtered_record_count, limit)
-                        and iter_count < paginate_max_iterations
+                    skip < total_record_count
+                    and num_of_records_collected
+                    < min(filtered_record_count, limit)
+                    and iter_count < paginate_max_iterations
                 ):
                     try:
                         batched_records = self._get_records(
@@ -581,7 +582,7 @@ class MetadataDbClient(Client):
 
     # TODO: remove this method
     def upsert_one_record(
-            self, data_asset_record: DataAssetRecord
+        self, data_asset_record: DataAssetRecord
     ) -> Response:
         """
         DEPRECATED: This method is deprecated. Use `upsert_one_docdb_record`
@@ -615,7 +616,7 @@ class MetadataDbClient(Client):
         return response
 
     def delete_many_records(
-            self, data_asset_record_ids: List[str]
+        self, data_asset_record_ids: List[str]
     ) -> Response:
         """Delete many records by their ids"""
 
@@ -636,9 +637,9 @@ class MetadataDbClient(Client):
         }
 
     def upsert_list_of_docdb_records(
-            self,
-            records: List[dict],
-            max_payload_size: int = 2e6,
+        self,
+        records: List[dict],
+        max_payload_size: int = 2e6,
     ) -> List[Response]:
         """
         Upsert a list of records. There's a limit to the size of the
@@ -719,9 +720,9 @@ class MetadataDbClient(Client):
 
     # TODO: remove this method
     def upsert_list_of_records(
-            self,
-            data_asset_records: List[DataAssetRecord],
-            max_payload_size: int = 2e6,
+        self,
+        data_asset_records: List[DataAssetRecord],
+        max_payload_size: int = 2e6,
     ) -> List[Response]:
         """
         DEPRECATED: This method is deprecated. Use

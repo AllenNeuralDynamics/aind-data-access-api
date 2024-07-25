@@ -323,6 +323,84 @@ class TestMetadataDbClient(unittest.TestCase):
         )
         self.assertEqual(expected_response, records)
 
+    @patch("aind_data_access_api.document_db.Client._get_records")
+    @patch("aind_data_access_api.document_db.Client._count_records")
+    def test_retrieve_schema_records(
+            self,
+            mock_count_record_response: MagicMock,
+            mock_get_record_response: MagicMock,
+    ):
+        """Tests retrieving schema records"""
+
+        client = MetadataDbClient(**self.example_client_args)
+        expected_response = [
+            {
+                "_id": "abc-123",
+                "name": "modal_00000_2000-10-10_10-10-10",
+                "location": "some_url",
+                "created": datetime(2000, 10, 10, 10, 10, 10),
+                "subject": {"subject_id": "00000", "sex": "Female"},
+            }
+        ]
+        mock_get_record_response.return_value = expected_response
+        mock_count_record_response.return_value = {
+            "total_record_count": 1,
+            "filtered_record_count": 1,
+        }
+        records = client.retrieve_schema_records()
+        paginate_records = client.retrieve_docdb_records(paginate=False)
+        self.assertEqual(expected_response, records)
+        self.assertEqual(expected_response, paginate_records)
+
+    @patch("aind_data_access_api.document_db.Client._get_records")
+    @patch("aind_data_access_api.document_db.Client._count_records")
+    @patch("logging.error")
+    def test_retrieve_many_schema_records(
+            self,
+            mock_log_error: MagicMock,
+            mock_count_record_response: MagicMock,
+            mock_get_record_response: MagicMock,
+    ):
+        """Tests retrieving many schema records"""
+
+        client = MetadataDbClient(**self.example_client_args)
+        mocked_record_list = [
+            {
+                "_id": f"{id_num}",
+                "name": "modal_00000_2000-10-10_10-10-10",
+                "location": "some_url",
+                "created": datetime(2000, 10, 10, 10, 10, 10),
+                "subject": {"subject_id": "00000", "sex": "Female"},
+            }
+            for id_num in range(0, 10)
+        ]
+        mock_get_record_response.side_effect = [
+            mocked_record_list[0:2],
+            Exception("Test"),
+            mocked_record_list[4:6],
+            mocked_record_list[6:8],
+            mocked_record_list[8:10],
+        ]
+        mock_count_record_response.return_value = {
+            "total_record_count": len(mocked_record_list),
+            "filtered_record_count": len(mocked_record_list),
+        }
+        expected_response = [
+            {
+                "_id": f"{id_num}",
+                "name": "modal_00000_2000-10-10_10-10-10",
+                "location": "some_url",
+                "created": datetime(2000, 10, 10, 10, 10, 10),
+                "subject": {"subject_id": "00000", "sex": "Female"},
+            }
+            for id_num in [0, 1, 4, 5, 6, 7, 8, 9]
+        ]
+        records = client.retrieve_schema_records(paginate_batch_size=2)
+        mock_log_error.assert_called_once_with(
+            "There were errors retrieving records. [\"Exception('Test')\"]"
+        )
+        self.assertEqual(expected_response, records)
+
     # TODO: remove this test
     @patch("aind_data_access_api.document_db.Client._get_records")
     @patch("aind_data_access_api.document_db.Client._count_records")
