@@ -41,23 +41,29 @@ class TestClient(unittest.TestCase):
         """Tests create url methode"""
 
         client = Client(**self.example_client_args)
-        expected_response = f"https://{self.example_client_args['host'].strip('/')}/" \
-                            f"{self.example_client_args.get('version', 'v1')}/" \
-                            f"{self.example_client_args['database']}/" \
-                            f"{self.example_client_args['collection']}"
+        expected_response = (
+            f"https://{self.example_client_args['host'].strip('/')}/"
+            f"{self.example_client_args.get('version', 'v1')}/"
+            f"{self.example_client_args['database']}/"
+            f"{self.example_client_args['collection']}"
+        )
         actual_response = client._create_url()
         self.assertEqual(
             expected_response,
             actual_response,
         )
 
-        database = 'schemas'
-        collection = 'procedures'
-        expected_response = f"https://{self.example_client_args['host'].strip('/')}/" \
-                            f"{self.example_client_args.get('version', 'v1')}/" \
-                            f"{database}/" \
-                            f"{collection}"
-        actual_response = client._create_url(database=database, collection=collection)
+        database = "schemas"
+        collection = "procedures"
+        expected_response = (
+            f"https://{self.example_client_args['host'].strip('/')}/"
+            f"{self.example_client_args.get('version', 'v1')}/"
+            f"{database}/"
+            f"{collection}"
+        )
+        actual_response = client._create_url(
+            database=database, collection=collection
+        )
         self.assertEqual(
             expected_response,
             actual_response,
@@ -131,10 +137,10 @@ class TestClient(unittest.TestCase):
     @patch("botocore.auth.SigV4Auth.add_auth")
     @patch("requests.post")
     def test_upsert_one_record(
-            self,
-            mock_post: MagicMock,
-            mock_auth: MagicMock,
-            mock_session: MagicMock,
+        self,
+        mock_post: MagicMock,
+        mock_auth: MagicMock,
+        mock_session: MagicMock,
     ):
         """Tests upsert_one method"""
         mock_creds = MagicMock()
@@ -163,10 +169,10 @@ class TestClient(unittest.TestCase):
     @patch("botocore.auth.SigV4Auth.add_auth")
     @patch("requests.post")
     def test_bulk_write(
-            self,
-            mock_post: MagicMock,
-            mock_auth: MagicMock,
-            mock_session: MagicMock,
+        self,
+        mock_post: MagicMock,
+        mock_auth: MagicMock,
+        mock_session: MagicMock,
     ):
         """Tests bulk_write method"""
         mock_creds = MagicMock()
@@ -213,10 +219,10 @@ class TestClient(unittest.TestCase):
     @patch("botocore.auth.SigV4Auth.add_auth")
     @patch("requests.delete")
     def test_delete_one_record(
-            self,
-            mock_delete: MagicMock,
-            mock_auth: MagicMock,
-            mock_session: MagicMock,
+        self,
+        mock_delete: MagicMock,
+        mock_auth: MagicMock,
+        mock_session: MagicMock,
     ):
         """Tests delete_one method"""
         mock_creds = MagicMock()
@@ -238,10 +244,10 @@ class TestClient(unittest.TestCase):
     @patch("botocore.auth.SigV4Auth.add_auth")
     @patch("requests.delete")
     def test_delete_many_records(
-            self,
-            mock_delete: MagicMock,
-            mock_auth: MagicMock,
-            mock_session: MagicMock,
+        self,
+        mock_delete: MagicMock,
+        mock_auth: MagicMock,
+        mock_session: MagicMock,
     ):
         """Tests delete_many_records method"""
         mock_creds = MagicMock()
@@ -274,9 +280,9 @@ class TestMetadataDbClient(unittest.TestCase):
     @patch("aind_data_access_api.document_db.Client._get_records")
     @patch("aind_data_access_api.document_db.Client._count_records")
     def test_retrieve_docdb_records(
-            self,
-            mock_count_record_response: MagicMock,
-            mock_get_record_response: MagicMock,
+        self,
+        mock_count_record_response: MagicMock,
+        mock_get_record_response: MagicMock,
     ):
         """Tests retrieving docdb records"""
 
@@ -304,10 +310,10 @@ class TestMetadataDbClient(unittest.TestCase):
     @patch("aind_data_access_api.document_db.Client._count_records")
     @patch("logging.error")
     def test_retrieve_many_docdb_records(
-            self,
-            mock_log_error: MagicMock,
-            mock_count_record_response: MagicMock,
-            mock_get_record_response: MagicMock,
+        self,
+        mock_log_error: MagicMock,
+        mock_count_record_response: MagicMock,
+        mock_get_record_response: MagicMock,
     ):
         """Tests retrieving many docdb records"""
 
@@ -352,9 +358,9 @@ class TestMetadataDbClient(unittest.TestCase):
     @patch("aind_data_access_api.document_db.Client._get_records")
     @patch("aind_data_access_api.document_db.Client._count_records")
     def test_retrieve_schema_records(
-            self,
-            mock_count_record_response: MagicMock,
-            mock_get_record_response: MagicMock,
+        self,
+        mock_count_record_response: MagicMock,
+        mock_get_record_response: MagicMock,
     ):
         """Tests retrieving schema records"""
 
@@ -382,10 +388,10 @@ class TestMetadataDbClient(unittest.TestCase):
     @patch("aind_data_access_api.document_db.Client._count_records")
     @patch("logging.error")
     def test_retrieve_many_schema_records(
-            self,
-            mock_log_error: MagicMock,
-            mock_count_record_response: MagicMock,
-            mock_get_record_response: MagicMock,
+        self,
+        mock_log_error: MagicMock,
+        mock_count_record_response: MagicMock,
+        mock_get_record_response: MagicMock,
     ):
         """Tests retrieving many schema records"""
 
@@ -431,9 +437,9 @@ class TestMetadataDbClient(unittest.TestCase):
     @patch("aind_data_access_api.document_db.Client._get_records")
     @patch("aind_data_access_api.document_db.Client._count_records")
     def test_retrieve_data_asset_records(
-            self,
-            mock_count_record_response: MagicMock,
-            mock_get_record_response: MagicMock,
+        self,
+        mock_count_record_response: MagicMock,
+        mock_get_record_response: MagicMock,
     ):
         """Tests retrieving data asset records"""
 
@@ -470,10 +476,10 @@ class TestMetadataDbClient(unittest.TestCase):
     @patch("aind_data_access_api.document_db.Client._count_records")
     @patch("logging.error")
     def test_retrieve_many_data_asset_records(
-            self,
-            mock_log_error: MagicMock,
-            mock_count_record_response: MagicMock,
-            mock_get_record_response: MagicMock,
+        self,
+        mock_log_error: MagicMock,
+        mock_count_record_response: MagicMock,
+        mock_get_record_response: MagicMock,
     ):
         """Tests retrieving many data asset records"""
 
@@ -536,7 +542,7 @@ class TestMetadataDbClient(unittest.TestCase):
 
     @patch("aind_data_access_api.document_db.Client._upsert_one_record")
     def test_upsert_one_docdb_record_invalid_corrupt(
-            self, mock_upsert: MagicMock
+        self, mock_upsert: MagicMock
     ):
         """Tests upserting one docdb record if record is invalid or corrupt"""
         client = MetadataDbClient(**self.example_client_args)
@@ -640,7 +646,7 @@ class TestMetadataDbClient(unittest.TestCase):
 
     @patch("aind_data_access_api.document_db.Client._bulk_write")
     def test_upsert_empty_list_of_docdb_records(
-            self, mock_bulk_write: MagicMock
+        self, mock_bulk_write: MagicMock
     ):
         """Tests upserting an empty list of docdb records"""
 
@@ -653,7 +659,7 @@ class TestMetadataDbClient(unittest.TestCase):
 
     @patch("aind_data_access_api.document_db.Client._bulk_write")
     def test_upsert_chunked_list_of_docdb_records(
-            self, mock_bulk_write: MagicMock
+        self, mock_bulk_write: MagicMock
     ):
         """Tests upserting a list of docdb records in chunks"""
 
@@ -719,7 +725,7 @@ class TestMetadataDbClient(unittest.TestCase):
 
     @patch("aind_data_access_api.document_db.Client._bulk_write")
     def test_upsert_list_of_docdb_records_invalid_corrupt(
-            self, mock_bulk_write: MagicMock
+        self, mock_bulk_write: MagicMock
     ):
         """Tests upserting a list of docdb records if a record is invalid or
         corrupt"""
