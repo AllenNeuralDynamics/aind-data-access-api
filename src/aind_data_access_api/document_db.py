@@ -34,6 +34,7 @@ class Client:
         self.database = database
         self.collection = collection
         self.version = version
+        self.database_schemas = "schemas"
         self._boto_session = boto_session
 
     @property
@@ -360,7 +361,7 @@ class MetadataDbClient(Client):
     def retrieve_schema_records(
         self,
         schema_type: str,
-        filter_query: Optional[dict] = None,
+        schema_version: Optional[str] = None,
         projection: Optional[dict] = None,
         sort: Optional[dict] = None,
         limit: int = 0,
@@ -375,8 +376,8 @@ class MetadataDbClient(Client):
         ----------
         schema_type : Optional[str]
           Type of schema to retrieve. E.g., "acquisition"
-        filter_query : Optional[dict]
-          Filter to apply to the records being returned. Default is None.
+        schema_version : Optional[str]
+          Schema version to use as a filter_query. Default is None.
         projection : Optional[dict]
           Subset of document fields to return. Default is None.
         sort : Optional[dict]
@@ -399,9 +400,11 @@ class MetadataDbClient(Client):
 
         """
 
+        filter_query = {"_id": schema_version} if schema_version is not None else None
+
         if paginate is False:
             records = self._get_records(
-                database="schemas",
+                database=self.database_schemas,
                 collection=schema_type,
                 filter_query=filter_query,
                 projection=projection,
@@ -411,7 +414,7 @@ class MetadataDbClient(Client):
         else:
             # Get record count
             record_counts = self._count_records(
-                database="schemas",
+                database=self.database_schemas,
                 collection=schema_type,
                 filter_query=filter_query,
             )
@@ -419,7 +422,7 @@ class MetadataDbClient(Client):
             filtered_record_count = record_counts["filtered_record_count"]
             if filtered_record_count <= paginate_batch_size:
                 records = self._get_records(
-                    database="schemas",
+                    database=self.database_schemas,
                     collection=schema_type,
                     filter_query=filter_query,
                     projection=projection,
@@ -440,7 +443,7 @@ class MetadataDbClient(Client):
                 ):
                     try:
                         batched_records = self._get_records(
-                            database="schemas",
+                            database=self.database_schemas,
                             collection=schema_type,
                             filter_query=filter_query,
                             projection=projection,
@@ -465,8 +468,6 @@ class MetadataDbClient(Client):
     # TODO: remove this method
     def retrieve_data_asset_records(
         self,
-        # add schmema type, string
-        # add collection
         filter_query: Optional[dict] = None,
         projection: Optional[dict] = None,
         sort: Optional[dict] = None,
