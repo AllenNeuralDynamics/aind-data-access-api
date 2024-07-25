@@ -380,7 +380,7 @@ class TestMetadataDbClient(unittest.TestCase):
             "filtered_record_count": 1,
         }
         records = client.retrieve_schema_records()
-        paginate_records = client.retrieve_docdb_records(paginate=False)
+        paginate_records = client.retrieve_schema_records(paginate=False)
         self.assertEqual(expected_response, records)
         self.assertEqual(expected_response, paginate_records)
 
