@@ -444,7 +444,9 @@ class TestMetadataDbClient(unittest.TestCase):
             }
             for id_num in [0, 1, 4, 5, 6, 7, 8, 9]
         ]
-        records = client.retrieve_schema_records(schema_type=schema_type, paginate_batch_size=2)
+        records = client.retrieve_schema_records(
+            schema_type=schema_type, paginate_batch_size=2
+        )
         mock_log_error.assert_called_once_with(
             "There were errors retrieving records. [\"Exception('Test')\"]"
         )
@@ -458,7 +460,7 @@ class TestMetadataDbClient(unittest.TestCase):
             projection=None,
             sort=None,
             limit=2,
-            skip=8
+            skip=8,
         )
         self.assertEqual(expected_response, records)
 
