@@ -364,14 +364,15 @@ class TestMetadataDbClient(unittest.TestCase):
     ):
         """Tests retrieving schema records"""
 
+        schema_type = "procedures"
         client = MetadataDbClient(**self.example_client_args)
         expected_response = [
             {
                 "_id": "abc-123",
-                "name": "modal_00000_2000-10-10_10-10-10",
-                "location": "some_url",
-                "created": datetime(2000, 10, 10, 10, 10, 10),
-                "subject": {"subject_id": "00000", "sex": "Female"},
+                "description": "Mock procedure schema",
+                "title": "Mock Procedures",
+                "definitions": {"MassUnit": object, "TimeUnit": object},
+                "properties": {"schema_version": object, "subject_id": object},
             }
         ]
         mock_get_record_response.return_value = expected_response
@@ -379,9 +380,18 @@ class TestMetadataDbClient(unittest.TestCase):
             "total_record_count": 1,
             "filtered_record_count": 1,
         }
-        records = client.retrieve_schema_records()
-        paginate_records = client.retrieve_schema_records(paginate=False)
+        records = client.retrieve_schema_records(schema_type=schema_type)
+        mock_count_record_response.assert_called_once_with(database='schemas',
+                                                           collection=schema_type,
+                                                           filter_query=None)
+        mock_get_record_response.assert_called_once_with(database='schemas',
+                                                         collection=schema_type,
+                                                         filter_query=None,
+                                                         projection=None,
+                                                         sort=None)
         self.assertEqual(expected_response, records)
+
+        paginate_records = client.retrieve_schema_records(schema_type=schema_type, paginate=False)
         self.assertEqual(expected_response, paginate_records)
 
     @patch("aind_data_access_api.document_db.Client._get_records")
