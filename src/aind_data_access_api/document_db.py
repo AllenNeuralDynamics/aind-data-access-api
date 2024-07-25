@@ -122,6 +122,9 @@ class Client:
         if filter_query is not None:
             params["filter"] = json.dumps(filter_query)
         response = requests.get(self._base_url, params=params)
+        if response.status_code != 200:
+            error_msg = response.text if response.text else "Unknown error"
+            raise ValueError(f"{response.status_code} Error: {error_msg}")
         response_body = response.json()
         return response_body
 
@@ -163,6 +166,9 @@ class Client:
             params["sort"] = json.dumps(sort)
 
         response = requests.get(self._base_url, params=params)
+        if response.status_code != 200:
+            error_msg = response.text if response.text else "Unknown error"
+            raise ValueError(f"{response.status_code} Error: {error_msg}")
         response_body = response.json()
         if response_body is None:
             raise KeyError("Body not found in json response")
