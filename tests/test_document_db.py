@@ -38,7 +38,7 @@ class TestClient(unittest.TestCase):
         )
 
     def test_create_url(self):
-        """Tests create url methode"""
+        """Tests create url method"""
 
         client = Client(**self.example_client_args)
         expected_response = (

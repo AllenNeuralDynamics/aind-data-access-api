@@ -64,7 +64,7 @@ class Client:
         database = database if database is not None else self.database
         collection = collection if collection is not None else self.collection
         return (
-            f"https://{self.host}/{self.version}/{database}/" f"{collection}"
+            f"https://{self.host}/{self.version}/{database}/{collection}"
         )
 
     @property
@@ -359,7 +359,7 @@ class MetadataDbClient(Client):
 
     def retrieve_schema_records(
         self,
-        schema_type: Optional[str] = None,
+        schema_type: str,
         filter_query: Optional[dict] = None,
         projection: Optional[dict] = None,
         sort: Optional[dict] = None,
@@ -374,7 +374,7 @@ class MetadataDbClient(Client):
         Parameters
         ----------
         schema_type : Optional[str]
-          Type of schema to retrieve. Default is None.
+          Type of schema to retrieve. E.g., "acquisition"
         filter_query : Optional[dict]
           Filter to apply to the records being returned. Default is None.
         projection : Optional[dict]
