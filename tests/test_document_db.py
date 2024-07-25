@@ -365,6 +365,7 @@ class TestMetadataDbClient(unittest.TestCase):
         """Tests retrieving schema records"""
 
         schema_type = "procedures"
+        database = "schemas"
         client = MetadataDbClient(**self.example_client_args)
         expected_response = [
             {
@@ -382,10 +383,10 @@ class TestMetadataDbClient(unittest.TestCase):
         }
         records = client.retrieve_schema_records(schema_type=schema_type)
         mock_count_record_response.assert_called_once_with(
-            database="schemas", collection=schema_type, filter_query=None
+            database=database, collection=schema_type, filter_query=None
         )
         mock_get_record_response.assert_called_once_with(
-            database="schemas",
+            database=database,
             collection=schema_type,
             filter_query=None,
             projection=None,
@@ -409,14 +410,16 @@ class TestMetadataDbClient(unittest.TestCase):
     ):
         """Tests retrieving many schema records"""
 
+        schema_type = "procedures"
+        database = "schemas"
         client = MetadataDbClient(**self.example_client_args)
         mocked_record_list = [
             {
                 "_id": f"{id_num}",
-                "name": "modal_00000_2000-10-10_10-10-10",
-                "location": "some_url",
-                "created": datetime(2000, 10, 10, 10, 10, 10),
-                "subject": {"subject_id": "00000", "sex": "Female"},
+                "description": "Mock procedure schema",
+                "title": "Mock Procedures",
+                "definitions": {"MassUnit": object, "TimeUnit": object},
+                "properties": {"schema_version": object, "subject_id": object},
             }
             for id_num in range(0, 10)
         ]
@@ -434,16 +437,28 @@ class TestMetadataDbClient(unittest.TestCase):
         expected_response = [
             {
                 "_id": f"{id_num}",
-                "name": "modal_00000_2000-10-10_10-10-10",
-                "location": "some_url",
-                "created": datetime(2000, 10, 10, 10, 10, 10),
-                "subject": {"subject_id": "00000", "sex": "Female"},
+                "description": "Mock procedure schema",
+                "title": "Mock Procedures",
+                "definitions": {"MassUnit": object, "TimeUnit": object},
+                "properties": {"schema_version": object, "subject_id": object},
             }
             for id_num in [0, 1, 4, 5, 6, 7, 8, 9]
         ]
-        records = client.retrieve_schema_records(paginate_batch_size=2)
+        records = client.retrieve_schema_records(schema_type=schema_type, paginate_batch_size=2)
         mock_log_error.assert_called_once_with(
             "There were errors retrieving records. [\"Exception('Test')\"]"
+        )
+        mock_count_record_response.assert_called_with(
+            database=database, collection=schema_type, filter_query=None
+        )
+        mock_get_record_response.assert_called_with(
+            database=database,
+            collection=schema_type,
+            filter_query=None,
+            projection=None,
+            sort=None,
+            limit=2,
+            skip=8
         )
         self.assertEqual(expected_response, records)
 
