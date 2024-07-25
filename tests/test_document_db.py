@@ -381,17 +381,21 @@ class TestMetadataDbClient(unittest.TestCase):
             "filtered_record_count": 1,
         }
         records = client.retrieve_schema_records(schema_type=schema_type)
-        mock_count_record_response.assert_called_once_with(database='schemas',
-                                                           collection=schema_type,
-                                                           filter_query=None)
-        mock_get_record_response.assert_called_once_with(database='schemas',
-                                                         collection=schema_type,
-                                                         filter_query=None,
-                                                         projection=None,
-                                                         sort=None)
+        mock_count_record_response.assert_called_once_with(
+            database="schemas", collection=schema_type, filter_query=None
+        )
+        mock_get_record_response.assert_called_once_with(
+            database="schemas",
+            collection=schema_type,
+            filter_query=None,
+            projection=None,
+            sort=None,
+        )
         self.assertEqual(expected_response, records)
 
-        paginate_records = client.retrieve_schema_records(schema_type=schema_type, paginate=False)
+        paginate_records = client.retrieve_schema_records(
+            schema_type=schema_type, paginate=False
+        )
         self.assertEqual(expected_response, paginate_records)
 
     @patch("aind_data_access_api.document_db.Client._get_records")
