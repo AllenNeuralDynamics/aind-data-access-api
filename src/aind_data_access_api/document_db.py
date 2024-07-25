@@ -18,8 +18,8 @@ from aind_data_access_api.utils import is_dict_corrupt
 
 
 class Client:
-    """Class to create client to interface with DocumentDB via an API
-    Gateway."""
+    """Class to create client to interface with DocumentDB via a REST api
+    (public Lambda function url)"""
 
     def __init__(
         self,
@@ -103,7 +103,7 @@ class Client:
 
     def _count_records(self, filter_query: Optional[dict] = None):
         """
-        Methods to count the number of records in a collection.
+        Count the number of records in a collection.
         Parameters
         ----------
         filter_query : Optional[dict]
@@ -122,9 +122,8 @@ class Client:
         if filter_query is not None:
             params["filter"] = json.dumps(filter_query)
         response = requests.get(self._base_url, params=params)
-        response_json = response.json()
-        body = response_json.get("body")
-        return json.loads(body)
+        response_body = response.json()
+        return response_body
 
     def _get_records(
         self,
