@@ -64,9 +64,7 @@ class Client:
 
         database = database if database is not None else self.database
         collection = collection if collection is not None else self.collection
-        return (
-            f"https://{self.host}/{self.version}/{database}/{collection}"
-        )
+        return f"https://{self.host}/{self.version}/{database}/{collection}"
 
     @property
     def _update_one_url(self):
@@ -400,7 +398,9 @@ class MetadataDbClient(Client):
 
         """
 
-        filter_query = {"_id": schema_version} if schema_version is not None else None
+        filter_query = (
+            {"_id": schema_version} if schema_version is not None else None
+        )
 
         if paginate is False:
             records = self._get_records(
