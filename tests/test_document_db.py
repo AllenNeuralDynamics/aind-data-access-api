@@ -366,6 +366,7 @@ class TestMetadataDbClient(unittest.TestCase):
 
         schema_type = "procedures"
         database = "schemas"
+        schema_version = "abc-123"
         client = MetadataDbClient(**self.example_client_args)
         expected_response = [
             {
@@ -381,14 +382,18 @@ class TestMetadataDbClient(unittest.TestCase):
             "total_record_count": 1,
             "filtered_record_count": 1,
         }
-        records = client.retrieve_schema_records(schema_type=schema_type)
+        records = client.retrieve_schema_records(
+            schema_type=schema_type, schema_version=schema_version
+        )
         mock_count_record_response.assert_called_once_with(
-            database=database, collection=schema_type, filter_query=None
+            database=database,
+            collection=schema_type,
+            filter_query={"_id": "abc-123"},
         )
         mock_get_record_response.assert_called_once_with(
             database=database,
             collection=schema_type,
-            filter_query=None,
+            filter_query={"_id": "abc-123"},
             projection=None,
             sort=None,
         )
@@ -411,7 +416,6 @@ class TestMetadataDbClient(unittest.TestCase):
         """Tests retrieving many schema records"""
 
         schema_type = "procedures"
-        database = "schemas"
         client = MetadataDbClient(**self.example_client_args)
         mocked_record_list = [
             {
@@ -449,18 +453,6 @@ class TestMetadataDbClient(unittest.TestCase):
         )
         mock_log_error.assert_called_once_with(
             "There were errors retrieving records. [\"Exception('Test')\"]"
-        )
-        mock_count_record_response.assert_called_with(
-            database=database, collection=schema_type, filter_query=None
-        )
-        mock_get_record_response.assert_called_with(
-            database=database,
-            collection=schema_type,
-            filter_query=None,
-            projection=None,
-            sort=None,
-            limit=2,
-            skip=8,
         )
         self.assertEqual(expected_response, records)
 
