@@ -129,7 +129,7 @@ class Client:
         self,
         filter_query: Optional[dict] = None,
         projection: Optional[dict] = None,
-        sort: Optional[List[Tuple[str, int]]] = None,
+        sort: Optional[dict] = None,
         limit: int = 0,
         skip: int = 0,
     ) -> List[dict]:
@@ -141,7 +141,7 @@ class Client:
           Filter to apply to the records being returned. Default is None.
         projection : Optional[dict]
           Subset of document fields to return. Default is None.
-        sort : Optional[List[Tuple[str, int]]]
+        sort : Optional[dict]
           Sort records when returned. Default is None.
         limit : int
           Return a smaller set of records. 0 for all records. Default is 0.
@@ -151,7 +151,7 @@ class Client:
         Returns
         -------
         List[dict]
-          The list of records returned from the API Gateway.
+          The list of records returned from the DocumentDB.
 
         """
         params = {"limit": str(limit), "skip": str(skip)}
@@ -160,15 +160,13 @@ class Client:
         if projection is not None:
             params["projection"] = json.dumps(projection)
         if sort is not None:
-            params["sort"] = str(sort)
+            params["sort"] = json.dumps(sort)
 
         response = requests.get(self._base_url, params=params)
-        response_json = response.json()
-        body = response_json.get("body")
-        if body is None:
+        response_body = response.json()
+        if response_body is None:
             raise KeyError("Body not found in json response")
-        else:
-            return json.loads(body)
+        return response_body
 
     def _upsert_one_record(
         self, record_filter: dict, update: dict
