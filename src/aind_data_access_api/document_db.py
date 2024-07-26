@@ -5,7 +5,7 @@ import logging
 import warnings
 from functools import cached_property
 from sys import getsizeof
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 import boto3
 import requests
@@ -169,9 +169,9 @@ class Client:
         if response.status_code != 200:
             error_msg = response.text if response.text else "Unknown error"
             raise ValueError(f"{response.status_code} Error: {error_msg}")
+        if not response.content:
+            raise ValueError("No payload in response")
         response_body = response.json()
-        if response_body is None:
-            raise KeyError("Body not found in json response")
         return response_body
 
     def _upsert_one_record(
