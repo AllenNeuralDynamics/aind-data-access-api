@@ -7,7 +7,11 @@ from unittest.mock import MagicMock, call, patch
 
 from requests import Response
 
-from aind_data_access_api.document_db import Client, MetadataDbClient
+from aind_data_access_api.document_db import (
+    Client,
+    MetadataDbClient,
+    SchemaDbClient,
+)
 from aind_data_access_api.models import DataAssetRecord
 
 
@@ -35,38 +39,6 @@ class TestClient(unittest.TestCase):
         self.assertEqual(
             "https://acmecorp.com/v1/db/coll/bulk_write",
             client._bulk_write_url,
-        )
-
-    def test_create_url(self):
-        """Tests create url method"""
-
-        client = Client(**self.example_client_args)
-        expected_response = (
-            f"https://{self.example_client_args['host'].strip('/')}/"
-            f"{self.example_client_args.get('version', 'v1')}/"
-            f"{self.example_client_args['database']}/"
-            f"{self.example_client_args['collection']}"
-        )
-        actual_response = client._create_url()
-        self.assertEqual(
-            expected_response,
-            actual_response,
-        )
-
-        database = "schemas"
-        collection = "procedures"
-        expected_response = (
-            f"https://{self.example_client_args['host'].strip('/')}/"
-            f"{self.example_client_args.get('version', 'v1')}/"
-            f"{database}/"
-            f"{collection}"
-        )
-        actual_response = client._create_url(
-            database=database, collection=collection
-        )
-        self.assertEqual(
-            expected_response,
-            actual_response,
         )
 
     @patch("requests.get")
@@ -350,107 +322,6 @@ class TestMetadataDbClient(unittest.TestCase):
             for id_num in [0, 1, 4, 5, 6, 7, 8, 9]
         ]
         records = client.retrieve_docdb_records(paginate_batch_size=2)
-        mock_log_error.assert_called_once_with(
-            "There were errors retrieving records. [\"Exception('Test')\"]"
-        )
-        self.assertEqual(expected_response, records)
-
-    @patch("aind_data_access_api.document_db.Client._get_records")
-    @patch("aind_data_access_api.document_db.Client._count_records")
-    def test_retrieve_schema_records(
-        self,
-        mock_count_record_response: MagicMock,
-        mock_get_record_response: MagicMock,
-    ):
-        """Tests retrieving schema records"""
-
-        schema_type = "procedures"
-        database = "schemas"
-        schema_version = "abc-123"
-        client = MetadataDbClient(**self.example_client_args)
-        expected_response = [
-            {
-                "_id": "abc-123",
-                "description": "Mock procedure schema",
-                "title": "Mock Procedures",
-                "definitions": {"MassUnit": object, "TimeUnit": object},
-                "properties": {"schema_version": object, "subject_id": object},
-            }
-        ]
-        mock_get_record_response.return_value = expected_response
-        mock_count_record_response.return_value = {
-            "total_record_count": 1,
-            "filtered_record_count": 1,
-        }
-        records = client.retrieve_schema_records(
-            schema_type=schema_type, schema_version=schema_version
-        )
-        mock_count_record_response.assert_called_once_with(
-            database=database,
-            collection=schema_type,
-            filter_query={"_id": "abc-123"},
-        )
-        mock_get_record_response.assert_called_once_with(
-            database=database,
-            collection=schema_type,
-            filter_query={"_id": "abc-123"},
-            projection=None,
-            sort=None,
-        )
-        self.assertEqual(expected_response, records)
-
-        paginate_records = client.retrieve_schema_records(
-            schema_type=schema_type, paginate=False
-        )
-        self.assertEqual(expected_response, paginate_records)
-
-    @patch("aind_data_access_api.document_db.Client._get_records")
-    @patch("aind_data_access_api.document_db.Client._count_records")
-    @patch("logging.error")
-    def test_retrieve_many_schema_records(
-        self,
-        mock_log_error: MagicMock,
-        mock_count_record_response: MagicMock,
-        mock_get_record_response: MagicMock,
-    ):
-        """Tests retrieving many schema records"""
-
-        schema_type = "procedures"
-        client = MetadataDbClient(**self.example_client_args)
-        mocked_record_list = [
-            {
-                "_id": f"{id_num}",
-                "description": "Mock procedure schema",
-                "title": "Mock Procedures",
-                "definitions": {"MassUnit": object, "TimeUnit": object},
-                "properties": {"schema_version": object, "subject_id": object},
-            }
-            for id_num in range(0, 10)
-        ]
-        mock_get_record_response.side_effect = [
-            mocked_record_list[0:2],
-            Exception("Test"),
-            mocked_record_list[4:6],
-            mocked_record_list[6:8],
-            mocked_record_list[8:10],
-        ]
-        mock_count_record_response.return_value = {
-            "total_record_count": len(mocked_record_list),
-            "filtered_record_count": len(mocked_record_list),
-        }
-        expected_response = [
-            {
-                "_id": f"{id_num}",
-                "description": "Mock procedure schema",
-                "title": "Mock Procedures",
-                "definitions": {"MassUnit": object, "TimeUnit": object},
-                "properties": {"schema_version": object, "subject_id": object},
-            }
-            for id_num in [0, 1, 4, 5, 6, 7, 8, 9]
-        ]
-        records = client.retrieve_schema_records(
-            schema_type=schema_type, paginate_batch_size=2
-        )
         mock_log_error.assert_called_once_with(
             "There were errors retrieving records. [\"Exception('Test')\"]"
         )
@@ -1001,6 +872,39 @@ class TestMetadataDbClient(unittest.TestCase):
         mock_delete.assert_called_once_with(
             record_filter={"_id": {"$in": ["abc-123", "def-456"]}},
         )
+
+
+class TestSchemaDbClient(unittest.TestCase):
+    """Test methods in SchemaDbClient"""
+
+    @patch("aind_data_access_api.document_db.Client._get_records")
+    def test_retrieve_schema_records(
+        self,
+        mock_get_record_response: MagicMock,
+    ):
+        """Tests retrieving schema records"""
+
+        schema_type = "procedures"
+        schema_version = "abc-123"
+        client = SchemaDbClient(host="acmecorp.com/", collection=schema_type)
+        expected_response = [
+            {
+                "_id": "abc-123",
+                "description": "Mock procedure schema",
+                "title": "Mock Procedures",
+                "definitions": {"MassUnit": object, "TimeUnit": object},
+                "properties": {"schema_version": object, "subject_id": object},
+            }
+        ]
+        mock_get_record_response.return_value = expected_response
+        records = client.retrieve_schema_records(schema_version=schema_version)
+        mock_get_record_response.assert_called_once_with(
+            filter_query={"_id": "abc-123"},
+            projection=None,
+            sort=None,
+            limit=0,
+        )
+        self.assertEqual(expected_response, records)
 
 
 if __name__ == "__main__":
