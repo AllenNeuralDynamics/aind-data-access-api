@@ -655,3 +655,63 @@ class MetadataDbClient(Client):
                         total_size += record_size
                 second_index = second_index + 1
         return responses
+
+
+class SchemaDbClient(Client):
+    """Class to manage reading and writing to schema db"""
+
+    def __init__(
+        self,
+        host: str,
+        collection: str,
+        database: str = "schemas",
+        version: str = "v1",
+        boto_session=None,
+    ):
+        """Class constructor"""
+        super().__init__(
+            host=host,
+            database=database,
+            collection=collection,
+            version=version,
+            boto_session=boto_session,
+        )
+
+    def retrieve_schema_records(
+        self,
+        schema_version: Optional[str] = None,
+        projection: Optional[dict] = None,
+        sort: Optional[dict] = None,
+        limit: int = 0,
+    ) -> List[dict]:
+        """
+        Retrieve schemas records from DocDB API Gateway as a list of dicts.
+
+        Parameters
+        ----------
+        schema_version : Optional[str]
+          Schema version to use as a filter_query. Default is None.
+        projection : Optional[dict]
+          Subset of document fields to return. Default is None.
+        sort : Optional[dict]
+          Sort records when returned. Default is None.
+        limit : int
+          Return a smaller set of records. 0 for all records. Default is 0.
+
+        Returns
+        -------
+        List[dict]
+
+        """
+
+        filter_query = (
+            {"_id": schema_version} if schema_version is not None else None
+        )
+
+        records = self._get_records(
+            filter_query=filter_query,
+            projection=projection,
+            sort=sort,
+            limit=limit,
+        )
+        return records

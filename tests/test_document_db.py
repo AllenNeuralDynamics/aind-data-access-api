@@ -7,7 +7,11 @@ from unittest.mock import MagicMock, call, patch
 
 from requests import Response
 
-from aind_data_access_api.document_db import Client, MetadataDbClient
+from aind_data_access_api.document_db import (
+    Client,
+    MetadataDbClient,
+    SchemaDbClient,
+)
 from aind_data_access_api.models import DataAssetRecord
 
 
@@ -868,6 +872,39 @@ class TestMetadataDbClient(unittest.TestCase):
         mock_delete.assert_called_once_with(
             record_filter={"_id": {"$in": ["abc-123", "def-456"]}},
         )
+
+
+class TestSchemaDbClient(unittest.TestCase):
+    """Test methods in SchemaDbClient"""
+
+    @patch("aind_data_access_api.document_db.Client._get_records")
+    def test_retrieve_schema_records(
+        self,
+        mock_get_record_response: MagicMock,
+    ):
+        """Tests retrieving schema records"""
+
+        schema_type = "procedures"
+        schema_version = "abc-123"
+        client = SchemaDbClient(host="acmecorp.com/", collection=schema_type)
+        expected_response = [
+            {
+                "_id": "abc-123",
+                "description": "Mock procedure schema",
+                "title": "Mock Procedures",
+                "definitions": {"MassUnit": object, "TimeUnit": object},
+                "properties": {"schema_version": object, "subject_id": object},
+            }
+        ]
+        mock_get_record_response.return_value = expected_response
+        records = client.retrieve_schema_records(schema_version=schema_version)
+        mock_get_record_response.assert_called_once_with(
+            filter_query={"_id": "abc-123"},
+            projection=None,
+            sort=None,
+            limit=0,
+        )
+        self.assertEqual(expected_response, records)
 
 
 if __name__ == "__main__":
