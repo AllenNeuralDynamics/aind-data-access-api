@@ -34,37 +34,15 @@ class Client:
         self.database = database
         self.collection = collection
         self.version = version
-        self.database_schemas = "schemas"
         self._boto_session = boto_session
 
     @property
     def _base_url(self):
         """Construct base url to interface with a collection in a database."""
-        # return helper function
-        return self._create_url()
-
-    def _create_url(
-        self, database: Optional[str] = None, collection: Optional[str] = None
-    ):
-        """
-        Create url based on input database and collection
-        ----------
-        database : Optional[str]
-          Database of url. Default is None
-        collection : Optional[str]
-          Collection of url. Default is None
-
-        Returns
-        -------
-        str
-          String of url in
-          https://{self.host}/{self.version}/{database}/{collection} format
-
-        """
-
-        database = database if database is not None else self.database
-        collection = collection if collection is not None else self.collection
-        return f"https://{self.host}/{self.version}/{database}/{collection}"
+        return (
+            f"https://{self.host}/{self.version}/{self.database}/"
+            f"{self.collection}"
+        )
 
     @property
     def _update_one_url(self):
@@ -123,20 +101,11 @@ class Client:
         ).add_auth(aws_request)
         return aws_request
 
-    def _count_records(
-        self,
-        database: Optional[str] = None,
-        collection: Optional[str] = None,
-        filter_query: Optional[dict] = None,
-    ):
+    def _count_records(self, filter_query: Optional[dict] = None):
         """
         Methods to count the number of records in a collection.
         Parameters
         ----------
-        database : Optional[str]
-          Database of the records being counted. Default is None
-        collection : Optional[str]
-          Collection of the records being counted. Default is None
         filter_query : Optional[dict]
           If passed, will return the number of records and number of records
           returned by the filter query.
@@ -152,16 +121,13 @@ class Client:
         }
         if filter_query is not None:
             params["filter"] = json.dumps(filter_query)
-        url = self._create_url(database, collection)
-        response = requests.get(url, params=params)
+        response = requests.get(self._base_url, params=params)
         response_json = response.json()
         body = response_json.get("body")
         return json.loads(body)
 
     def _get_records(
         self,
-        database: Optional[str] = None,
-        collection: Optional[str] = None,
         filter_query: Optional[dict] = None,
         projection: Optional[dict] = None,
         sort: Optional[List[Tuple[str, int]]] = None,
@@ -172,10 +138,6 @@ class Client:
         Retrieve records from collection.
         Parameters
         ----------
-        database : Optional[str]
-          Database of the records being returned. Default is None
-        collection : Optional[str]
-          Collection of the records being returned. Default is None
         filter_query : Optional[dict]
           Filter to apply to the records being returned. Default is None.
         projection : Optional[dict]
@@ -201,8 +163,7 @@ class Client:
         if sort is not None:
             params["sort"] = str(sort)
 
-        url = self._create_url(database, collection)
-        response = requests.get(url, params=params)
+        response = requests.get(self._base_url, params=params)
         response_json = response.json()
         body = response_json.get("body")
         if body is None:
@@ -356,115 +317,6 @@ class MetadataDbClient(Client):
                     )
         return records
 
-    def retrieve_schema_records(
-        self,
-        schema_type: str,
-        schema_version: Optional[str] = None,
-        projection: Optional[dict] = None,
-        sort: Optional[dict] = None,
-        limit: int = 0,
-        paginate: bool = True,
-        paginate_batch_size: int = 10,
-        paginate_max_iterations: int = 20000,
-    ) -> List[dict]:
-        """
-        Retrieve schemas records from DocDB API Gateway as a list of dicts.
-
-        Parameters
-        ----------
-        schema_type : Optional[str]
-          Type of schema to retrieve. E.g., "acquisition"
-        schema_version : Optional[str]
-          Schema version to use as a filter_query. Default is None.
-        projection : Optional[dict]
-          Subset of document fields to return. Default is None.
-        sort : Optional[dict]
-          Sort records when returned. Default is None.
-        limit : int
-          Return a smaller set of records. 0 for all records. Default is 0.
-        paginate : bool
-          If set to true, will batch the queries to the API Gateway. It may
-          be faster to set to false if the number of records expected to be
-          returned is small.
-        paginate_batch_size : int
-          Number of records to return at a time. Default is 10.
-        paginate_max_iterations : int
-          Max number of iterations to run to prevent indefinite calls to the
-          API Gateway. Default is 20000.
-
-        Returns
-        -------
-        List[dict]
-
-        """
-
-        filter_query = (
-            {"_id": schema_version} if schema_version is not None else None
-        )
-
-        if paginate is False:
-            records = self._get_records(
-                database=self.database_schemas,
-                collection=schema_type,
-                filter_query=filter_query,
-                projection=projection,
-                sort=sort,
-                limit=limit,
-            )
-        else:
-            # Get record count
-            record_counts = self._count_records(
-                database=self.database_schemas,
-                collection=schema_type,
-                filter_query=filter_query,
-            )
-            total_record_count = record_counts["total_record_count"]
-            filtered_record_count = record_counts["filtered_record_count"]
-            if filtered_record_count <= paginate_batch_size:
-                records = self._get_records(
-                    database=self.database_schemas,
-                    collection=schema_type,
-                    filter_query=filter_query,
-                    projection=projection,
-                    sort=sort,
-                )
-            else:
-                records = []
-                errors = []
-                num_of_records_collected = 0
-                limit = filtered_record_count if limit == 0 else limit
-                skip = 0
-                iter_count = 0
-                while (
-                    skip < total_record_count
-                    and num_of_records_collected
-                    < min(filtered_record_count, limit)
-                    and iter_count < paginate_max_iterations
-                ):
-                    try:
-                        batched_records = self._get_records(
-                            database=self.database_schemas,
-                            collection=schema_type,
-                            filter_query=filter_query,
-                            projection=projection,
-                            sort=sort,
-                            limit=paginate_batch_size,
-                            skip=skip,
-                        )
-                        num_of_records_collected += len(batched_records)
-                        records.extend(batched_records)
-                    except Exception as e:
-                        errors.append(repr(e))
-                    skip = skip + paginate_batch_size
-                    iter_count += 1
-                    # TODO: Add optional progress bar?
-                records = records[0:limit]
-                if len(errors) > 0:
-                    logging.error(
-                        f"There were errors retrieving records. {errors}"
-                    )
-        return records
-
     # TODO: remove this method
     def retrieve_data_asset_records(
         self,
@@ -515,7 +367,6 @@ class MetadataDbClient(Client):
             stacklevel=2,
         )
         if paginate is False:
-            # and add to count records
             records = self._get_records(
                 filter_query=filter_query,
                 projection=projection,
@@ -804,3 +655,63 @@ class MetadataDbClient(Client):
                         total_size += record_size
                 second_index = second_index + 1
         return responses
+
+
+class SchemaDbClient(Client):
+    """Class to manage reading and writing to schema db"""
+
+    def __init__(
+        self,
+        host: str,
+        collection: str,
+        database: str = "schemas",
+        version: str = "v1",
+        boto_session=None,
+    ):
+        """Class constructor"""
+        super().__init__(
+            host=host,
+            database=database,
+            collection=collection,
+            version=version,
+            boto_session=boto_session,
+        )
+
+    def retrieve_schema_records(
+        self,
+        schema_version: Optional[str] = None,
+        projection: Optional[dict] = None,
+        sort: Optional[dict] = None,
+        limit: int = 0,
+    ) -> List[dict]:
+        """
+        Retrieve schemas records from DocDB API Gateway as a list of dicts.
+
+        Parameters
+        ----------
+        schema_version : Optional[str]
+          Schema version to use as a filter_query. Default is None.
+        projection : Optional[dict]
+          Subset of document fields to return. Default is None.
+        sort : Optional[dict]
+          Sort records when returned. Default is None.
+        limit : int
+          Return a smaller set of records. 0 for all records. Default is 0.
+
+        Returns
+        -------
+        List[dict]
+
+        """
+
+        filter_query = (
+            {"_id": schema_version} if schema_version is not None else None
+        )
+
+        records = self._get_records(
+            filter_query=filter_query,
+            projection=projection,
+            sort=sort,
+            limit=limit,
+        )
+        return records
