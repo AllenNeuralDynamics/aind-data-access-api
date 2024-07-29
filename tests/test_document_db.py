@@ -43,7 +43,7 @@ class TestClient(unittest.TestCase):
 
     @patch("requests.get")
     def test_count_records(self, mock_get: MagicMock):
-        """Tests get_records method"""
+        """Tests _count_records method"""
 
         client = Client(**self.example_client_args)
         mock_response = Response()
@@ -52,8 +52,9 @@ class TestClient(unittest.TestCase):
             "total_record_count": 1234,
             "filtered_record_count": 47,
         }
-        body = json.dumps(mock_records_counts)
-        mock_response._content = json.dumps({"body": body}).encode("utf-8")
+        mock_response._content = json.dumps(mock_records_counts).encode(
+            "utf-8"
+        )
         mock_get.return_value = mock_response
         record_count = client._count_records(filter_query={"_id": "abc"})
         self.assertEqual(
@@ -62,27 +63,42 @@ class TestClient(unittest.TestCase):
         )
 
     @patch("requests.get")
+    def test_count_records_error(self, mock_get: MagicMock):
+        """Tests _count_records when there is a HTTP error"""
+        client = Client(**self.example_client_args)
+        mock_response = Response()
+        mock_response.status_code = 400
+        mock_error = {"error": {"name": "Error", "message": "Incorrect Path"}}
+        mock_response._content = json.dumps(mock_error).encode("utf-8")
+        mock_get.return_value = mock_response
+        with self.assertRaises(ValueError) as e:
+            client._count_records(filter_query={"_id": "abc"})
+        self.assertEqual(
+            f"ValueError('400 Error: {json.dumps(mock_error)}')",
+            repr(e.exception),
+        )
+
+    @patch("requests.get")
     def test_get_records(self, mock_get: MagicMock):
-        """Tests get_records method"""
+        """Tests _get_records method"""
 
         client = Client(**self.example_client_args)
         mock_response = Response()
         mock_response.status_code = 200
-        body = json.dumps(
+        mock_response._content = json.dumps(
             [
                 {"_id": "abc123", "message": "hi"},
                 {"_id": "efg456", "message": "hello"},
             ]
-        )
-        mock_response._content = json.dumps({"body": body}).encode("utf-8")
+        ).encode("utf-8")
         mock_response2 = Response()
         mock_response2.status_code = 200
-        body2 = json.dumps([{"_id": "abc123", "message": "hi"}])
-        mock_response2._content = json.dumps({"body": body2}).encode("utf-8")
+        mock_response2._content = json.dumps(
+            [{"_id": "abc123", "message": "hi"}]
+        ).encode("utf-8")
         mock_response3 = Response()
         mock_response3.status_code = 200
-        body3 = json.dumps([{"_id": "abc123", "message": "hi"}])
-        mock_response3._content = json.dumps({"miss": body3}).encode("utf-8")
+        mock_response3._content = None
 
         mock_get.side_effect = [mock_response, mock_response2, mock_response3]
         records1 = client._get_records()
@@ -91,8 +107,6 @@ class TestClient(unittest.TestCase):
             projection={"_id": 1, "message": 1},
             sort=[("message", 1)],
         )
-        with self.assertRaises(KeyError) as e:
-            client._get_records(filter_query={"_id": "4532654"})
         self.assertEqual(
             [
                 {"_id": "abc123", "message": "hi"},
@@ -101,8 +115,35 @@ class TestClient(unittest.TestCase):
             records1,
         )
         self.assertEqual([{"_id": "abc123", "message": "hi"}], records2)
+
+    @patch("requests.get")
+    def test_get_records_error(self, mock_get: MagicMock):
+        """Tests _get_records method when there is an HTTP error or
+        no payload in response"""
+        client = Client(**self.example_client_args)
+        mock_response1 = Response()
+        mock_response1.status_code = 404
+        mock_error = {
+            "error": {
+                "name": "Error",
+                "message": "Database or collection not found.",
+            }
+        }
+        mock_response1._content = json.dumps(mock_error).encode("utf-8")
+        mock_response2 = Response()
+        mock_response2.status_code = 200
+        mock_response2._content = None
+        mock_get.side_effect = [mock_response1, mock_response2]
+        with self.assertRaises(ValueError) as e:
+            client._get_records(filter_query={"_id": "abc"})
         self.assertEqual(
-            "KeyError('Body not found in json response')", repr(e.exception)
+            f"ValueError('404 Error: {json.dumps(mock_error)}')",
+            repr(e.exception),
+        )
+        with self.assertRaises(ValueError) as e:
+            client._get_records(filter_query={"_id": "4532654"})
+        self.assertEqual(
+            "ValueError('No payload in response')", repr(e.exception)
         )
 
     @patch("boto3.session.Session")
