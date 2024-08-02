@@ -42,9 +42,16 @@ REST API (Read-Only)
    import requests
 
    URL = "https://api.allenneuraldynamics.org/v1/metadata_index/data_assets"
+
+   # find data assets with filter
    filter = {"subject.subject_id": "123456"}
-   limit = 100
-   response = requests.get(URL, params={"filter": json.dumps(filter), "limit": limit})
+   response = requests.get(URL, params={"filter": json.dumps(filter)})
+   print(response.json())
+
+   # count number of records with filter
+   filter = {"location": {"$regex": ".*s3://aind-open-data/.*"}}
+   count_records = True
+   response = requests.get(URL, params={"filter": json.dumps(filter), "count_records": True})
    print(response.json())
 
 2. Alternatively, we provide a Python client:
@@ -64,12 +71,8 @@ REST API (Read-Only)
    )
 
    filter = {"subject.subject_id": "123456"}
-   limit = 1000
-   paginate_batch_size = 100
    response = docdb_api_client.retrieve_docdb_records(
       filter_query=filter,
-      limit=limit,
-      paginate_batch_size=paginate_batch_size
    )
    print(response)
 
