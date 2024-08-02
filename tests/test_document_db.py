@@ -23,6 +23,10 @@ class TestClient(unittest.TestCase):
         "database": "db",
         "collection": "coll",
     }
+    example_readwrite_client_args = {
+        **example_client_args,
+        "use_signed_requests": True,
+    }
 
     def test_client_constructor(self):
         """Tests class constructor"""
@@ -39,6 +43,96 @@ class TestClient(unittest.TestCase):
         self.assertEqual(
             "https://acmecorp.com/v1/db/coll/bulk_write",
             client._bulk_write_url,
+        )
+        self.assertFalse(client.use_signed_requests)
+
+    def test_client_constructor_with_signed_requests(self):
+        """Tests class constructor with signed requests"""
+        client = Client(**self.example_readwrite_client_args)
+
+        self.assertEqual("acmecorp.com", client.host)
+        self.assertEqual("db", client.database)
+        self.assertEqual("coll", client.collection)
+        self.assertEqual("https://acmecorp.com/v1/db/coll", client._base_url)
+        self.assertEqual(
+            "https://acmecorp.com/v1/db/coll/update_one",
+            client._update_one_url,
+        )
+        self.assertEqual(
+            "https://acmecorp.com/v1/db/coll/bulk_write",
+            client._bulk_write_url,
+        )
+        self.assertTrue(client.use_signed_requests)
+
+    @patch("boto3.session.Session")
+    @patch("botocore.auth.SigV4Auth.add_auth")
+    def test_signed_request(
+        self,
+        mock_auth: MagicMock,
+        mock_session: MagicMock,
+    ):
+        """Tests _signed_request method"""
+        mock_creds = MagicMock()
+        mock_creds.access_key = "abc"
+        mock_creds.secret_key = "efg"
+        mock_session.return_value.region_name = "us-west-2"
+        mock_session.get_credentials.return_value = mock_creds
+
+        client = Client(**self.example_readwrite_client_args)
+        signed_header = client._signed_request(
+            url="https://acmecorp.com/v1/db/coll/update_one",
+            method="POST",
+            params=None,
+            data=(
+                '{"filter": {"_id": "123"},'
+                ' "update": {"$set": {"_id": "123", "message": "hi"}},'
+                ' "upsert": "True"}'
+            ),
+        )
+        mock_auth.assert_called_once()
+        mock_session.assert_called_once()
+        self.assertEqual(
+            signed_header.url, "https://acmecorp.com/v1/db/coll/update_one"
+        )
+        self.assertEqual(signed_header.method, "POST")
+        self.assertEqual(signed_header.params, {})
+        self.assertEqual(
+            signed_header.data,
+            (
+                '{"filter": {"_id": "123"},'
+                ' "update": {"$set": {"_id": "123", "message": "hi"}},'
+                ' "upsert": "True"}'
+            ),
+        )
+
+    @patch("boto3.session.Session")
+    @patch("botocore.auth.SigV4Auth.add_auth")
+    def test_signed_request_error(
+        self,
+        mock_auth: MagicMock,
+        mock_session: MagicMock,
+    ):
+        """Tests _signed_request method when use_signed_requests is False"""
+        client = Client(**self.example_client_args)
+        with self.assertRaises(ValueError) as e:
+            client._signed_request(
+                url="https://acmecorp.com/v1/db/coll/update_one",
+                method="POST",
+                params=None,
+                data=(
+                    '{"filter": {"_id": "123"},'
+                    ' "update": {"$set": {"_id": "123", "message": "hi"}},'
+                    ' "upsert": "True"}'
+                ),
+            )
+        mock_auth.assert_not_called()
+        mock_session.assert_not_called()
+        self.assertEqual(
+            (
+                "A method requires signed requests with AWS credentials. "
+                "Please reinitialize the client with use_signed_requests=True."
+            ),
+            str(e.exception),
         )
 
     @patch("requests.get")
@@ -57,6 +151,39 @@ class TestClient(unittest.TestCase):
         )
         mock_get.return_value = mock_response
         record_count = client._count_records(filter_query={"_id": "abc"})
+        self.assertEqual(
+            mock_records_counts,
+            record_count,
+        )
+
+    @patch("boto3.session.Session")
+    @patch("botocore.auth.SigV4Auth.add_auth")
+    @patch("requests.get")
+    def test_count_records_signed(
+        self,
+        mock_get: MagicMock,
+        mock_auth: MagicMock,
+        mock_session: MagicMock,
+    ):
+        """Tests _count_records method with signed requests"""
+        mock_creds = MagicMock()
+        mock_creds.access_key = "abc"
+        mock_creds.secret_key = "efg"
+        mock_session.return_value.region_name = "us-west-2"
+        mock_session.get_credentials.return_value = mock_creds
+        client = Client(**self.example_readwrite_client_args)
+        mock_response = Response()
+        mock_response.status_code = 200
+        mock_records_counts = {
+            "total_record_count": 1234,
+            "filtered_record_count": 47,
+        }
+        mock_response._content = json.dumps(mock_records_counts).encode(
+            "utf-8"
+        )
+        mock_get.return_value = mock_response
+        record_count = client._count_records(filter_query={"_id": "abc"})
+        mock_auth.assert_called_once()
         self.assertEqual(
             mock_records_counts,
             record_count,
@@ -116,6 +243,43 @@ class TestClient(unittest.TestCase):
         )
         self.assertEqual([{"_id": "abc123", "message": "hi"}], records2)
 
+    @patch("boto3.session.Session")
+    @patch("botocore.auth.SigV4Auth.add_auth")
+    @patch("requests.get")
+    def test_get_records_signed(
+        self,
+        mock_get: MagicMock,
+        mock_auth: MagicMock,
+        mock_session: MagicMock,
+    ):
+        """Tests _get_records method with signed requests"""
+        mock_creds = MagicMock()
+        mock_creds.access_key = "abc"
+        mock_creds.secret_key = "efg"
+        mock_session.return_value.region_name = "us-west-2"
+        mock_session.get_credentials.return_value = mock_creds
+
+        client = Client(**self.example_readwrite_client_args)
+        mock_response = Response()
+        mock_response.status_code = 200
+        mock_response._content = json.dumps(
+            [
+                {"_id": "abc123", "message": "hi"},
+                {"_id": "efg456", "message": "hello"},
+            ]
+        ).encode("utf-8")
+
+        mock_get.return_value = mock_response
+        records = client._get_records()
+        mock_auth.assert_called_once()
+        self.assertEqual(
+            [
+                {"_id": "abc123", "message": "hi"},
+                {"_id": "efg456", "message": "hello"},
+            ],
+            records,
+        )
+
     @patch("requests.get")
     def test_get_records_error(self, mock_get: MagicMock):
         """Tests _get_records method when there is an HTTP error or
@@ -162,7 +326,7 @@ class TestClient(unittest.TestCase):
         mock_session.return_value.region_name = "us-west-2"
         mock_session.get_credentials.return_value = mock_creds
 
-        client = Client(**self.example_client_args)
+        client = Client(**self.example_readwrite_client_args)
         client._upsert_one_record(
             record_filter={"_id": "123"},
             update={"$set": {"_id": "123", "message": "hi"}},
@@ -194,7 +358,7 @@ class TestClient(unittest.TestCase):
         mock_session.return_value.region_name = "us-west-2"
         mock_session.get_credentials.return_value = mock_creds
 
-        client = Client(**self.example_client_args)
+        client = Client(**self.example_readwrite_client_args)
         operations = [
             {
                 "UpdateOne": {
@@ -244,7 +408,7 @@ class TestClient(unittest.TestCase):
         mock_session.return_value.region_name = "us-west-2"
         mock_session.get_credentials.return_value = mock_creds
 
-        client = Client(**self.example_client_args)
+        client = Client(**self.example_readwrite_client_args)
         client._delete_one_record(record_filter={"_id": "123"})
         mock_auth.assert_called_once()
         mock_delete.assert_called_once_with(
@@ -269,7 +433,7 @@ class TestClient(unittest.TestCase):
         mock_session.return_value.region_name = "us-west-2"
         mock_session.get_credentials.return_value = mock_creds
 
-        client = Client(**self.example_client_args)
+        client = Client(**self.example_readwrite_client_args)
         client._delete_many_records(
             record_filter={"_id": {"$in": ["123", "456"]}}
         )
@@ -288,6 +452,10 @@ class TestMetadataDbClient(unittest.TestCase):
         "host": "acmecorp.com/",
         "database": "metadata_db",
         "collection": "data_assets",
+    }
+    example_readwrite_client_args = {
+        **example_client_args,
+        "use_signed_requests": True,
     }
 
     @patch("aind_data_access_api.document_db.Client._get_records")
@@ -459,7 +627,7 @@ class TestMetadataDbClient(unittest.TestCase):
     @patch("aind_data_access_api.document_db.Client._upsert_one_record")
     def test_upsert_one_docdb_record(self, mock_upsert: MagicMock):
         """Tests upserting one docdb record"""
-        client = MetadataDbClient(**self.example_client_args)
+        client = MetadataDbClient(**self.example_readwrite_client_args)
         mock_upsert.return_value = {"message": "success"}
         record = {
             "_id": "abc-123",
@@ -480,7 +648,7 @@ class TestMetadataDbClient(unittest.TestCase):
         self, mock_upsert: MagicMock
     ):
         """Tests upserting one docdb record if record is invalid or corrupt"""
-        client = MetadataDbClient(**self.example_client_args)
+        client = MetadataDbClient(**self.example_readwrite_client_args)
         record_no__id = {
             "id": "abc-123",
             "name": "modal_00000_2000-10-10_10-10-10",
@@ -532,7 +700,7 @@ class TestMetadataDbClient(unittest.TestCase):
     def test_upsert_list_of_docdb_records(self, mock_bulk_write: MagicMock):
         """Tests upserting a list of docdb records"""
 
-        client = MetadataDbClient(**self.example_client_args)
+        client = MetadataDbClient(**self.example_readwrite_client_args)
         mock_bulk_write.return_value = {"message": "success"}
         records = [
             {
@@ -585,7 +753,7 @@ class TestMetadataDbClient(unittest.TestCase):
     ):
         """Tests upserting an empty list of docdb records"""
 
-        client = MetadataDbClient(**self.example_client_args)
+        client = MetadataDbClient(**self.example_readwrite_client_args)
         records = []
 
         response = client.upsert_list_of_docdb_records(records)
@@ -598,7 +766,7 @@ class TestMetadataDbClient(unittest.TestCase):
     ):
         """Tests upserting a list of docdb records in chunks"""
 
-        client = MetadataDbClient(**self.example_client_args)
+        client = MetadataDbClient(**self.example_readwrite_client_args)
         mock_bulk_write.return_value = {"message": "success"}
         records = [
             {
@@ -665,7 +833,7 @@ class TestMetadataDbClient(unittest.TestCase):
         """Tests upserting a list of docdb records if a record is invalid or
         corrupt"""
 
-        client = MetadataDbClient(**self.example_client_args)
+        client = MetadataDbClient(**self.example_readwrite_client_args)
         records_no__id = [
             {
                 "_id": "abc-123",
@@ -871,7 +1039,7 @@ class TestMetadataDbClient(unittest.TestCase):
     @patch("aind_data_access_api.document_db.Client._delete_one_record")
     def test_delete_one_record(self, mock_delete: MagicMock):
         """Tests deleting one data asset record"""
-        client = MetadataDbClient(**self.example_client_args)
+        client = MetadataDbClient(**self.example_readwrite_client_args)
         successful_response = Response()
         successful_response.status_code = 200
         # n is the number of records removed. It will be 0 if the id does
@@ -894,7 +1062,7 @@ class TestMetadataDbClient(unittest.TestCase):
     @patch("aind_data_access_api.document_db.Client._delete_many_records")
     def test_delete_many_records(self, mock_delete: MagicMock):
         """Tests deleting many data asset records"""
-        client = MetadataDbClient(**self.example_client_args)
+        client = MetadataDbClient(**self.example_readwrite_client_args)
         successful_response = Response()
         successful_response.status_code = 200
         # n is the number of records removed. It will be 0 if the id does
