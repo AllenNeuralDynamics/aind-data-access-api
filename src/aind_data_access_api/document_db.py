@@ -5,7 +5,7 @@ import logging
 import warnings
 from functools import cached_property
 from sys import getsizeof
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 import boto3
 import requests
@@ -18,8 +18,8 @@ from aind_data_access_api.utils import is_dict_corrupt
 
 
 class Client:
-    """Class to create client to interface with DocumentDB via an API
-    Gateway."""
+    """Class to create client to interface with DocumentDB via a REST api
+    (public Lambda function url)"""
 
     def __init__(
         self,
@@ -103,7 +103,7 @@ class Client:
 
     def _count_records(self, filter_query: Optional[dict] = None):
         """
-        Methods to count the number of records in a collection.
+        Count the number of records in a collection.
         Parameters
         ----------
         filter_query : Optional[dict]
@@ -122,15 +122,17 @@ class Client:
         if filter_query is not None:
             params["filter"] = json.dumps(filter_query)
         response = requests.get(self._base_url, params=params)
-        response_json = response.json()
-        body = response_json.get("body")
-        return json.loads(body)
+        if response.status_code != 200:
+            error_msg = response.text if response.text else "Unknown error"
+            raise ValueError(f"{response.status_code} Error: {error_msg}")
+        response_body = response.json()
+        return response_body
 
     def _get_records(
         self,
         filter_query: Optional[dict] = None,
         projection: Optional[dict] = None,
-        sort: Optional[List[Tuple[str, int]]] = None,
+        sort: Optional[dict] = None,
         limit: int = 0,
         skip: int = 0,
     ) -> List[dict]:
@@ -142,7 +144,7 @@ class Client:
           Filter to apply to the records being returned. Default is None.
         projection : Optional[dict]
           Subset of document fields to return. Default is None.
-        sort : Optional[List[Tuple[str, int]]]
+        sort : Optional[dict]
           Sort records when returned. Default is None.
         limit : int
           Return a smaller set of records. 0 for all records. Default is 0.
@@ -152,7 +154,7 @@ class Client:
         Returns
         -------
         List[dict]
-          The list of records returned from the API Gateway.
+          The list of records returned from the DocumentDB.
 
         """
         params = {"limit": str(limit), "skip": str(skip)}
@@ -161,15 +163,16 @@ class Client:
         if projection is not None:
             params["projection"] = json.dumps(projection)
         if sort is not None:
-            params["sort"] = str(sort)
+            params["sort"] = json.dumps(sort)
 
         response = requests.get(self._base_url, params=params)
-        response_json = response.json()
-        body = response_json.get("body")
-        if body is None:
-            raise KeyError("Body not found in json response")
-        else:
-            return json.loads(body)
+        if response.status_code != 200:
+            error_msg = response.text if response.text else "Unknown error"
+            raise ValueError(f"{response.status_code} Error: {error_msg}")
+        if not response.content:
+            raise ValueError("No payload in response")
+        response_body = response.json()
+        return response_body
 
     def _upsert_one_record(
         self, record_filter: dict, update: dict
@@ -235,7 +238,7 @@ class MetadataDbClient(Client):
         sort: Optional[dict] = None,
         limit: int = 0,
         paginate: bool = True,
-        paginate_batch_size: int = 10,
+        paginate_batch_size: int = 1000,
         paginate_max_iterations: int = 20000,
     ) -> List[dict]:
         """
@@ -256,7 +259,7 @@ class MetadataDbClient(Client):
           be faster to set to false if the number of records expected to be
           returned is small.
         paginate_batch_size : int
-          Number of records to return at a time. Default is 10.
+          Number of records to return at a time. Default is 1000.
         paginate_max_iterations : int
           Max number of iterations to run to prevent indefinite calls to the
           API Gateway. Default is 20000.
@@ -655,3 +658,63 @@ class MetadataDbClient(Client):
                         total_size += record_size
                 second_index = second_index + 1
         return responses
+
+
+class SchemaDbClient(Client):
+    """Class to manage reading and writing to schema db"""
+
+    def __init__(
+        self,
+        host: str,
+        collection: str,
+        database: str = "schemas",
+        version: str = "v1",
+        boto_session=None,
+    ):
+        """Class constructor"""
+        super().__init__(
+            host=host,
+            database=database,
+            collection=collection,
+            version=version,
+            boto_session=boto_session,
+        )
+
+    def retrieve_schema_records(
+        self,
+        schema_version: Optional[str] = None,
+        projection: Optional[dict] = None,
+        sort: Optional[dict] = None,
+        limit: int = 0,
+    ) -> List[dict]:
+        """
+        Retrieve schemas records from DocDB API Gateway as a list of dicts.
+
+        Parameters
+        ----------
+        schema_version : Optional[str]
+          Schema version to use as a filter_query. Default is None.
+        projection : Optional[dict]
+          Subset of document fields to return. Default is None.
+        sort : Optional[dict]
+          Sort records when returned. Default is None.
+        limit : int
+          Return a smaller set of records. 0 for all records. Default is 0.
+
+        Returns
+        -------
+        List[dict]
+
+        """
+
+        filter_query = (
+            {"_id": schema_version} if schema_version is not None else None
+        )
+
+        records = self._get_records(
+            filter_query=filter_query,
+            projection=projection,
+            sort=sort,
+            limit=limit,
+        )
+        return records
