@@ -526,7 +526,7 @@ class MetadataDbClient(Client):
     def upsert_list_of_docdb_records(
         self,
         records: List[dict],
-        max_payload_size: int = 2e6,
+        max_payload_size: int = 5e6,
     ) -> List[Response]:
         """
         Upsert a list of records. There's a limit to the size of the
@@ -575,6 +575,7 @@ class MetadataDbClient(Client):
                 )
             ]
             while second_index < end_index + 1:
+                # TODO: Add optional progress bar?
                 if second_index == end_index:
                     response = self._bulk_write(operations)
                     responses.append(response)
