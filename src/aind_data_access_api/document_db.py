@@ -18,8 +18,7 @@ from aind_data_access_api.utils import is_dict_corrupt
 
 
 class Client:
-    """Class to create client to interface with DocumentDB via a REST api
-    (public Lambda function url)"""
+    """Class to create client to interface with DocumentDB via a REST api"""
 
     def __init__(
         self,
@@ -28,7 +27,6 @@ class Client:
         collection: str,
         version: str = "v1",
         boto_session=None,
-        use_signed_requests=False,
     ):
         """Class constructor."""
         self.host = host.strip("/")
@@ -36,7 +34,6 @@ class Client:
         self.collection = collection
         self.version = version
         self._boto_session = boto_session
-        self.use_signed_requests = use_signed_requests
 
     @property
     def _base_url(self):
@@ -92,13 +89,8 @@ class Client:
         params: Optional[dict] = None,
         data: Optional[str] = None,
     ) -> AWSRequest:
-        """Create a signed request to read/write to the document database.
+        """Create a signed request to the DocumentDB REST api.
         Permissions are managed through AWS."""
-        if not self.use_signed_requests:
-            raise ValueError(
-                "A method requires signed requests with AWS credentials. "
-                "Please reinitialize the client with use_signed_requests=True."
-            )
         aws_request = AWSRequest(
             url=url,
             method=method,
@@ -108,7 +100,7 @@ class Client:
         )
         SigV4Auth(
             self.__boto_session.get_credentials(),
-            "lambda",
+            "execute-api",
             self.__boto_session.region_name,
         ).add_auth(aws_request)
         return aws_request
@@ -133,17 +125,7 @@ class Client:
         }
         if filter_query is not None:
             params["filter"] = json.dumps(filter_query)
-        if self.use_signed_requests:
-            signed_header = self._signed_request(
-                method="GET", url=self._base_url, params=params
-            )
-            response = requests.get(
-                url=self._base_url,
-                headers=dict(signed_header.headers),
-                params=params,
-            )
-        else:
-            response = requests.get(self._base_url, params=params)
+        response = requests.get(self._base_url, params=params)
         if response.status_code != 200:
             error_msg = response.text if response.text else "Unknown error"
             raise ValueError(f"{response.status_code} Error: {error_msg}")
@@ -187,17 +169,7 @@ class Client:
         if sort is not None:
             params["sort"] = json.dumps(sort)
 
-        if self.use_signed_requests:
-            signed_header = self._signed_request(
-                method="GET", url=self._base_url, params=params
-            )
-            response = requests.get(
-                url=self._base_url,
-                headers=dict(signed_header.headers),
-                params=params,
-            )
-        else:
-            response = requests.get(self._base_url, params=params)
+        response = requests.get(self._base_url, params=params)
         if response.status_code != 200:
             error_msg = response.text if response.text else "Unknown error"
             raise ValueError(f"{response.status_code} Error: {error_msg}")

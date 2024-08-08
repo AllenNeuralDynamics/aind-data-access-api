@@ -42,16 +42,9 @@ REST API (Read-Only)
    import requests
 
    URL = "https://api.allenneuraldynamics.org/v1/metadata_index/data_assets"
-
-   # find data assets with filter
    filter = {"subject.subject_id": "123456"}
-   response = requests.get(URL, params={"filter": json.dumps(filter)})
-   print(response.json())
-
-   # count number of records with filter
-   filter = {"location": {"$regex": ".*s3://aind-open-data/.*"}}
-   count_records = True
-   response = requests.get(URL, params={"filter": json.dumps(filter), "count_records": True})
+   limit = 1000
+   response = requests.get(URL, params={"filter": json.dumps(filter), "limit": limit})
    print(response.json())
 
 2. Alternatively, we provide a Python client:
