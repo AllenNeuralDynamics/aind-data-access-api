@@ -18,8 +18,7 @@ from aind_data_access_api.utils import is_dict_corrupt
 
 
 class Client:
-    """Class to create client to interface with DocumentDB via a REST api
-    (public Lambda function url)"""
+    """Class to create client to interface with DocumentDB via a REST api"""
 
     def __init__(
         self,
@@ -84,14 +83,19 @@ class Client:
         return self._boto_session
 
     def _signed_request(
-        self, url: str, method: str, data: Optional[str] = None
+        self,
+        url: str,
+        method: str,
+        params: Optional[dict] = None,
+        data: Optional[str] = None,
     ) -> AWSRequest:
-        """Create a signed request to write to the document store.
+        """Create a signed request to the DocumentDB REST api.
         Permissions are managed through AWS."""
         aws_request = AWSRequest(
             url=url,
             method=method,
             data=data,
+            params=params,
             headers={"Content-Type": "application/json"},
         )
         SigV4Auth(
@@ -494,7 +498,7 @@ class MetadataDbClient(Client):
     def upsert_list_of_docdb_records(
         self,
         records: List[dict],
-        max_payload_size: int = 2e6,
+        max_payload_size: int = 5e6,
     ) -> List[Response]:
         """
         Upsert a list of records. There's a limit to the size of the
@@ -543,6 +547,7 @@ class MetadataDbClient(Client):
                 )
             ]
             while second_index < end_index + 1:
+                # TODO: Add optional progress bar?
                 if second_index == end_index:
                     response = self._bulk_write(operations)
                     responses.append(response)
