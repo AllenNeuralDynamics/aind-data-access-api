@@ -43,7 +43,7 @@ REST API (Read-Only)
 
    URL = "https://api.allenneuraldynamics.org/v1/metadata_index/data_assets"
    filter = {"subject.subject_id": "123456"}
-   limit = 100
+   limit = 1000
    response = requests.get(URL, params={"filter": json.dumps(filter), "limit": limit})
    print(response.json())
 
@@ -64,12 +64,8 @@ REST API (Read-Only)
    )
 
    filter = {"subject.subject_id": "123456"}
-   limit = 1000
-   paginate_batch_size = 100
    response = docdb_api_client.retrieve_docdb_records(
       filter_query=filter,
-      limit=limit,
-      paginate_batch_size=paginate_batch_size
    )
    print(response)
 
