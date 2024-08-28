@@ -43,7 +43,7 @@ REST API (Read-Only)
 
    URL = "https://api.allenneuraldynamics.org/v1/metadata_index/data_assets"
    filter = {"subject.subject_id": "123456"}
-   limit = 1000
+   limit = 500
    response = requests.get(URL, params={"filter": json.dumps(filter), "limit": limit})
    print(response.json())
 
