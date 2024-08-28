@@ -242,7 +242,7 @@ class MetadataDbClient(Client):
         sort: Optional[dict] = None,
         limit: int = 0,
         paginate: bool = True,
-        paginate_batch_size: int = 1000,
+        paginate_batch_size: int = 500,
         paginate_max_iterations: int = 20000,
     ) -> List[dict]:
         """
@@ -263,7 +263,7 @@ class MetadataDbClient(Client):
           be faster to set to false if the number of records expected to be
           returned is small.
         paginate_batch_size : int
-          Number of records to return at a time. Default is 1000.
+          Number of records to return at a time. Default is 500.
         paginate_max_iterations : int
           Max number of iterations to run to prevent indefinite calls to the
           API Gateway. Default is 20000.
