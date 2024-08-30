@@ -146,6 +146,55 @@ class TestClient(unittest.TestCase):
             "ValueError('No payload in response')", repr(e.exception)
         )
 
+    @patch("requests.post")
+    def test_aggregate_records(self, mock_post: MagicMock):
+        """Tests _aggregate_records method"""
+        pipeline = [{"$match": {"_id": "abc123"}}]
+        client = Client(**self.example_client_args)
+        mock_response = Response()
+        mock_response.status_code = 200
+        mock_response._content = json.dumps(
+            [{"_id": "abc123", "message": "hi"}]
+        ).encode("utf-8")
+
+        mock_post.return_value = mock_response
+        result = client._aggregate_records(pipeline=pipeline)
+        self.assertEqual(
+            [{"_id": "abc123", "message": "hi"}],
+            result,
+        )
+
+    @patch("requests.post")
+    def test_aggregate_records_error(self, mock_post: MagicMock):
+        """Tests _aggregate_records method when there is an HTTP error or
+        no payload in response"""
+        invalid_pipeline = [{"$match_invalid": {"_id": "abc123"}}]
+        client = Client(**self.example_client_args)
+        mock_response1 = Response()
+        mock_response1.status_code = 400
+        mock_error = {
+            "error": {
+                "name": "MongoServerError",
+                "message": "Unrecognized pipeline stage name: '$match_invalid'",
+            }
+        }
+        mock_response1._content = json.dumps(mock_error).encode("utf-8")
+        mock_response2 = Response()
+        mock_response2.status_code = 200
+        mock_response2._content = None
+        mock_post.side_effect = [mock_response1, mock_response2]
+        with self.assertRaises(ValueError) as e:
+            client._aggregate_records(pipeline=invalid_pipeline)
+        self.assertEqual(
+            f"400 Error: {json.dumps(mock_error)}",
+            str(e.exception),
+        )
+        with self.assertRaises(ValueError) as e:
+            client._aggregate_records(pipeline=invalid_pipeline)
+        self.assertEqual(
+            "ValueError('No payload in response')", repr(e.exception)
+        )
+
     @patch("boto3.session.Session")
     @patch("botocore.auth.SigV4Auth.add_auth")
     @patch("requests.post")
