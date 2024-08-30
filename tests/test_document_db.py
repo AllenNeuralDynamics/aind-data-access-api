@@ -175,7 +175,9 @@ class TestClient(unittest.TestCase):
         mock_error = {
             "error": {
                 "name": "MongoServerError",
-                "message": "Unrecognized pipeline stage name: '$match_invalid'",
+                "message": (
+                    "Unrecognized pipeline stage name: '$match_invalid'"
+                ),
             }
         }
         mock_response1._content = json.dumps(mock_error).encode("utf-8")
