@@ -507,6 +507,27 @@ class TestMetadataDbClient(unittest.TestCase):
         )
         self.assertEqual(expected_response, list(records))
 
+    @patch("aind_data_access_api.document_db.Client._aggregate_records")
+    def test_aggregate_docdb_records(self, mock_aggregate: MagicMock):
+        """Tests aggregating docdb records"""
+        expected_result = [
+            {
+                "_id": "abc-123",
+                "name": "modal_00000_2000-10-10_10-10-10",
+                "created": datetime(2000, 10, 10, 10, 10, 10),
+                "location": "some_url",
+                "subject": {"subject_id": "00000", "sex": "Female"},
+            }
+        ]
+        client = MetadataDbClient(**self.example_client_args)
+        mock_aggregate.return_value = expected_result
+        pipeline = [{"$match": {"_id": "abc-123"}}]
+        result = client.aggregate_docdb_records(pipeline)
+        self.assertEqual(result, expected_result)
+        mock_aggregate.assert_called_once_with(
+            pipeline=pipeline,
+        )
+
     @patch("aind_data_access_api.document_db.Client._upsert_one_record")
     def test_upsert_one_docdb_record(self, mock_upsert: MagicMock):
         """Tests upserting one docdb record"""
