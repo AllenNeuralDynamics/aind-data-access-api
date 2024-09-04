@@ -107,6 +107,7 @@ Aggregation Example 1: Get all subjects per breeding group
               "$group": {
                   "_id": "$subject.breeding_info.breeding_group",
                   "subject_ids": {"$addToSet": "$subject.subject_id"},
+                  "count": {"$sum": 1},
               }
           }
       ]
@@ -116,6 +117,9 @@ Aggregation Example 1: Get all subjects per breeding group
       print(f"Total breeding groups: {len(result)}")
       print(f"First 3 breeding groups and corresponding subjects:")
       print(json.dumps(result[:3], indent=3))
+
+For more info about aggregations, please see MongoDB documentation:
+https://www.mongodb.com/docs/manual/aggregation/
 
 
 Updating Metadata
