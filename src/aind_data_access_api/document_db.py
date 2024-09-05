@@ -44,6 +44,14 @@ class Client:
         )
 
     @property
+    def _aggregate_url(self):
+        """Url to aggregate records."""
+        return (
+            f"https://{self.host}/{self.version}/{self.database}/"
+            f"{self.collection}/aggregate"
+        )
+
+    @property
     def _update_one_url(self):
         """Url to update one record"""
         return (
@@ -178,6 +186,18 @@ class Client:
         response_body = response.json()
         return response_body
 
+    def _aggregate_records(self, pipeline: List[dict]) -> List[dict]:
+        """Aggregate records from collection using an aggregation pipeline."""
+        # Do not need to sign request since API supports readonly aggregations
+        response = requests.post(url=self._aggregate_url, json=pipeline)
+        if response.status_code != 200:
+            error_msg = response.text if response.text else "Unknown error"
+            raise ValueError(f"{response.status_code} Error: {error_msg}")
+        if not response.content:
+            raise ValueError("No payload in response")
+        response_body = response.json()
+        return response_body
+
     def _upsert_one_record(
         self, record_filter: dict, update: dict
     ) -> Response:
@@ -242,7 +262,7 @@ class MetadataDbClient(Client):
         sort: Optional[dict] = None,
         limit: int = 0,
         paginate: bool = True,
-        paginate_batch_size: int = 1000,
+        paginate_batch_size: int = 500,
         paginate_max_iterations: int = 20000,
     ) -> List[dict]:
         """
@@ -263,7 +283,7 @@ class MetadataDbClient(Client):
           be faster to set to false if the number of records expected to be
           returned is small.
         paginate_batch_size : int
-          Number of records to return at a time. Default is 1000.
+          Number of records to return at a time. Default is 500.
         paginate_max_iterations : int
           Max number of iterations to run to prevent indefinite calls to the
           API Gateway. Default is 20000.
@@ -323,6 +343,10 @@ class MetadataDbClient(Client):
                         f"There were errors retrieving records. {errors}"
                     )
         return records
+
+    def aggregate_docdb_records(self, pipeline: List[dict]) -> List[dict]:
+        """Aggregate records using an aggregation pipeline."""
+        return self._aggregate_records(pipeline=pipeline)
 
     # TODO: remove this method
     def retrieve_data_asset_records(

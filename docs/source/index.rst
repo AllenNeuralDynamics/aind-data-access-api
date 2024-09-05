@@ -12,6 +12,7 @@ Welcome to this repository's documentation!
    :caption: Contents:
 
    UserGuide
+   ExamplesDocDBRestApi
    ExamplesDocDBDirectConnection
    Contributing
    modules
