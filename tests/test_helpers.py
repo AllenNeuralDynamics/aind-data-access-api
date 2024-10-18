@@ -57,5 +57,6 @@ class TestHelpers(unittest.TestCase):
 
         self.assertRaises(ValueError, get_quality_control, client, id="123")
 
+
 if __name__ == "__main__":
     unittest.main()
