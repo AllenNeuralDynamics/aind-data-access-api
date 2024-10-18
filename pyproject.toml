@@ -41,6 +41,9 @@ docdb = [
     "pymongo==4.3.3",
     "sshtunnel"
 ]
+helpers=[
+    "aind-data-schema"
+]
 rds = [
     "psycopg2-binary==2.9.5",
     "pandas>=2.0.0,<2.2.0",
