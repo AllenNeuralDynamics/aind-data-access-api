@@ -1,13 +1,9 @@
 """Test helpers module"""
 
-import json
-import os
 import unittest
-from unittest.mock import MagicMock, patch
-
-from aind_data_access_api.credentials import CoreCredentials
-from aind_data_access_api.document_store import DocumentStoreCredentials
-from aind_data_access_api.rds_tables import RDSCredentials
+import json
+from unittest.mock import MagicMock
+from aind_data_schema.core.quality_control import QualityControl
 
 
 class TestHelpers(unittest.TestCase):
@@ -18,15 +14,20 @@ class TestHelpers(unittest.TestCase):
         from aind_data_access_api.helpers import get_quality_control
 
         # Get json dict from test file
-        with open("./resources/helpers/quality_control.json", "r") as f:
-            qc_str = f.read()
+        with open("./tests/resources/helpers/quality_control.json", "r") as f:
+            qc_dict = json.load(f)
 
         client = MagicMock()
-        client.retrieve_docdb_records.return_value = [qc_str]
+        client.retrieve_docdb_records.return_value = [
+            {"quality_control": qc_dict}
+        ]
 
         qc = get_quality_control(client, id="123")
 
-        # self.assertEqual(qc, )
+        self.assertEqual(
+            qc, QualityControl.model_validate_json(json.dumps(qc_dict))
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
