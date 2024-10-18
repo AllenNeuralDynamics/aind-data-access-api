@@ -32,7 +32,7 @@ dev = [
     "isort",
     "Sphinx",
     "furo",
-    "aind-data-access-api[full]"
+    "aind-data-access-api[full]",
 ]
 secrets = [
     "boto3",
@@ -40,6 +40,9 @@ secrets = [
 docdb = [
     "pymongo==4.3.3",
     "sshtunnel"
+]
+helpers=[
+    "aind-data-schema"
 ]
 rds = [
     "psycopg2-binary==2.9.5",
@@ -50,6 +53,7 @@ full = [
     "aind-data-access-api[secrets]",
     "aind-data-access-api[docdb]",
     "aind-data-access-api[rds]",
+    "aind-data-access-api[helpers]",
 ]
 [tool.setuptools.packages.find]
 where = ["src"]
