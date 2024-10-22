@@ -1,14 +1,14 @@
-"""Test helpers module"""
+"""Test util.data_schema module."""
 
 import unittest
 import json
 from unittest.mock import MagicMock
-from aind_data_access_api.helpers import get_quality_control
+from aind_data_access_api.util.data_schema import get_quality_control
 from aind_data_schema.core.quality_control import QualityControl
 
 
-class TestHelpers(unittest.TestCase):
-    """Test methods in CoreCredentials class."""
+class TestUtilDataSchema(unittest.TestCase):
+    """Test methods in data schema."""
 
     def test_get_qc_id(self):
         """Test get_quality_control function."""
@@ -95,6 +95,14 @@ class TestHelpers(unittest.TestCase):
         client.retrieve_docdb_records.return_value = []
 
         self.assertRaises(ValueError, get_quality_control, client, name="123")
+
+    def test_get_qc_no_qc(self):
+        """Test that a value error is raised when no qc exists."""
+        # Get json dict from test file
+        client = MagicMock()
+        client.retrieve_docdb_records.return_value = [{"_id": "abcd"}]
+
+        self.assertRaises(ValueError, get_quality_control, client, _id="123")
 
 
 if __name__ == "__main__":
