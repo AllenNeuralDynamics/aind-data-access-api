@@ -20,7 +20,8 @@ dependencies = [
     "requests",
     "aind-codeocean-api>=0.4.0",
     "pydantic>=2.0",
-    "pydantic-settings>=2.0"
+    "pydantic-settings>=2.0",
+    "aind-data-schema",
 ]
 
 [project.optional-dependencies]
@@ -41,9 +42,6 @@ docdb = [
     "pymongo==4.3.3",
     "sshtunnel"
 ]
-helpers=[
-    "aind-data-schema"
-]
 rds = [
     "psycopg2-binary==2.9.5",
     "pandas>=2.0.0,<2.2.0",
@@ -53,7 +51,6 @@ full = [
     "aind-data-access-api[secrets]",
     "aind-data-access-api[docdb]",
     "aind-data-access-api[rds]",
-    "aind-data-access-api[helpers]",
 ]
 [tool.setuptools.packages.find]
 where = ["src"]
