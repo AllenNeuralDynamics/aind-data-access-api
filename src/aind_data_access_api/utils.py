@@ -107,6 +107,37 @@ def does_metadata_record_exist_in_docdb(
         return True
 
 
+def get_record_from_docdb(
+    docdb_client: MongoClient,
+    db_name: str,
+    collection_name: str,
+    record_id: str,
+) -> Optional[dict]:
+    """
+    Download a record from docdb using the record _id.
+    Parameters
+    ----------
+    docdb_client : MongoClient
+    db_name : str
+    collection_name : str
+    record_id : str
+
+    Returns
+    -------
+    Optional[dict]
+        None if record does not exist. Otherwise, it will return the record as
+        a dict.
+
+    """
+    db = docdb_client[db_name]
+    collection = db[collection_name]
+    records = list(collection.find(filter={"_id": record_id}, limit=1))
+    if len(records) > 0:
+        return records[0]
+    else:
+        return None
+
+
 def paginate_docdb(
     db_name: str,
     collection_name: str,
