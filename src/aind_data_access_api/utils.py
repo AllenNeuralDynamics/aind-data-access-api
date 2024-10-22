@@ -138,6 +138,70 @@ def get_record_from_docdb(
         return None
 
 
+def get_projected_record_from_docdb(
+    docdb_client: MongoClient,
+    db_name: str,
+    collection_name: str,
+    record_id: str,
+    projection: dict,
+) -> Optional[dict]:
+    """
+    Download a record from docdb using the record _id and a projection.
+
+    Parameters
+    ----------
+    docdb_client : MongoClient
+    db_name : str
+    collection_name : str
+    record_id : str
+    projection : dict
+
+    Returns
+    -------
+    Optional[dict]
+        None if record does not exist. Otherwise, it will return the projected
+        record as a dict.
+    """
+    db = docdb_client[db_name]
+    collection = db[collection_name]
+    records = list(collection.find(filter={"_id": record_id}, projection=projection, limit=1))
+    if len(records) > 0:
+        return records[0]
+    else:
+        return None
+
+
+def get_id_from_name(
+    docdb_client: MongoClient,
+    db_name: str,
+    collection_name: str,
+    name: str,
+) -> Optional[str]:
+    """
+    Get the _id of a record in DocDb using the name field.
+    Parameters
+    ----------
+    docdb_client : MongoClient
+    db_name : str
+    collection_name : str
+    name : str
+
+    Returns
+    -------
+    Optional[str]
+        None if record does not exist. Otherwise, it will return the _id of
+        the record.
+    """
+    db = docdb_client[db_name]
+    collection = db[collection_name]
+    records = list(collection.find(filter={"name": name}, projection={"_id": 1}, limit=1))
+    if len(records) > 0:
+        return records[0]["_id"]
+    else:
+        return None
+
+
+
 def paginate_docdb(
     db_name: str,
     collection_name: str,
