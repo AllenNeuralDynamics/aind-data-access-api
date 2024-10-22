@@ -1,6 +1,5 @@
 """Tests methods in util.docdb module"""
 
-
 import unittest
 from unittest.mock import MagicMock
 
