@@ -18,7 +18,7 @@ class TestHelpers(unittest.TestCase):
 
         client = MagicMock()
         client.retrieve_docdb_records.return_value = [
-            {"quality_control": qc_dict}
+            {"_id": "abcd", "quality_control": qc_dict}
         ]
 
         qc = get_quality_control(client, _id="123")
@@ -35,7 +35,7 @@ class TestHelpers(unittest.TestCase):
 
         client = MagicMock()
         client.retrieve_docdb_records.return_value = [
-            {"quality_control": qc_dict}
+            {"_id": "abcd", "quality_control": qc_dict}
         ]
 
         qc = get_quality_control(client, name="123")
@@ -52,11 +52,45 @@ class TestHelpers(unittest.TestCase):
         """Test that a value error is raised when no record exists."""
         # Get json dict from test file
         client = MagicMock()
+        client.retrieve_docdb_records.return_value = []
+
+        self.assertRaises(ValueError, get_quality_control, client, _id="123")
+
+    def test_get_qc_invalid(self):
+        """Test that a value error is raised when qc is invalid."""
+        # Get json dict from test file
+        with open("./tests/resources/helpers/quality_control_invalid.json", "r") as f:
+            qc_dict = json.load(f)
+
+        client = MagicMock()
         client.retrieve_docdb_records.return_value = [
+            {"_id": "abcd", "quality_control": qc_dict}
         ]
 
-        self.assertRaises(ValueError, get_quality_control, client, id="123")
+        self.assertRaises(ValueError, get_quality_control, client, _id="123")
 
+    def test_get_qc_invalid_allowed(self):
+        """Test that a dict is returned when we allow invalid."""
+        # Get json dict from test file
+        with open("./tests/resources/helpers/quality_control_invalid.json", "r") as f:
+            qc_dict = json.load(f)
+
+        client = MagicMock()
+        client.retrieve_docdb_records.return_value = [
+            {"_id": "abcd", "quality_control": qc_dict}
+        ]
+
+        qc = get_quality_control(client, _id="123", allow_invalid=True)
+
+        self.assertEqual(qc, qc_dict)
+
+    def test_get_qc_no_name(self):
+        """Test that a value error is raised when no record exists."""
+        # Get json dict from test file
+        client = MagicMock()
+        client.retrieve_docdb_records.return_value = []
+
+        self.assertRaises(ValueError, get_quality_control, client, name="123")
 
 if __name__ == "__main__":
     unittest.main()

@@ -2,7 +2,7 @@
 
 from typing import Optional
 from aind_data_access_api.document_db import MetadataDbClient
-from aind_data_access_api.utils import (
+from aind_data_access_api.utils_docdb import (
     get_projected_record_from_docdb,
     get_id_from_name,
 )
@@ -34,8 +34,9 @@ def get_quality_control(
 
     if name:
         _id = get_id_from_name(client, name=name)
-        if not _id:
-            raise ValueError(f"No record found with name {name}")
+
+    if not _id:
+        raise ValueError(f"No record found with name {name}")
 
     record = get_projected_record_from_docdb(
         client, record_id=_id, projection={"quality_control": 1}
