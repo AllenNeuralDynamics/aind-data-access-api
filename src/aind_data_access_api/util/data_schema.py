@@ -2,7 +2,7 @@
 
 from typing import Optional
 from aind_data_access_api.document_db import MetadataDbClient
-from aind_data_access_api.utils_docdb import (
+from aind_data_access_api.utils.docdb import (
     get_projected_record_from_docdb,
     get_id_from_name,
 )
