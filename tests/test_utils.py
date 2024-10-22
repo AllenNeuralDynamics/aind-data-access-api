@@ -6,15 +6,16 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from aind_data_access_api.utils import (
+from aind_data_access_api.utils_s3 import get_s3_bucket_and_prefix, get_s3_location
+from aind_data_access_api.utils_docdb import (
     build_docdb_location_to_id_map,
     does_metadata_record_exist_in_docdb,
     get_record_from_docdb,
-    get_s3_bucket_and_prefix,
-    get_s3_location,
-    is_dict_corrupt,
-    paginate_docdb,
+    get_id_from_name,
+    get_projected_record_from_docdb,
+    paginate_docdb
 )
+from aind_data_access_api.utils import is_dict_corrupt
 
 TEST_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
 TEST_UTILS_DIR = TEST_DIR / "resources" / "utils"
@@ -228,6 +229,25 @@ class TestUtils(unittest.TestCase):
             ),
         }
         self.assertEqual(expected_map, actual_map)
+
+    def test_get_id_from_name(self):
+        """Tests get_id_from_name"""
+        client = MagicMock()
+        client.retrieve_docdb_records.return_value = [
+            {"_id": "abcd", "name": "123"}
+        ]
+        self.assertEqual("abcd", get_id_from_name(client, name="123"))
+
+    def test_get_projected_record_from_docdb(self):
+        """Tests get_projected_record_from_docdb"""
+        client = MagicMock()
+        client.retrieve_docdb_records.return_value = [
+            {"_id": "abcd", "quality_control": {"a": 1}}
+        ]
+        record = get_projected_record_from_docdb(
+            client, record_id="abcd", projection={"quality_control": 1}
+        )
+        self.assertEqual({"_id": "abcd", "quality_control": {"a": 1}}, record)
 
 
 if __name__ == "__main__":

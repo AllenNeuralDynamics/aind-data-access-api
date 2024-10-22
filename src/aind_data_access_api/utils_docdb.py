@@ -45,7 +45,9 @@ def does_metadata_record_exist_in_docdb(
 
 
 def get_record_from_docdb(
-    client: MetadataDbClient,
+    docdb_client: MongoClient,
+    db_name: str,
+    collection_name: str,
     record_id: str,
 ) -> Optional[dict]:
     """
@@ -64,9 +66,9 @@ def get_record_from_docdb(
         a dict.
 
     """
-    records = client.retrieve_docdb_records(
-        filter_query={"_id": record_id}, limit=1
-    )
+    db = docdb_client[db_name]
+    collection = db[collection_name]
+    records = list(collection.find(filter={"_id": record_id}, limit=1))
     if len(records) > 0:
         return records[0]
     else:
