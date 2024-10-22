@@ -4,6 +4,7 @@ from typing import Dict, Iterator, List, Optional
 from urllib.parse import urlparse
 
 from pymongo import MongoClient
+from aind_data_access_api.document_db import MetadataDbClient
 
 
 def get_s3_bucket_and_prefix(s3_location: str) -> Dict[str, str]:
@@ -108,9 +109,7 @@ def does_metadata_record_exist_in_docdb(
 
 
 def get_record_from_docdb(
-    docdb_client: MongoClient,
-    db_name: str,
-    collection_name: str,
+    client: MetadataDbClient,
     record_id: str,
 ) -> Optional[dict]:
     """
@@ -129,9 +128,9 @@ def get_record_from_docdb(
         a dict.
 
     """
-    db = docdb_client[db_name]
-    collection = db[collection_name]
-    records = list(collection.find(filter={"_id": record_id}, limit=1))
+    records = client.retrieve_docdb_records(
+        filter_query={"_id": record_id}, limit=1
+    )
     if len(records) > 0:
         return records[0]
     else:
@@ -139,9 +138,7 @@ def get_record_from_docdb(
 
 
 def get_projected_record_from_docdb(
-    docdb_client: MongoClient,
-    db_name: str,
-    collection_name: str,
+    client: MetadataDbClient,
     record_id: str,
     projection: dict,
 ) -> Optional[dict]:
@@ -162,9 +159,9 @@ def get_projected_record_from_docdb(
         None if record does not exist. Otherwise, it will return the projected
         record as a dict.
     """
-    db = docdb_client[db_name]
-    collection = db[collection_name]
-    records = list(collection.find(filter={"_id": record_id}, projection=projection, limit=1))
+    records = client.retrieve_docdb_records(
+        filter_query={"_id": record_id}, projection=projection, limit=1
+    )
     if len(records) > 0:
         return records[0]
     else:
@@ -172,9 +169,7 @@ def get_projected_record_from_docdb(
 
 
 def get_id_from_name(
-    docdb_client: MongoClient,
-    db_name: str,
-    collection_name: str,
+    client: MetadataDbClient,
     name: str,
 ) -> Optional[str]:
     """
@@ -192,14 +187,13 @@ def get_id_from_name(
         None if record does not exist. Otherwise, it will return the _id of
         the record.
     """
-    db = docdb_client[db_name]
-    collection = db[collection_name]
-    records = list(collection.find(filter={"name": name}, projection={"_id": 1}, limit=1))
+    records = client.retrieve_docdb_records(
+        filter_query={"name": name}, projection={"_id": 1}, limit=1
+    )
     if len(records) > 0:
         return records[0]["_id"]
     else:
         return None
-
 
 
 def paginate_docdb(

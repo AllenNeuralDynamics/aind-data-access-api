@@ -1,12 +1,20 @@
 """Module for convenience functions for the data access API."""
 
+from typing import Optional
 from aind_data_access_api.document_db import MetadataDbClient
+from aind_data_access_api.utils import (
+    get_projected_record_from_docdb,
+    get_id_from_name,
+)
 from aind_data_schema.core.quality_control import QualityControl
 import json
 
 
 def get_quality_control(
-    client: MetadataDbClient, id: str = "", name: str = ""
+    client: MetadataDbClient,
+    _id: Optional[str] = None,
+    name: Optional[str] = None,
+    allow_invalid: bool = False,
 ):
     """Using a connected DocumentDB client, retrieve the QualityControl object for a given record.
 
@@ -15,29 +23,33 @@ def get_quality_control(
     client : MetadataDbClient
         A connected DocumentDB client.
     id : str, optional
-        _id field in DocDB, by default None
+        _id field in DocDB, by default empty
     name : str, optional
-        name field in DocDB, by default None
+        name field in DocDB, by default empty
+    allow_invalid : bool, optional
+        return invalid QualityControl as dict if True, by default False
     """
-    if id == "" and name == "":
-        raise ValueError("Must specify either id or name.")
+    if not _id and not name:
+        raise ValueError("Must specify either _id or name.")
 
-    if id != "":
-        filter_query = {"_id": id}
+    if name:
+        _id = get_id_from_name(client, name=name)
+        if not _id:
+            raise ValueError(f"No record found with name {name}")
 
-    if name != "":
-        filter_query = {"name": name}
-
-    record = client.retrieve_docdb_records(
-        filter_query=filter_query, projection={"quality_control": 1}, limit=1
+    record = get_projected_record_from_docdb(
+        client, record_id=_id, projection={"quality_control": 1}
     )
+    if not record:
+        raise ValueError(f"No record found with id {_id} or name {name}")
 
-    if len(record) == 0:
-        raise ValueError(f"No record found with id {id} or name {name}")
+    qc_data = record["quality_control"]
 
     # Try to validate
-    qc = QualityControl.model_validate_json(
-        json.dumps(record[0]["quality_control"])
-    )
-
-    return qc
+    try:
+        return QualityControl.model_validate_json(json.dumps(qc_data))
+    except Exception as e:
+        if allow_invalid:
+            return qc_data
+        else:
+            raise e

@@ -21,7 +21,7 @@ class TestHelpers(unittest.TestCase):
             {"quality_control": qc_dict}
         ]
 
-        qc = get_quality_control(client, id="123")
+        qc = get_quality_control(client, _id="123")
 
         self.assertEqual(
             qc, QualityControl.model_validate_json(json.dumps(qc_dict))
