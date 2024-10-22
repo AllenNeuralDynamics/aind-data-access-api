@@ -2,7 +2,7 @@
 
 from typing import Optional
 from aind_data_access_api.document_db import MetadataDbClient
-from aind_data_access_api.utils.docdb import (
+from aind_data_access_api.util.docdb import (
     get_projected_record_from_docdb,
     get_id_from_name,
 )
@@ -43,6 +43,11 @@ def get_quality_control(
     )
     if not record:
         raise ValueError(f"No record found with id {_id} or name {name}")
+
+    if "quality_control" not in record:
+        raise ValueError(
+            f"No quality_control field found in record with id {_id}"
+        )
 
     qc_data = record["quality_control"]
 
