@@ -16,7 +16,8 @@ def get_quality_control(
     name: Optional[str] = None,
     allow_invalid: bool = False,
 ):
-    """Using a connected DocumentDB client, retrieve the QualityControl object for a given record.
+    """Using a connected DocumentDB client, retrieve the QualityControl object
+    for a given record.
 
     Parameters
     ----------
