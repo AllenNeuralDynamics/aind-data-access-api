@@ -1,6 +1,5 @@
 """Module for DocDB utility functions"""
 
-
 from typing import Dict, Iterator, List, Optional
 from pymongo import MongoClient
 

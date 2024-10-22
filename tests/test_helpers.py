@@ -59,7 +59,9 @@ class TestHelpers(unittest.TestCase):
     def test_get_qc_invalid(self):
         """Test that a value error is raised when qc is invalid."""
         # Get json dict from test file
-        with open("./tests/resources/helpers/quality_control_invalid.json", "r") as f:
+        with open(
+            "./tests/resources/helpers/quality_control_invalid.json", "r"
+        ) as f:
             qc_dict = json.load(f)
 
         client = MagicMock()
@@ -72,7 +74,9 @@ class TestHelpers(unittest.TestCase):
     def test_get_qc_invalid_allowed(self):
         """Test that a dict is returned when we allow invalid."""
         # Get json dict from test file
-        with open("./tests/resources/helpers/quality_control_invalid.json", "r") as f:
+        with open(
+            "./tests/resources/helpers/quality_control_invalid.json", "r"
+        ) as f:
             qc_dict = json.load(f)
 
         client = MagicMock()
@@ -91,6 +95,7 @@ class TestHelpers(unittest.TestCase):
         client.retrieve_docdb_records.return_value = []
 
         self.assertRaises(ValueError, get_quality_control, client, name="123")
+
 
 if __name__ == "__main__":
     unittest.main()

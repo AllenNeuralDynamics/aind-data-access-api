@@ -6,14 +6,17 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from aind_data_access_api.utils_s3 import get_s3_bucket_and_prefix, get_s3_location
+from aind_data_access_api.utils_s3 import (
+    get_s3_bucket_and_prefix,
+    get_s3_location,
+)
 from aind_data_access_api.utils_docdb import (
     build_docdb_location_to_id_map,
     does_metadata_record_exist_in_docdb,
     get_record_from_docdb,
     get_id_from_name,
     get_projected_record_from_docdb,
-    paginate_docdb
+    paginate_docdb,
 )
 from aind_data_access_api.utils import is_dict_corrupt
 
