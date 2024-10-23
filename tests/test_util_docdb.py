@@ -26,7 +26,7 @@ class TestUtilDocDB(unittest.TestCase):
         """Tests get_record_from_docdb"""
         client = MagicMock()
         client.retrieve_docdb_records.return_value = [{"_id": "abcd"}]
-        record = get_record_from_docdb(client, record_id="abcd")
+        record = get_record_from_docdb(client, _id="abcd")
         self.assertEqual({"_id": "abcd"}, record)
 
     def test_get_projected_record_from_docdb(self):
@@ -36,7 +36,7 @@ class TestUtilDocDB(unittest.TestCase):
             {"quality_control": {"a": 1}}
         ]
         record = get_projected_record_from_docdb(
-            client, record_id="abcd", projection={"quality_control": 1}
+            client, _id="abcd", projection={"quality_control": 1}
         )
         self.assertEqual({"quality_control": {"a": 1}}, record)
 
