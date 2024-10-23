@@ -1,6 +1,5 @@
 """Module for convenience functions for the data access API."""
 
-from typing import Optional
 from aind_data_access_api.document_db import MetadataDbClient
 from aind_data_access_api.helpers.docdb import (
     get_field_from_docdb,
@@ -13,7 +12,6 @@ import json
 def get_quality_control_by_id(
     client: MetadataDbClient,
     _id: str,
-    name: Optional[str] = None,
     allow_invalid: bool = False,
 ):
     """Using a connected DocumentDB client, retrieve the QualityControl object
