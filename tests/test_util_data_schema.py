@@ -3,7 +3,7 @@
 import unittest
 import json
 from unittest.mock import MagicMock
-from aind_data_access_api.util.data_schema import get_quality_control
+from aind_data_access_api.helpers.data_schema import get_quality_control
 from aind_data_schema.core.quality_control import QualityControl
 
 
@@ -109,6 +109,12 @@ class TestUtilDataSchema(unittest.TestCase):
         # Get json dict from test file
         client = MagicMock()
         client.retrieve_docdb_records.return_value = [{"_id": "abcd"}]
+
+        self.assertRaises(ValueError, get_quality_control, client, _id="123")
+
+        client.retrieve_docdb_records.return_value = [
+            {"_id": "abcd", "quality_control": None}
+        ]
 
         self.assertRaises(ValueError, get_quality_control, client, _id="123")
 
