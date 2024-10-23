@@ -7,7 +7,7 @@ from aind_data_access_api.helpers.docdb import (
     get_record_from_docdb,
     get_id_from_name,
     get_projected_record_from_docdb,
-    get_field_from_docdb
+    get_field_from_docdb,
 )
 
 
@@ -47,6 +47,6 @@ class TestUtilDocDB(unittest.TestCase):
             {"quality_control": {"a": 1}}
         ]
         field = get_field_from_docdb(
-            client, record_id="abcd", field="quality_control"
+            client, _id="abcd", field="quality_control"
         )
         self.assertEqual({"quality_control": {"a": 1}}, field)

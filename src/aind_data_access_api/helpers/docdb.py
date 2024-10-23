@@ -67,7 +67,7 @@ def get_projected_record_from_docdb(
 
 def get_field_from_docdb(
     client: MetadataDbClient,
-    record_id: str,
+    _id: str,
     field: str,
 ) -> Optional[dict]:
     """Download a single field from a docdb record
@@ -84,7 +84,7 @@ def get_field_from_docdb(
         None if a record does not exist. Otherwise returns the field in a dict.
     """
     return get_projected_record_from_docdb(
-        client, record_id=record_id, projection={field: 1}
+        client, record_id=_id, projection={field: 1}
     )
 
 

@@ -3,7 +3,10 @@
 import unittest
 import json
 from unittest.mock import MagicMock
-from aind_data_access_api.helpers.data_schema import get_quality_control_by_id, get_quality_control_by_name
+from aind_data_access_api.helpers.data_schema import (
+    get_quality_control_by_id,
+    get_quality_control_by_name,
+)
 from aind_data_schema.core.quality_control import QualityControl
 
 
@@ -62,7 +65,9 @@ class TestUtilDataSchema(unittest.TestCase):
         client = MagicMock()
         client.retrieve_docdb_records.return_value = []
 
-        self.assertRaises(ValueError, get_quality_control_by_id, client, _id="123")
+        self.assertRaises(
+            ValueError, get_quality_control_by_id, client, _id="123"
+        )
 
     def test_get_qc_invalid(self):
         """Test that a value error is raised when qc is invalid."""
@@ -76,7 +81,9 @@ class TestUtilDataSchema(unittest.TestCase):
             }
         ]
 
-        self.assertRaises(ValueError, get_quality_control_by_id, client, _id="123")
+        self.assertRaises(
+            ValueError, get_quality_control_by_id, client, _id="123"
+        )
 
     def test_get_qc_invalid_allowed(self):
         """Test that a dict is returned when we allow invalid."""
@@ -99,7 +106,9 @@ class TestUtilDataSchema(unittest.TestCase):
         client = MagicMock()
         client.retrieve_docdb_records.return_value = []
 
-        self.assertRaises(ValueError, get_quality_control_by_name, client, name="123")
+        self.assertRaises(
+            ValueError, get_quality_control_by_name, client, name="123"
+        )
 
     def test_get_qc_no_qc(self):
         """Test that a value error is raised when no qc exists."""
@@ -107,13 +116,17 @@ class TestUtilDataSchema(unittest.TestCase):
         client = MagicMock()
         client.retrieve_docdb_records.return_value = [{"_id": "abcd"}]
 
-        self.assertRaises(ValueError, get_quality_control_by_id, client, _id="123")
+        self.assertRaises(
+            ValueError, get_quality_control_by_id, client, _id="123"
+        )
 
         client.retrieve_docdb_records.return_value = [
             {"_id": "abcd", "quality_control": None}
         ]
 
-        self.assertRaises(ValueError, get_quality_control_by_id, client, _id="123")
+        self.assertRaises(
+            ValueError, get_quality_control_by_id, client, _id="123"
+        )
 
 
 if __name__ == "__main__":
