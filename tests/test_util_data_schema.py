@@ -10,38 +10,49 @@ from aind_data_schema.core.quality_control import QualityControl
 class TestUtilDataSchema(unittest.TestCase):
     """Test methods in data schema."""
 
+    def setUpClass(self):
+        """Set up the class by extracting contents from example files."""
+
+        with open("./tests/resources/helpers/quality_control.json", "r") as f:
+            self.example_quality_control = json.load(f)
+
+        with open(
+            "./tests/resources/helpers/quality_control_invalid.json", "r"
+        ) as f:
+            self.example_quality_control_invalid = json.load(f)
+
     def test_get_qc_id(self):
         """Test get_quality_control function."""
         # Get json dict from test file
-        with open("./tests/resources/helpers/quality_control.json", "r") as f:
-            qc_dict = json.load(f)
-
         client = MagicMock()
         client.retrieve_docdb_records.return_value = [
-            {"_id": "abcd", "quality_control": qc_dict}
+            {"_id": "abcd", "quality_control": self.example_quality_control}
         ]
 
         qc = get_quality_control(client, _id="123")
 
         self.assertEqual(
-            qc, QualityControl.model_validate_json(json.dumps(qc_dict))
+            qc,
+            QualityControl.model_validate_json(
+                json.dumps(self.example_quality_control)
+            ),
         )
 
     def test_get_qc_name(self):
         """Test get_quality_control function."""
         # Get json dict from test file
-        with open("./tests/resources/helpers/quality_control.json", "r") as f:
-            qc_dict = json.load(f)
-
         client = MagicMock()
         client.retrieve_docdb_records.return_value = [
-            {"_id": "abcd", "quality_control": qc_dict}
+            {"_id": "abcd", "quality_control": self.example_quality_control}
         ]
 
         qc = get_quality_control(client, name="123")
 
         self.assertEqual(
-            qc, QualityControl.model_validate_json(json.dumps(qc_dict))
+            qc,
+            QualityControl.model_validate_json(
+                json.dumps(self.example_quality_control)
+            ),
         )
 
     def test_get_qc_no_identifier(self):
@@ -59,14 +70,13 @@ class TestUtilDataSchema(unittest.TestCase):
     def test_get_qc_invalid(self):
         """Test that a value error is raised when qc is invalid."""
         # Get json dict from test file
-        with open(
-            "./tests/resources/helpers/quality_control_invalid.json", "r"
-        ) as f:
-            qc_dict = json.load(f)
 
         client = MagicMock()
         client.retrieve_docdb_records.return_value = [
-            {"_id": "abcd", "quality_control": qc_dict}
+            {
+                "_id": "abcd",
+                "quality_control": self.example_quality_control_invalid,
+            }
         ]
 
         self.assertRaises(ValueError, get_quality_control, client, _id="123")
@@ -74,19 +84,17 @@ class TestUtilDataSchema(unittest.TestCase):
     def test_get_qc_invalid_allowed(self):
         """Test that a dict is returned when we allow invalid."""
         # Get json dict from test file
-        with open(
-            "./tests/resources/helpers/quality_control_invalid.json", "r"
-        ) as f:
-            qc_dict = json.load(f)
-
         client = MagicMock()
         client.retrieve_docdb_records.return_value = [
-            {"_id": "abcd", "quality_control": qc_dict}
+            {
+                "_id": "abcd",
+                "quality_control": self.example_quality_control_invalid,
+            }
         ]
 
         qc = get_quality_control(client, _id="123", allow_invalid=True)
 
-        self.assertEqual(qc, qc_dict)
+        self.assertEqual(qc, self.example_quality_control_invalid)
 
     def test_get_qc_no_name(self):
         """Test that a value error is raised when no record exists."""
