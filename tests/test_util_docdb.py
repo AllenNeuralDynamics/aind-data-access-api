@@ -3,10 +3,11 @@
 import unittest
 from unittest.mock import MagicMock
 
-from aind_data_access_api.util.docdb import (
+from aind_data_access_api.helpers.docdb import (
     get_record_from_docdb,
     get_id_from_name,
     get_projected_record_from_docdb,
+    get_field_from_docdb
 )
 
 
@@ -32,9 +33,20 @@ class TestUtilDocDB(unittest.TestCase):
         """Tests get_projected_record_from_docdb"""
         client = MagicMock()
         client.retrieve_docdb_records.return_value = [
-            {"_id": "abcd", "quality_control": {"a": 1}}
+            {"quality_control": {"a": 1}}
         ]
         record = get_projected_record_from_docdb(
             client, record_id="abcd", projection={"quality_control": 1}
         )
-        self.assertEqual({"_id": "abcd", "quality_control": {"a": 1}}, record)
+        self.assertEqual({"quality_control": {"a": 1}}, record)
+
+    def test_get_field_from_docdb(self):
+        """Tests get_field_from_docdb"""
+        client = MagicMock()
+        client.retrieve_docdb_records.return_value = [
+            {"quality_control": {"a": 1}}
+        ]
+        field = get_field_from_docdb(
+            client, record_id="abcd", field="quality_control"
+        )
+        self.assertEqual({"quality_control": {"a": 1}}, field)

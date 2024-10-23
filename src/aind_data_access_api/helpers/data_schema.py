@@ -3,16 +3,16 @@
 from typing import Optional
 from aind_data_access_api.document_db import MetadataDbClient
 from aind_data_access_api.helpers.docdb import (
-    get_projected_record_from_docdb,
+    get_field_from_docdb,
     get_id_from_name,
 )
 from aind_data_schema.core.quality_control import QualityControl
 import json
 
 
-def get_quality_control(
+def get_quality_control_by_id(
     client: MetadataDbClient,
-    _id: Optional[str] = None,
+    _id: str,
     name: Optional[str] = None,
     allow_invalid: bool = False,
 ):
@@ -23,36 +23,54 @@ def get_quality_control(
     ----------
     client : MetadataDbClient
         A connected DocumentDB client.
-    id : str, optional
+    _id : str, optional
         _id field in DocDB, by default empty
-    name : str, optional
-        name field in DocDB, by default empty
     allow_invalid : bool, optional
         return invalid QualityControl as dict if True, by default False
     """
-    if not _id and not name:
-        raise ValueError("Must specify either _id or name.")
-
-    if name:
-        _id = get_id_from_name(client, name=name)
-
-    if not _id:
-        raise ValueError(f"No record found with name {name}")
-
-    record = get_projected_record_from_docdb(
-        client, record_id=_id, projection={"quality_control": 1}
+    record = get_field_from_docdb(
+        client, record_id=_id, field="quality_control"
     )
     if not record:
-        raise ValueError(f"No record found with id {_id} or name {name}")
+        raise ValueError(f"No record found with id {_id}")
 
     if "quality_control" not in record or not record["quality_control"]:
         raise ValueError(
             f"No quality_control field found in record with id {_id}"
         )
 
-    qc_data = record["quality_control"]
+    return validate_qc(record["quality_control"], allow_invalid=allow_invalid)
 
-    # Try to validate
+
+def get_quality_control_by_name(
+    client: MetadataDbClient,
+    name: str,
+    allow_invalid: bool = False,
+):
+    """Using a connected DocumentDB client, retrieve the QualityControl object
+    for a given record.
+
+    Parameters
+    ----------
+    client : MetadataDbClient
+        A connected DocumentDB client.
+    name : str, optional
+        name field in DocDB, by default empty
+    allow_invalid : bool, optional
+        return invalid QualityControl as dict if True, by default False
+    """
+    _id = get_id_from_name(client, name=name)
+    if not _id:
+        raise ValueError(f"No record found with name {name}")
+
+    return get_quality_control_by_id(
+        client, _id=_id, allow_invalid=allow_invalid
+    )
+
+
+def validate_qc(qc_data: dict, allow_invalid: bool = False):
+    """Validate a quality control dict."""
+
     try:
         return QualityControl.model_validate_json(json.dumps(qc_data))
     except Exception as e:
