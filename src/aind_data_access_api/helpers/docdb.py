@@ -6,7 +6,7 @@ from aind_data_access_api.document_db import MetadataDbClient
 
 def get_record_from_docdb(
     client: MetadataDbClient,
-    record_id: str,
+    _id: str,
 ) -> Optional[dict]:
     """
     Download a record from docdb using the record _id.
@@ -16,7 +16,7 @@ def get_record_from_docdb(
     docdb_client : MongoClient
     db_name : str
     collection_name : str
-    record_id : str
+    _id : str
 
     Returns
     -------
@@ -26,7 +26,7 @@ def get_record_from_docdb(
 
     """
     records = client.retrieve_docdb_records(
-        filter_query={"_id": record_id}, limit=1
+        filter_query={"_id": _id}, limit=1
     )
     if len(records) > 0:
         return records[0]
@@ -36,7 +36,7 @@ def get_record_from_docdb(
 
 def get_projected_record_from_docdb(
     client: MetadataDbClient,
-    record_id: str,
+    _id: str,
     projection: dict,
 ) -> Optional[dict]:
     """
@@ -47,7 +47,7 @@ def get_projected_record_from_docdb(
     docdb_client : MongoClient
     db_name : str
     collection_name : str
-    record_id : str
+    _id : str
     projection : dict
 
     Returns
@@ -57,7 +57,7 @@ def get_projected_record_from_docdb(
         record as a dict.
     """
     records = client.retrieve_docdb_records(
-        filter_query={"_id": record_id}, projection=projection, limit=1
+        filter_query={"_id": _id}, projection=projection, limit=1
     )
     if len(records) > 0:
         return records[0]
@@ -75,7 +75,7 @@ def get_field_from_docdb(
     Parameters
     ----------
     client : MetadataDbClient
-    record_id : str
+    _id : str
     field : str
 
     Returns
@@ -84,7 +84,7 @@ def get_field_from_docdb(
         None if a record does not exist. Otherwise returns the field in a dict.
     """
     return get_projected_record_from_docdb(
-        client, record_id=_id, projection={field: 1}
+        client, _id=_id, projection={field: 1}
     )
 
 
