@@ -103,7 +103,8 @@ def get_id_from_name(
 
     if len(records) > 1:
         print(
-            "Warning: multiple records share the name {name}, only the first record will be returned."
+            "Warning: multiple records share the name {name}, ",
+            "only the first record will be returned.",
         )
 
     if len(records) > 0:
