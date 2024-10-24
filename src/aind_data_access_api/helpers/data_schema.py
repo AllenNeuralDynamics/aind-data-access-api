@@ -2,7 +2,7 @@
 
 from aind_data_access_api.document_db import MetadataDbClient
 from aind_data_access_api.helpers.docdb import (
-    get_field_from_docdb,
+    get_field_by_id,
     get_id_from_name,
 )
 from aind_data_schema.core.quality_control import QualityControl
@@ -26,9 +26,7 @@ def get_quality_control_by_id(
     allow_invalid : bool, optional
         return invalid QualityControl as dict if True, by default False
     """
-    record = get_field_from_docdb(
-        client, _id=_id, field="quality_control"
-    )
+    record = get_field_by_id(client, _id=_id, field="quality_control")
     if not record:
         raise ValueError(f"No record found with id {_id}")
 
