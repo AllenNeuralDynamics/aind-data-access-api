@@ -17,12 +17,13 @@ class TestUtilDataSchema(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         """Set up the class by extracting contents from example files."""
+        file_dir = Path("./tests/resources/helpers")
 
-        valid_path = Path("./tests/resources/helpers/quality_control.json")
+        valid_path = file_dir / "quality_control.json"
         with valid_path.open("r") as f:
             cls.example_quality_control = json.load(f)
 
-        invalid_path = Path("./tests/resources/helpers/quality_control_invalid.json")
+        invalid_path = file_dir / "quality_control_invalid.json"
         with invalid_path.open("r") as f:
             cls.example_quality_control_invalid = json.load(f)
 
