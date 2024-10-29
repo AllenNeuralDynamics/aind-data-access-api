@@ -1,5 +1,6 @@
 """Test util.data_schema module."""
 
+from pathlib import Path
 import unittest
 import json
 from unittest.mock import MagicMock
@@ -17,12 +18,12 @@ class TestUtilDataSchema(unittest.TestCase):
     def setUpClass(cls) -> None:
         """Set up the class by extracting contents from example files."""
 
-        with open("./tests/resources/helpers/quality_control.json", "r") as f:
+        valid_path = Path("./tests/resources/helpers/quality_control.json")
+        with valid_path.open("r") as f:
             cls.example_quality_control = json.load(f)
 
-        with open(
-            "./tests/resources/helpers/quality_control_invalid.json", "r"
-        ) as f:
+        invalid_path = Path("./tests/resources/helpers/quality_control_invalid.json")
+        with invalid_path.open("r") as f:
             cls.example_quality_control_invalid = json.load(f)
 
     def test_get_qc_id(self):
