@@ -20,7 +20,8 @@ dependencies = [
     "requests",
     "aind-codeocean-api>=0.4.0",
     "pydantic>=2.0",
-    "pydantic-settings>=2.0"
+    "pydantic-settings>=2.0",
+    "aind-data-schema",
 ]
 
 [project.optional-dependencies]
@@ -32,7 +33,7 @@ dev = [
     "isort",
     "Sphinx",
     "furo",
-    "aind-data-access-api[full]"
+    "aind-data-access-api[full]",
 ]
 secrets = [
     "boto3",
