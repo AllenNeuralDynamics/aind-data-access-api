@@ -2,6 +2,7 @@
 
 from typing import Optional
 from aind_data_access_api.document_db import MetadataDbClient
+import logging
 
 
 def get_record_by_id(
@@ -102,8 +103,8 @@ def get_id_from_name(
     )
 
     if len(records) > 1:
-        print(
-            "Warning: multiple records share the name {name}, ",
+        logging.warning(
+            "Multiple records share the name {name}, ",
             "only the first record will be returned.",
         )
 
