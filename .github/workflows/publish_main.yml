@@ -11,7 +11,7 @@ jobs:
     outputs:
       pkg_version: ${{ steps.output_version.outputs.pkg_version }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Get version from file
       run: |
         pkg_name=$(grep -P 'version = \{attr = .*\}' pyproject.toml | grep -oP '\w+.__version__')
@@ -23,10 +23,10 @@ jobs:
         git tag "v${{ env.tag }}"
     - name: Push git tag
       run: git push origin "v${{ env.tag }}"
-    - name: Set up Python 3.8
-      uses: actions/setup-python@v2
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v5
       with:
-        python-version: 3.8
+        python-version: '3.10'
     - name: Install dependencies
       run: |
         pip install --upgrade setuptools wheel twine build
@@ -35,4 +35,5 @@ jobs:
     - name: Publish on PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
+        verbose: true
         password: ${{ secrets.AIND_PYPI_TOKEN }}
