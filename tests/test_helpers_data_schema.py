@@ -1,21 +1,23 @@
-"""Test util.data_schema module."""
+"""Test helpers.data_schema module."""
 
-from pathlib import Path
-import unittest
 import json
+import os
+import unittest
+from pathlib import Path
 from unittest.mock import MagicMock
+
+from aind_data_schema.core.quality_control import QualityControl
+
 from aind_data_access_api.helpers.data_schema import (
     get_quality_control_by_id,
     get_quality_control_by_name,
 )
-from aind_data_schema.core.quality_control import QualityControl
-import os
 
 TEST_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
 TEST_HELPERS_DIR = TEST_DIR / "resources" / "helpers"
 
 
-class TestUtilDataSchema(unittest.TestCase):
+class TestHelpersDataSchema(unittest.TestCase):
     """Test methods in data schema."""
 
     @classmethod
@@ -66,7 +68,6 @@ class TestUtilDataSchema(unittest.TestCase):
 
     def test_get_qc_no_record(self):
         """Test that a value error is raised when no record exists."""
-        # Get json dict from test file
         client = MagicMock()
         client.retrieve_docdb_records.return_value = []
 
@@ -107,7 +108,6 @@ class TestUtilDataSchema(unittest.TestCase):
 
     def test_get_qc_no_name(self):
         """Test that a value error is raised when no record exists."""
-        # Get json dict from test file
         client = MagicMock()
         client.retrieve_docdb_records.return_value = []
 

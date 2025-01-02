@@ -1,4 +1,4 @@
-"""Tests methods in util.docdb module"""
+"""Tests methods in helpers.docdb module"""
 
 import unittest
 from unittest.mock import MagicMock, patch
@@ -12,8 +12,8 @@ from aind_data_access_api.helpers.docdb import (
 )
 
 
-class TestUtilDocDB(unittest.TestCase):
-    """Class to test methods in util.docdb module."""
+class TestHelpersDocDB(unittest.TestCase):
+    """Class to test methods in helpers.docdb module."""
 
     def test_get_id_from_name(self):
         """Tests get_id_from_name"""

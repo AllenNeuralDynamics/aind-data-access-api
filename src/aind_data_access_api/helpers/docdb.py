@@ -1,8 +1,9 @@
 """Utilities that go through the MetadataDBClient """
 
-from typing import Optional
-from aind_data_access_api.document_db import MetadataDbClient
 import logging
+from typing import Optional
+
+from aind_data_access_api.document_db import MetadataDbClient
 
 
 def get_record_by_id(
