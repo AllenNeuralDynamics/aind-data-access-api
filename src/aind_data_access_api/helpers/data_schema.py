@@ -56,8 +56,6 @@ def get_quality_control_by_name(
         return invalid QualityControl as dict if True, by default False
     """
     _id = get_id_from_name(client, name=name)
-    if not _id:
-        raise ValueError(f"No record found with name {name}")
 
     return get_quality_control_by_id(
         client, _id=_id, allow_invalid=allow_invalid
