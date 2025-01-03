@@ -1,12 +1,14 @@
 """Module for convenience functions for the data access API."""
 
+import json
+
+from aind_data_schema.core.quality_control import QualityControl
+
 from aind_data_access_api.document_db import MetadataDbClient
 from aind_data_access_api.helpers.docdb import (
     get_field_by_id,
     get_id_from_name,
 )
-from aind_data_schema.core.quality_control import QualityControl
-import json
 
 
 def get_quality_control_by_id(
@@ -56,8 +58,6 @@ def get_quality_control_by_name(
         return invalid QualityControl as dict if True, by default False
     """
     _id = get_id_from_name(client, name=name)
-    if not _id:
-        raise ValueError(f"No record found with name {name}")
 
     return get_quality_control_by_id(
         client, _id=_id, allow_invalid=allow_invalid
