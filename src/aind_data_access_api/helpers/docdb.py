@@ -1,8 +1,9 @@
 """Utilities that go through the MetadataDBClient """
 
-from typing import Optional
-from aind_data_access_api.document_db import MetadataDbClient
 import logging
+from typing import Optional
+
+from aind_data_access_api.document_db import MetadataDbClient
 
 
 def get_record_by_id(
@@ -83,9 +84,11 @@ def get_field_by_id(
 def get_id_from_name(
     client: MetadataDbClient,
     name: str,
-) -> Optional[str]:
+) -> str:
     """
-    Get the _id of a record in DocDb from its name field.
+    Get the _id of a record in DocDb from its name field. If multiple share
+    the same name, only the first record is returned. If no record is found,
+    an exception is raised.
 
     Parameters
     ----------
@@ -94,21 +97,43 @@ def get_id_from_name(
 
     Returns
     -------
-    Optional[str]
-        None if record does not exist. Otherwise, it will return the _id of
-        the record.
+    str
+        The _id of the record with the given name.
     """
     records = client.retrieve_docdb_records(
-        filter_query={"name": name}, projection={"_id": 1}, limit=0
+        filter_query={"name": name}, projection={"_id": 1}
     )
-
     if len(records) > 1:
         logging.warning(
-            "Multiple records share the name {name}, ",
+            f"Multiple records share the name {name}, "
             "only the first record will be returned.",
         )
+    elif len(records) == 0:
+        raise ValueError(f"No record found with name {name}")
+    return records[0]["_id"]
 
-    if len(records) > 0:
-        return records[0]["_id"]
-    else:
-        return None
+
+def get_name_from_id(
+    client: MetadataDbClient,
+    _id: str,
+) -> str:
+    """
+    Get the name of a record in DocDb from its _id field. If no record is
+    found, an exception is raised.
+
+    Parameters
+    ----------
+    client : MetadataDbClient
+    _id : str
+
+    Returns
+    -------
+    str
+        The name of the record with the given _id.
+    """
+    records = client.retrieve_docdb_records(
+        filter_query={"_id": _id}, projection={"name": 1}, limit=1
+    )
+    if len(records) == 0:
+        raise ValueError(f"No record found with _id {_id}")
+    return records[0]["name"]
