@@ -185,8 +185,7 @@ explicitly setting credentials, or downloading from AWS Secrets Manager.
 
 .. code:: python
 
-   from aind_data_access_api.credentials import RDSCredentials
-   from aind_data_access_api.rds_tables import Client
+   from aind_data_access_api.rds_tables import RDSCredentials, Client
 
    # Method one assuming user, password, and host are known
    ds_client = Client(
@@ -194,9 +193,8 @@ explicitly setting credentials, or downloading from AWS Secrets Manager.
                   username="user",
                   password="password",
                   host="host",
-                  database="metadata",
+                  dbname="dev",
                ),
-               collection_name="data_assets",
          )
 
    # Method two if you have permissions to AWS Secrets Manager
@@ -210,7 +208,7 @@ explicitly setting credentials, or downloading from AWS Secrets Manager.
    df = ds_client.read_table(table_name="spike_sorting_urls")
 
    # Can also pass in a custom sql query
-   df = ds_client.read_table(query="SELECT * FROM spike_sorting_urls")
+   cursor_result = ds_client.execute_query(query="SELECT * FROM spike_sorting_urls")
 
    # It's also possible to save a pandas dataframe as a table. Please check internal documentation for more details.
    ds_client.overwrite_table_with_df(df, table_name)
