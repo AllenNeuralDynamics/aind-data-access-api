@@ -4,9 +4,7 @@ import json
 import os
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock
-
-from aind_data_schema.core.quality_control import QualityControl
+from unittest.mock import MagicMock, patch
 
 from aind_data_access_api.helpers.data_schema import (
     get_quality_control_by_id,
@@ -32,8 +30,13 @@ class TestHelpersDataSchema(unittest.TestCase):
         with invalid_path.open("r") as f:
             cls.example_quality_control_invalid = json.load(f)
 
-    def test_get_qc_id(self):
+    @patch(
+        "aind_data_schema.core.quality_control."
+        "QualityControl.model_validate_json"
+    )
+    def test_get_qc_id(self, mock_model_validate_json: MagicMock):
         """Test get_quality_control function."""
+        mock_model_validate_json.return_value = "mock validated qc"
         # Get json dict from test file
         client = MagicMock()
         client.retrieve_docdb_records.return_value = [
@@ -42,15 +45,18 @@ class TestHelpersDataSchema(unittest.TestCase):
 
         qc = get_quality_control_by_id(client, _id="123")
 
-        self.assertEqual(
-            qc,
-            QualityControl.model_validate_json(
-                json.dumps(self.example_quality_control)
-            ),
+        self.assertEqual(qc, "mock validated qc")
+        mock_model_validate_json.assert_called_once_with(
+            json.dumps(self.example_quality_control)
         )
 
-    def test_get_qc_name(self):
+    @patch(
+        "aind_data_schema.core.quality_control."
+        "QualityControl.model_validate_json"
+    )
+    def test_get_qc_name(self, mock_model_validate_json: MagicMock):
         """Test get_quality_control function."""
+        mock_model_validate_json.return_value = "mock validated qc"
         # Get json dict from test file
         client = MagicMock()
         client.retrieve_docdb_records.return_value = [
@@ -59,11 +65,9 @@ class TestHelpersDataSchema(unittest.TestCase):
 
         qc = get_quality_control_by_name(client, name="123")
 
-        self.assertEqual(
-            qc,
-            QualityControl.model_validate_json(
-                json.dumps(self.example_quality_control)
-            ),
+        self.assertEqual(qc, "mock validated qc")
+        mock_model_validate_json.assert_called_once_with(
+            json.dumps(self.example_quality_control)
         )
 
     def test_get_qc_no_record(self):
