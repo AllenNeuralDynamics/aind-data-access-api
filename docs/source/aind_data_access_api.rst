@@ -1,6 +1,14 @@
 aind\_data\_access\_api package
 ===============================
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   aind_data_access_api.helpers
+
 Submodules
 ----------
 
