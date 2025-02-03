@@ -213,6 +213,48 @@ explicitly setting credentials, or downloading from AWS Secrets Manager.
    # It's also possible to save a pandas dataframe as a table. Please check internal documentation for more details.
    ds_client.overwrite_table_with_df(df, table_name)
 
+
+Installation
+------------
+
+Basic installation:
+
+.. code:: bash
+
+   pip install aind-data-access-api
+
+Optional Dependencies
+~~~~~~~~~~~~~~~~~~~
+
+Different features require different optional dependencies:
+
+- To use DocDB features (including ``MetadataDbClient``):
+
+.. code:: bash
+
+   pip install "aind-data-access-api[docdb]"
+
+- To use RDS features:
+
+.. code:: bash
+
+   pip install "aind-data-access-api[rds]"
+
+- To use AWS Secrets management:
+
+.. code:: bash
+
+   pip install "aind-data-access-api[secrets]"
+
+- To install all optional dependencies:
+
+.. code:: bash
+
+   pip install "aind-data-access-api[full]"
+
+Note: When using zsh or other shells that interpret square brackets, the quotes around the install argument are required.
+
+
 Reporting bugs or making feature requests
 -----------------------------------------
 
