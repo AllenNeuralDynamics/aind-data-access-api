@@ -14,7 +14,6 @@ from botocore.awsrequest import AWSRequest
 from requests import Response
 
 from aind_data_access_api.models import DataAssetRecord
-from aind_data_access_api.utils import is_dict_corrupt
 
 
 class Client:
@@ -484,8 +483,6 @@ class MetadataDbClient(Client):
         """Upsert one record if the record is not corrupt"""
         if record.get("_id") is None:
             raise ValueError("Record does not have an _id field.")
-        if is_dict_corrupt(record):
-            raise ValueError("Record is corrupt and cannot be upserted.")
         response = self._upsert_one_record(
             record_filter={"_id": record["_id"]},
             update={"$set": json.loads(json.dumps(record, default=str))},
@@ -582,10 +579,6 @@ class MetadataDbClient(Client):
             for record in records:
                 if record.get("_id") is None:
                     raise ValueError("A record does not have an _id field.")
-                if is_dict_corrupt(record):
-                    raise ValueError(
-                        "A record is corrupt and cannot be upserted."
-                    )
             # chunk records
             first_index = 0
             end_index = len(records)
