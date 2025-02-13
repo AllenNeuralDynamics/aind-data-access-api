@@ -153,6 +153,6 @@ It's possible to attach a custom Session to retry certain requests errors
         host=API_GATEWAY_HOST,
         database=DATABASE,
         collection=COLLECTION,
-        requests_session=session,
+        session=session,
     ) as docdb_api_client:
         records = docdb_api_client.retrieve_docdb_records(limit=10)

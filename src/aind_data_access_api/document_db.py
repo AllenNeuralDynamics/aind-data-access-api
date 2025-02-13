@@ -3,11 +3,11 @@
 import json
 import logging
 import warnings
-from functools import cached_property
 from sys import getsizeof
 from typing import List, Optional
 
 import boto3
+from boto3.session import Session as BotoSession
 from botocore.auth import SigV4Auth
 from botocore.awsrequest import AWSRequest
 from requests import Response, Session
@@ -25,19 +25,29 @@ class Client:
         database: str,
         collection: str,
         version: str = "v1",
-        boto_session=None,
-        requests_session=None,
+        boto: Optional[BotoSession] = None,
+        session: Optional[Session] = None,
     ):
-        """Class constructor."""
+        """
+        Instantiate a Client.
+        Parameters
+        ----------
+        host : str
+        database : str
+        collection : str
+        version : str
+        boto : Optional[BotoSession]
+        session : Optional[Session]
+        """
         self.host = host.strip("/")
         self.database = database
         self.collection = collection
         self.version = version
-        self._boto_session = boto_session
-        self._requests_session = requests_session
+        self.boto = boto
+        self.session = session
 
     @property
-    def _base_url(self):
+    def _base_url(self) -> str:
         """Construct base url to interface with a collection in a database."""
         return (
             f"https://{self.host}/{self.version}/{self.database}/"
@@ -45,7 +55,7 @@ class Client:
         )
 
     @property
-    def _aggregate_url(self):
+    def _aggregate_url(self) -> str:
         """Url to aggregate records."""
         return (
             f"https://{self.host}/{self.version}/{self.database}/"
@@ -53,7 +63,7 @@ class Client:
         )
 
     @property
-    def _update_one_url(self):
+    def _update_one_url(self) -> str:
         """Url to update one record"""
         return (
             f"https://{self.host}/{self.version}/{self.database}/"
@@ -61,7 +71,7 @@ class Client:
         )
 
     @property
-    def _delete_one_url(self):
+    def _delete_one_url(self) -> str:
         """Url to update one record"""
         return (
             f"https://{self.host}/{self.version}/{self.database}/"
@@ -69,7 +79,7 @@ class Client:
         )
 
     @property
-    def _delete_many_url(self):
+    def _delete_many_url(self) -> str:
         """Url to update one record"""
         return (
             f"https://{self.host}/{self.version}/{self.database}/"
@@ -77,26 +87,26 @@ class Client:
         )
 
     @property
-    def _bulk_write_url(self):
+    def _bulk_write_url(self) -> str:
         """Url to bulk write many records."""
         return (
             f"https://{self.host}/{self.version}/{self.database}/"
             f"{self.collection}/bulk_write"
         )
 
-    @cached_property
-    def __boto_session(self):
+    @property
+    def _boto(self) -> BotoSession:
         """Boto3 session"""
-        if self._boto_session is None:
-            self._boto_session = boto3.session.Session()
-        return self._boto_session
+        if self.boto is None:
+            self.boto = boto3.session.Session()
+        return self.boto
 
-    @cached_property
-    def __requests_session(self):
+    @property
+    def _session(self) -> Session:
         """Requests session"""
-        if self._requests_session is None:
-            self._requests_session = Session()
-        return self._requests_session
+        if self.session is None:
+            self.session = Session()
+        return self.session
 
     def _signed_request(
         self,
@@ -115,9 +125,9 @@ class Client:
             headers={"Content-Type": "application/json"},
         )
         SigV4Auth(
-            self.__boto_session.get_credentials(),
+            self._boto.get_credentials(),
             "execute-api",
-            self.__boto_session.region_name,
+            self._boto.region_name,
         ).add_auth(aws_request)
         return aws_request
 
@@ -141,7 +151,7 @@ class Client:
         }
         if filter_query is not None:
             params["filter"] = json.dumps(filter_query)
-        response = self.__requests_session.get(self._base_url, params=params)
+        response = self._session.get(self._base_url, params=params)
         response.raise_for_status()
         response_body = response.json()
         return response_body
@@ -183,7 +193,7 @@ class Client:
         if sort is not None:
             params["sort"] = json.dumps(sort)
 
-        response = self.__requests_session.get(self._base_url, params=params)
+        response = self._session.get(self._base_url, params=params)
         response.raise_for_status()
         response_body = response.json()
         return response_body
@@ -191,9 +201,7 @@ class Client:
     def _aggregate_records(self, pipeline: List[dict]) -> List[dict]:
         """Aggregate records from collection using an aggregation pipeline."""
         # Do not need to sign request since API supports readonly aggregations
-        response = self.__requests_session.post(
-            url=self._aggregate_url, json=pipeline
-        )
+        response = self._session.post(url=self._aggregate_url, json=pipeline)
         response.raise_for_status()
         response_body = response.json()
         return response_body
@@ -208,7 +216,7 @@ class Client:
         signed_header = self._signed_request(
             method="POST", url=self._update_one_url, data=data
         )
-        response = self.__requests_session.post(
+        response = self._session.post(
             url=self._update_one_url,
             headers=dict(signed_header.headers),
             data=data,
@@ -222,7 +230,7 @@ class Client:
         signed_header = self._signed_request(
             method="DELETE", url=self._delete_one_url, data=data
         )
-        response = self.__requests_session.delete(
+        response = self._session.delete(
             url=self._delete_one_url,
             headers=dict(signed_header.headers),
             data=data,
@@ -235,7 +243,7 @@ class Client:
         signed_header = self._signed_request(
             method="DELETE", url=self._delete_many_url, data=data
         )
-        response = self.__requests_session.delete(
+        response = self._session.delete(
             url=self._delete_many_url,
             headers=dict(signed_header.headers),
             data=data,
@@ -250,7 +258,7 @@ class Client:
         signed_header = self._signed_request(
             method="POST", url=self._bulk_write_url, data=data
         )
-        response = self.__requests_session.post(
+        response = self._session.post(
             url=self._bulk_write_url,
             headers=dict(signed_header.headers),
             data=data,
@@ -259,8 +267,8 @@ class Client:
 
     def close(self):
         """Close the clients."""
-        if self.__requests_session is not None:
-            self.__requests_session.close()
+        if self._session is not None:
+            self._session.close()
 
     def __enter__(self):
         """Enter the context manager."""
@@ -717,8 +725,8 @@ class SchemaDbClient(Client):
         collection: str,
         database: str = "schemas",
         version: str = "v1",
-        boto_session=None,
-        requests_session=None,
+        boto: Optional[BotoSession] = None,
+        session: Optional[Session] = None,
     ):
         """Class constructor"""
         super().__init__(
@@ -726,8 +734,8 @@ class SchemaDbClient(Client):
             database=database,
             collection=collection,
             version=version,
-            boto_session=boto_session,
-            requests_session=requests_session
+            boto=boto,
+            session=session,
         )
 
     def retrieve_schema_records(
