@@ -52,6 +52,14 @@ class Client:
         )
 
     @property
+    def _insert_one_url(self):
+        """Url to insert one record"""
+        return (
+            f"https://{self.host}/{self.version}/{self.database}/"
+            f"{self.collection}/insert_one"
+        )
+
+    @property
     def _update_one_url(self):
         """Url to update one record"""
         return (
@@ -197,6 +205,18 @@ class Client:
             raise ValueError("No payload in response")
         response_body = response.json()
         return response_body
+
+    def _insert_one_record(self, record: dict) -> Response:
+        """Insert a single record into the collection."""
+        data = json.dumps(record)
+        signed_header = self._signed_request(
+            method="POST", url=self._insert_one_url, data=data
+        )
+        return requests.post(
+            url=self._insert_one_url,
+            headers=dict(signed_header.headers),
+            data=data,
+        )
 
     def _upsert_one_record(
         self, record_filter: dict, update: dict
@@ -450,6 +470,15 @@ class MetadataDbClient(Client):
         for record in records:
             data_asset_records.append(DataAssetRecord(**record))
         return data_asset_records
+
+    def insert_one_docdb_record(self, record: dict) -> Response:
+        """Insert one new record"""
+        if record.get("_id") is None:
+            raise ValueError("Record does not have an _id field.")
+        response = self._insert_one_record(
+            json.loads(json.dumps(record, default=str)),
+        )
+        return response
 
     def upsert_one_docdb_record(self, record: dict) -> Response:
         """Upsert one record if the record is not corrupt"""

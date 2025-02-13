@@ -200,6 +200,33 @@ class TestClient(unittest.TestCase):
     @patch("boto3.session.Session")
     @patch("botocore.auth.SigV4Auth.add_auth")
     @patch("requests.post")
+    def test_insert_one_record(
+        self,
+        mock_post: MagicMock,
+        mock_auth: MagicMock,
+        mock_session: MagicMock,
+    ):
+        """Tests insert_one method"""
+        mock_creds = MagicMock()
+        mock_creds.access_key = "abc"
+        mock_creds.secret_key = "efg"
+        mock_session.return_value.region_name = "us-west-2"
+        mock_session.get_credentials.return_value = mock_creds
+
+        client = Client(**self.example_client_args)
+        client._insert_one_record(
+            {"_id": "123", "message": "hi"},
+        )
+        mock_auth.assert_called_once()
+        mock_post.assert_called_once_with(
+            url="https://acmecorp.com/v1/db/coll/insert_one",
+            headers={"Content-Type": "application/json"},
+            data=('{"_id": "123", "message": "hi"}'),
+        )
+
+    @patch("boto3.session.Session")
+    @patch("botocore.auth.SigV4Auth.add_auth")
+    @patch("requests.post")
     def test_upsert_one_record(
         self,
         mock_post: MagicMock,
@@ -527,6 +554,42 @@ class TestMetadataDbClient(unittest.TestCase):
         mock_aggregate.assert_called_once_with(
             pipeline=pipeline,
         )
+
+    @patch("aind_data_access_api.document_db.Client._insert_one_record")
+    def test_insert_one_docdb_record(self, mock_insert: MagicMock):
+        """Tests inserting one docdb record"""
+        client = MetadataDbClient(**self.example_client_args)
+        mock_insert.return_value = {"message": "success"}
+        record = {
+            "_id": "abc-123",
+            "name": "modal_00000_2000-10-10_10-10-10",
+            "created": datetime(2000, 10, 10, 10, 10, 10),
+            "location": "some_url",
+            "subject": {"subject_id": "00000", "sex": "Female"},
+        }
+        response = client.insert_one_docdb_record(record)
+        self.assertEqual({"message": "success"}, response)
+        mock_insert.assert_called_once_with(
+            json.loads(json.dumps(record, default=str)),
+        )
+
+    @patch("aind_data_access_api.document_db.Client._insert_one_record")
+    def test_insert_one_docdb_record_invalid(self, mock_insert: MagicMock):
+        """Tests inserting one docdb record if record is invalid"""
+        client = MetadataDbClient(**self.example_client_args)
+        record_no__id = {
+            "id": "abc-123",
+            "name": "modal_00000_2000-10-10_10-10-10",
+            "created": datetime(2000, 10, 10, 10, 10, 10),
+            "location": "some_url",
+            "subject": {"subject_id": "00000", "sex": "Female"},
+        }
+        with self.assertRaises(ValueError) as e:
+            client.insert_one_docdb_record(record_no__id)
+        self.assertEqual(
+            "Record does not have an _id field.", str(e.exception)
+        )
+        mock_insert.assert_not_called()
 
     @patch("aind_data_access_api.document_db.Client._upsert_one_record")
     def test_upsert_one_docdb_record(self, mock_upsert: MagicMock):
