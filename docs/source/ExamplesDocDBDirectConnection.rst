@@ -140,8 +140,7 @@ functions to update records in DocDB.
       DocumentDbSSHCredentials,
   )
   from aind_data_schema.core.metadata import Metadata
-
-  from aind_data_access_api.utils import paginate_docdb, is_dict_corrupt
+  from aind_data_access_api.utils import paginate_docdb
 
   logging.basicConfig(level="INFO")
 
@@ -216,9 +215,6 @@ functions to update records in DocDB.
                   **new_record
               ).model_dump_json(warnings=False, by_alias=True)
               new_record = json.loads(new_record_str)
-              if is_dict_corrupt(new_record):
-                  logging.warning(f"New record for {location} is corrupt! Skipping.")
-                  new_record = None
           except Exception:
               new_record = None
       return new_record
@@ -257,9 +253,6 @@ functions to update records in DocDB.
           The new record to replace the existing record with.
 
       """
-      if is_dict_corrupt(new_record) or record_id != new_record.get("_id"):
-          logging.warning(f"Attempting to update corrupt record {record_id}! Skipping.")
-          return
       if dryrun:
           logging.info(f"(dryrun) doc_db_client.collection.update_one: {record_id}")
       else:

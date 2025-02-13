@@ -1,5 +1,6 @@
 """Package for common methods used for interfacing with DocDB."""
 
+import warnings
 from typing import Dict, Iterator, List, Optional
 from urllib.parse import urlparse
 
@@ -46,8 +47,12 @@ def get_s3_location(bucket: str, prefix: str) -> str:
     return f"s3://{bucket}/{stripped_prefix}"
 
 
+# TODO: deprecate this method
 def is_dict_corrupt(input_dict: dict) -> bool:
     """
+    DEPRECATED: This method is deprecated. Special chars in fieldnames are
+    allowed but not recommended.
+
     Checks that all the keys, included nested keys, don't contain '$' or '.'
     Parameters
     ----------
@@ -60,6 +65,13 @@ def is_dict_corrupt(input_dict: dict) -> bool:
       forbidden characters. False otherwise.
 
     """
+    warnings.warn(
+        "is_dict_corrupt is deprecated. Special chars in fieldnames are "
+        "allowed but not recommended."
+        "",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     if not isinstance(input_dict, dict):
         return True
     for key, value in input_dict.items():
