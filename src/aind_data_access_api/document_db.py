@@ -8,10 +8,9 @@ from sys import getsizeof
 from typing import List, Optional
 
 import boto3
-import requests
 from botocore.auth import SigV4Auth
 from botocore.awsrequest import AWSRequest
-from requests import Response
+from requests import Response, Session
 
 from aind_data_access_api.models import DataAssetRecord
 from aind_data_access_api.utils import is_dict_corrupt
@@ -27,6 +26,7 @@ class Client:
         collection: str,
         version: str = "v1",
         boto_session=None,
+        requests_session=None,
     ):
         """Class constructor."""
         self.host = host.strip("/")
@@ -34,6 +34,7 @@ class Client:
         self.collection = collection
         self.version = version
         self._boto_session = boto_session
+        self._requests_session = requests_session
 
     @property
     def _base_url(self):
@@ -90,6 +91,13 @@ class Client:
             self._boto_session = boto3.session.Session()
         return self._boto_session
 
+    @cached_property
+    def __requests_session(self):
+        """Requests session"""
+        if self._requests_session is None:
+            self._requests_session = Session()
+        return self._requests_session
+
     def _signed_request(
         self,
         url: str,
@@ -133,10 +141,8 @@ class Client:
         }
         if filter_query is not None:
             params["filter"] = json.dumps(filter_query)
-        response = requests.get(self._base_url, params=params)
-        if response.status_code != 200:
-            error_msg = response.text if response.text else "Unknown error"
-            raise ValueError(f"{response.status_code} Error: {error_msg}")
+        response = self.__requests_session.get(self._base_url, params=params)
+        response.raise_for_status()
         response_body = response.json()
         return response_body
 
@@ -177,24 +183,18 @@ class Client:
         if sort is not None:
             params["sort"] = json.dumps(sort)
 
-        response = requests.get(self._base_url, params=params)
-        if response.status_code != 200:
-            error_msg = response.text if response.text else "Unknown error"
-            raise ValueError(f"{response.status_code} Error: {error_msg}")
-        if not response.content:
-            raise ValueError("No payload in response")
+        response = self.__requests_session.get(self._base_url, params=params)
+        response.raise_for_status()
         response_body = response.json()
         return response_body
 
     def _aggregate_records(self, pipeline: List[dict]) -> List[dict]:
         """Aggregate records from collection using an aggregation pipeline."""
         # Do not need to sign request since API supports readonly aggregations
-        response = requests.post(url=self._aggregate_url, json=pipeline)
-        if response.status_code != 200:
-            error_msg = response.text if response.text else "Unknown error"
-            raise ValueError(f"{response.status_code} Error: {error_msg}")
-        if not response.content:
-            raise ValueError("No payload in response")
+        response = self.__requests_session.post(
+            url=self._aggregate_url, json=pipeline
+        )
+        response.raise_for_status()
         response_body = response.json()
         return response_body
 
@@ -208,11 +208,13 @@ class Client:
         signed_header = self._signed_request(
             method="POST", url=self._update_one_url, data=data
         )
-        return requests.post(
+        response = self.__requests_session.post(
             url=self._update_one_url,
             headers=dict(signed_header.headers),
             data=data,
         )
+        response.raise_for_status()
+        return response
 
     def _delete_one_record(self, record_filter: dict) -> Response:
         """Upsert a single record into the collection."""
@@ -220,11 +222,12 @@ class Client:
         signed_header = self._signed_request(
             method="DELETE", url=self._delete_one_url, data=data
         )
-        return requests.delete(
+        response = self.__requests_session.delete(
             url=self._delete_one_url,
             headers=dict(signed_header.headers),
             data=data,
         )
+        return response
 
     def _delete_many_records(self, record_filter: dict) -> Response:
         """Upsert a single record into the collection."""
@@ -232,11 +235,13 @@ class Client:
         signed_header = self._signed_request(
             method="DELETE", url=self._delete_many_url, data=data
         )
-        return requests.delete(
+        response = self.__requests_session.delete(
             url=self._delete_many_url,
             headers=dict(signed_header.headers),
             data=data,
         )
+        response.raise_for_status()
+        return response
 
     def _bulk_write(self, operations: List[dict]) -> Response:
         """Bulk write many records into the collection."""
@@ -245,11 +250,25 @@ class Client:
         signed_header = self._signed_request(
             method="POST", url=self._bulk_write_url, data=data
         )
-        return requests.post(
+        response = self.__requests_session.post(
             url=self._bulk_write_url,
             headers=dict(signed_header.headers),
             data=data,
         )
+        return response
+
+    def close(self):
+        """Close the clients."""
+        if self.__requests_session is not None:
+            self.__requests_session.close()
+
+    def __enter__(self):
+        """Enter the context manager."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit the context manager."""
+        self.close()
 
 
 class MetadataDbClient(Client):
@@ -699,6 +718,7 @@ class SchemaDbClient(Client):
         database: str = "schemas",
         version: str = "v1",
         boto_session=None,
+        requests_session=None,
     ):
         """Class constructor"""
         super().__init__(
@@ -707,6 +727,7 @@ class SchemaDbClient(Client):
             collection=collection,
             version=version,
             boto_session=boto_session,
+            requests_session=requests_session
         )
 
     def retrieve_schema_records(
