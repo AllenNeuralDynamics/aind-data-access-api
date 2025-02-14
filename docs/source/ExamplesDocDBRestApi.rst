@@ -121,3 +121,38 @@ Aggregation Example 1: Get all subjects per breeding group
 
 For more info about aggregations, please see MongoDB documentation:
 https://www.mongodb.com/docs/manual/aggregation/
+
+Advanced Example: Custom Session Object
+-------------------------------------------
+
+It's possible to attach a custom Session to retry certain requests errors
+
+.. code:: python
+
+    import requests
+    from requests.adapters import HTTPAdapter
+    from urllib3.util import Retry
+
+    from aind_data_access_api.document_db import MetadataDbClient
+
+    API_GATEWAY_HOST = "api.allenneuraldynamics.org"
+    DATABASE = "metadata_index"
+    COLLECTION = "data_assets"
+
+    retry = Retry(
+        total=5,
+        backoff_factor=1,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["GET", "POST", "DELETE"],
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    session = requests.Session()
+    session.mount("https://", adapter)
+
+    with MetadataDbClient(
+        host=API_GATEWAY_HOST,
+        database=DATABASE,
+        collection=COLLECTION,
+        session=session,
+    ) as docdb_api_client:
+        records = docdb_api_client.retrieve_docdb_records(limit=10)
