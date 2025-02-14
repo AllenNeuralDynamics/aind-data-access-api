@@ -13,7 +13,6 @@ from botocore.awsrequest import AWSRequest
 from requests import Response, Session
 
 from aind_data_access_api.models import DataAssetRecord
-from aind_data_access_api.utils import is_dict_corrupt
 
 
 class Client:
@@ -60,6 +59,14 @@ class Client:
         return (
             f"https://{self.host}/{self.version}/{self.database}/"
             f"{self.collection}/aggregate"
+        )
+
+    @property
+    def _insert_one_url(self) -> str:
+        """Url to insert one record"""
+        return (
+            f"https://{self.host}/{self.version}/{self.database}/"
+            f"{self.collection}/insert_one"
         )
 
     @property
@@ -205,6 +212,20 @@ class Client:
         response.raise_for_status()
         response_body = response.json()
         return response_body
+
+    def _insert_one_record(self, record: dict) -> Response:
+        """Insert a single record into the collection."""
+        data = json.dumps(record)
+        signed_header = self._signed_request(
+            method="POST", url=self._insert_one_url, data=data
+        )
+        response = self.session.post(
+            url=self._insert_one_url,
+            headers=dict(signed_header.headers),
+            data=data,
+        )
+        response.raise_for_status()
+        return response
 
     def _upsert_one_record(
         self, record_filter: dict, update: dict
@@ -478,12 +499,19 @@ class MetadataDbClient(Client):
             data_asset_records.append(DataAssetRecord(**record))
         return data_asset_records
 
+    def insert_one_docdb_record(self, record: dict) -> Response:
+        """Insert one new record"""
+        if record.get("_id") is None:
+            raise ValueError("Record does not have an _id field.")
+        response = self._insert_one_record(
+            json.loads(json.dumps(record, default=str)),
+        )
+        return response
+
     def upsert_one_docdb_record(self, record: dict) -> Response:
         """Upsert one record if the record is not corrupt"""
         if record.get("_id") is None:
             raise ValueError("Record does not have an _id field.")
-        if is_dict_corrupt(record):
-            raise ValueError("Record is corrupt and cannot be upserted.")
         response = self._upsert_one_record(
             record_filter={"_id": record["_id"]},
             update={"$set": json.loads(json.dumps(record, default=str))},
@@ -580,10 +608,6 @@ class MetadataDbClient(Client):
             for record in records:
                 if record.get("_id") is None:
                     raise ValueError("A record does not have an _id field.")
-                if is_dict_corrupt(record):
-                    raise ValueError(
-                        "A record is corrupt and cannot be upserted."
-                    )
             # chunk records
             first_index = 0
             end_index = len(records)

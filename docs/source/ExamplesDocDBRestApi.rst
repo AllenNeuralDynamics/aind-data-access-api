@@ -156,3 +156,65 @@ It's possible to attach a custom Session to retry certain requests errors
         session=session,
     ) as docdb_api_client:
         records = docdb_api_client.retrieve_docdb_records(limit=10)
+
+
+
+Updating Metadata
+~~~~~~~~~~~~~~~~~~~~~~
+
+1. **Permissions**: Request permissions for AWS Credentials to write to DocDB through the API Gateway.
+2. **Query DocDB**: Filter for the records you want to update.
+3. **Update DocDB**: Use ``upsert_one_docdb_record`` or ``upsert_list_of_docdb_records`` to update the records.
+
+Please note that records are read and written as dictionaries from DocDB (not Pydantic models).
+For example, to update the "instrument" and "session" metadata of a record in DocDB:
+
+.. code:: python
+
+  # filter for records you want to update
+  records = docdb_api_client.retrieve_docdb_records(
+      filter_query=filter,
+      projection=projection, # recommended
+  )
+  print(f"Found {len(records)} records in DocDB matching filter.")
+
+  for record in records:
+      # NOTE: provide core metadata as dictionaries
+      # e.g. update some field from the queried result
+      instrument = record["instrument"] # dictionary
+      instrument["instrument_type"] = "New Instrument Type"  
+      # e.g. replace entirely from file
+      with open(INSTRUMENT_FILE_PATH, "r") as f:
+          instrument = json.load(f)
+      # e.g. convert Pydantic model to dictionary
+      session = session_model.model_dump()
+
+      # update record in docdb
+      record_update = {
+          "_id": record["_id"],
+          "instrument": instrument,
+          "session": session
+      }
+      response = docdb_api_client.upsert_one_docdb_record(
+          record=record_update
+      )
+      print(response.json())
+
+You can also make updates to individual nested fields:
+
+.. code:: python
+
+  record_update = {
+      "_id": record["_id"],
+      "data_description.project_name": project_name, # nested field
+  }
+
+  response = docdb_api_client.upsert_one_docdb_record(
+      record=record_update
+  )
+  print(response.json())
+
+Please note that while DocumentDB supports fieldnames with special characters ("$" and "."), they are not recommended.
+There may be issues querying or updating these fields.
+
+It is recommended to avoid these special chars in dictionary keys, e.g. ``{"abc.py": "data"}`` can be written as ``{"filename": "abc.py", "some_file_property": "data"}`` instead.
