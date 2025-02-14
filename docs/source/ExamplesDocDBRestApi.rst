@@ -188,7 +188,6 @@ For example, to update the "rig" and "session" metadata of a record in DocDB:
       response = docdb_api_client.upsert_one_docdb_record(
           record=record_update
       )
-      response.raise_for_status()
       print(response.json())
 
 You can also make updates to individual nested fields:
@@ -203,7 +202,6 @@ You can also make updates to individual nested fields:
   response = docdb_api_client.upsert_one_docdb_record(
       record=record_update
   )
-  response.raise_for_status()
   print(response.json())
 
 Please note that while DocumentDB supports fieldnames with special characters ("$" and "."), they are not recommended.

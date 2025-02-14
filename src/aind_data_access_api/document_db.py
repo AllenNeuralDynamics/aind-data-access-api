@@ -62,7 +62,7 @@ class Client:
         )
 
     @property
-    def _insert_one_url(self):
+    def _insert_one_url(self) -> str:
         """Url to insert one record"""
         return (
             f"https://{self.host}/{self.version}/{self.database}/"
@@ -219,11 +219,13 @@ class Client:
         signed_header = self._signed_request(
             method="POST", url=self._insert_one_url, data=data
         )
-        return requests.post(
+        response = self.session.post(
             url=self._insert_one_url,
             headers=dict(signed_header.headers),
             data=data,
         )
+        response.raise_for_status()
+        return response
 
     def _upsert_one_record(
         self, record_filter: dict, update: dict

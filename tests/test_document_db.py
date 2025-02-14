@@ -173,7 +173,7 @@ class TestClient(unittest.TestCase):
 
     @patch("boto3.session.Session")
     @patch("botocore.auth.SigV4Auth.add_auth")
-    @patch("requests.post")
+    @patch("requests.Session.post")
     def test_insert_one_record(
         self,
         mock_post: MagicMock,
@@ -193,7 +193,7 @@ class TestClient(unittest.TestCase):
         )
         mock_auth.assert_called_once()
         mock_post.assert_called_once_with(
-            url="https://acmecorp.com/v1/db/coll/insert_one",
+            url="https://example.com/v1/db/coll/insert_one",
             headers={"Content-Type": "application/json"},
             data=('{"_id": "123", "message": "hi"}'),
         )
