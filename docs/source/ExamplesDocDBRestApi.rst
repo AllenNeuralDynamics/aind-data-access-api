@@ -166,7 +166,8 @@ Updating Metadata
 2. **Query DocDB**: Filter for the records you want to update.
 3. **Update DocDB**: Use ``upsert_one_docdb_record`` or ``upsert_list_of_docdb_records`` to update the records.
 
-For example, to update the "rig" and "session" metadata of a record in DocDB:
+Please note that records are read and written as dictionaries from DocDB (not Pydantic models).
+For example, to update the "instrument" and "session" metadata of a record in DocDB:
 
 .. code:: python
 
@@ -177,14 +178,23 @@ For example, to update the "rig" and "session" metadata of a record in DocDB:
   )
   print(f"Found {len(records)} records in DocDB matching filter.")
 
-  # update rig and session metadata for each record
   for record in records:
+      # NOTE: provide core metadata as dictionaries
+      # e.g. update some field from the queried result
+      instrument = record["instrument"] # dictionary
+      instrument["instrument_type"] = "New Instrument Type"  
+      # e.g. replace entirely from file
+      with open(INSTRUMENT_FILE_PATH, "r") as f:
+          instrument = json.load(f)
+      # e.g. convert Pydantic model to dictionary
+      session = session_model.model_dump()
+
+      # update record in docdb
       record_update = {
           "_id": record["_id"],
-          "rig": rig,
+          "instrument": instrument,
           "session": session
       }
-
       response = docdb_api_client.upsert_one_docdb_record(
           record=record_update
       )
