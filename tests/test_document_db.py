@@ -5,6 +5,7 @@ import unittest
 from datetime import datetime
 from unittest.mock import MagicMock, call, patch
 
+import requests.exceptions
 from requests import Response
 
 from aind_data_access_api.document_db import (
@@ -19,7 +20,7 @@ class TestClient(unittest.TestCase):
     """Test methods in Client class."""
 
     example_client_args = {
-        "host": "acmecorp.com/",
+        "host": "example.com/",
         "database": "db",
         "collection": "coll",
     }
@@ -28,20 +29,20 @@ class TestClient(unittest.TestCase):
         """Tests class constructor"""
         client = Client(**self.example_client_args)
 
-        self.assertEqual("acmecorp.com", client.host)
+        self.assertEqual("example.com", client.host)
         self.assertEqual("db", client.database)
         self.assertEqual("coll", client.collection)
-        self.assertEqual("https://acmecorp.com/v1/db/coll", client._base_url)
+        self.assertEqual("https://example.com/v1/db/coll", client._base_url)
         self.assertEqual(
-            "https://acmecorp.com/v1/db/coll/update_one",
+            "https://example.com/v1/db/coll/update_one",
             client._update_one_url,
         )
         self.assertEqual(
-            "https://acmecorp.com/v1/db/coll/bulk_write",
+            "https://example.com/v1/db/coll/bulk_write",
             client._bulk_write_url,
         )
 
-    @patch("requests.get")
+    @patch("requests.Session.get")
     def test_count_records(self, mock_get: MagicMock):
         """Tests _count_records method"""
 
@@ -62,23 +63,18 @@ class TestClient(unittest.TestCase):
             record_count,
         )
 
-    @patch("requests.get")
+    @patch("requests.Session.get")
     def test_count_records_error(self, mock_get: MagicMock):
         """Tests _count_records when there is a HTTP error"""
         client = Client(**self.example_client_args)
         mock_response = Response()
         mock_response.status_code = 400
-        mock_error = {"error": {"name": "Error", "message": "Incorrect Path"}}
-        mock_response._content = json.dumps(mock_error).encode("utf-8")
         mock_get.return_value = mock_response
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaises(requests.exceptions.HTTPError) as e:
             client._count_records(filter_query={"_id": "abc"})
-        self.assertEqual(
-            f"ValueError('400 Error: {json.dumps(mock_error)}')",
-            repr(e.exception),
-        )
+        self.assertIn("400 Client Error", str(e.exception))
 
-    @patch("requests.get")
+    @patch("requests.Session.get")
     def test_get_records(self, mock_get: MagicMock):
         """Tests _get_records method"""
 
@@ -105,7 +101,7 @@ class TestClient(unittest.TestCase):
         records2 = client._get_records(
             filter_query={"_id": "abc123"},
             projection={"_id": 1, "message": 1},
-            sort=[("message", 1)],
+            sort={"message": 1},
         )
         self.assertEqual(
             [
@@ -116,37 +112,27 @@ class TestClient(unittest.TestCase):
         )
         self.assertEqual([{"_id": "abc123", "message": "hi"}], records2)
 
-    @patch("requests.get")
+    @patch("requests.Session.get")
     def test_get_records_error(self, mock_get: MagicMock):
         """Tests _get_records method when there is an HTTP error or
         no payload in response"""
         client = Client(**self.example_client_args)
         mock_response1 = Response()
         mock_response1.status_code = 404
-        mock_error = {
-            "error": {
-                "name": "Error",
-                "message": "Database or collection not found.",
-            }
-        }
-        mock_response1._content = json.dumps(mock_error).encode("utf-8")
         mock_response2 = Response()
         mock_response2.status_code = 200
         mock_response2._content = None
         mock_get.side_effect = [mock_response1, mock_response2]
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaises(requests.exceptions.HTTPError) as e:
             client._get_records(filter_query={"_id": "abc"})
-        self.assertEqual(
-            f"ValueError('404 Error: {json.dumps(mock_error)}')",
-            repr(e.exception),
-        )
-        with self.assertRaises(ValueError) as e:
+        self.assertIn("404 Client Error", str(e.exception))
+        with self.assertRaises(requests.exceptions.JSONDecodeError) as e:
             client._get_records(filter_query={"_id": "4532654"})
-        self.assertEqual(
-            "ValueError('No payload in response')", repr(e.exception)
+        self.assertIn(
+            "Expecting value: line 1 column 1 (char 0)", str(e.exception)
         )
 
-    @patch("requests.post")
+    @patch("requests.Session.post")
     def test_aggregate_records(self, mock_post: MagicMock):
         """Tests _aggregate_records method"""
         pipeline = [{"$match": {"_id": "abc123"}}]
@@ -164,7 +150,7 @@ class TestClient(unittest.TestCase):
             result,
         )
 
-    @patch("requests.post")
+    @patch("requests.Session.post")
     def test_aggregate_records_error(self, mock_post: MagicMock):
         """Tests _aggregate_records method when there is an HTTP error or
         no payload in response"""
@@ -172,29 +158,17 @@ class TestClient(unittest.TestCase):
         client = Client(**self.example_client_args)
         mock_response1 = Response()
         mock_response1.status_code = 400
-        mock_error = {
-            "error": {
-                "name": "MongoServerError",
-                "message": (
-                    "Unrecognized pipeline stage name: '$match_invalid'"
-                ),
-            }
-        }
-        mock_response1._content = json.dumps(mock_error).encode("utf-8")
         mock_response2 = Response()
         mock_response2.status_code = 200
         mock_response2._content = None
         mock_post.side_effect = [mock_response1, mock_response2]
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaises(requests.exceptions.HTTPError) as e:
             client._aggregate_records(pipeline=invalid_pipeline)
-        self.assertEqual(
-            f"400 Error: {json.dumps(mock_error)}",
-            str(e.exception),
-        )
-        with self.assertRaises(ValueError) as e:
+        self.assertIn("400 Client Error", str(e.exception))
+        with self.assertRaises(requests.exceptions.JSONDecodeError) as e:
             client._aggregate_records(pipeline=invalid_pipeline)
-        self.assertEqual(
-            "ValueError('No payload in response')", repr(e.exception)
+        self.assertIn(
+            "Expecting value: line 1 column 1 (char 0)", str(e.exception)
         )
 
     @patch("boto3.session.Session")
@@ -226,7 +200,7 @@ class TestClient(unittest.TestCase):
 
     @patch("boto3.session.Session")
     @patch("botocore.auth.SigV4Auth.add_auth")
-    @patch("requests.post")
+    @patch("requests.Session.post")
     def test_upsert_one_record(
         self,
         mock_post: MagicMock,
@@ -247,7 +221,7 @@ class TestClient(unittest.TestCase):
         )
         mock_auth.assert_called_once()
         mock_post.assert_called_once_with(
-            url="https://acmecorp.com/v1/db/coll/update_one",
+            url="https://example.com/v1/db/coll/update_one",
             headers={"Content-Type": "application/json"},
             data=(
                 '{"filter": {"_id": "123"},'
@@ -258,7 +232,7 @@ class TestClient(unittest.TestCase):
 
     @patch("boto3.session.Session")
     @patch("botocore.auth.SigV4Auth.add_auth")
-    @patch("requests.post")
+    @patch("requests.Session.post")
     def test_bulk_write(
         self,
         mock_post: MagicMock,
@@ -292,7 +266,7 @@ class TestClient(unittest.TestCase):
         client._bulk_write(operations=operations)
         mock_auth.assert_called_once()
         mock_post.assert_called_once_with(
-            url="https://acmecorp.com/v1/db/coll/bulk_write",
+            url="https://example.com/v1/db/coll/bulk_write",
             headers={"Content-Type": "application/json"},
             data=(
                 '[{"UpdateOne":'
@@ -308,7 +282,7 @@ class TestClient(unittest.TestCase):
 
     @patch("boto3.session.Session")
     @patch("botocore.auth.SigV4Auth.add_auth")
-    @patch("requests.delete")
+    @patch("requests.Session.delete")
     def test_delete_one_record(
         self,
         mock_delete: MagicMock,
@@ -326,14 +300,14 @@ class TestClient(unittest.TestCase):
         client._delete_one_record(record_filter={"_id": "123"})
         mock_auth.assert_called_once()
         mock_delete.assert_called_once_with(
-            url="https://acmecorp.com/v1/db/coll/delete_one",
+            url="https://example.com/v1/db/coll/delete_one",
             headers={"Content-Type": "application/json"},
             data=('{"filter": {"_id": "123"}}'),
         )
 
     @patch("boto3.session.Session")
     @patch("botocore.auth.SigV4Auth.add_auth")
-    @patch("requests.delete")
+    @patch("requests.Session.delete")
     def test_delete_many_records(
         self,
         mock_delete: MagicMock,
@@ -353,9 +327,45 @@ class TestClient(unittest.TestCase):
         )
         mock_auth.assert_called_once()
         mock_delete.assert_called_once_with(
-            url="https://acmecorp.com/v1/db/coll/delete_many",
+            url="https://example.com/v1/db/coll/delete_many",
             headers={"Content-Type": "application/json"},
             data=('{"filter": {"_id": {"$in": ["123", "456"]}}}'),
+        )
+
+    @patch("aind_data_access_api.document_db.Session")
+    def test_content_manager(
+        self,
+        mock_session: MagicMock,
+    ):
+        """Tests request session closes when client is in context manager."""
+        mock_response = Response()
+        mock_response.status_code = 200
+        mock_records_counts = {
+            "total_record_count": 1234,
+            "filtered_record_count": 47,
+        }
+        mock_response._content = json.dumps(mock_records_counts).encode(
+            "utf-8"
+        )
+        mock_session.return_value.get.return_value = mock_response
+        with Client(**self.example_client_args) as client:
+            record_count = client._count_records(filter_query={"_id": "abc"})
+        self.assertEqual(
+            mock_records_counts,
+            record_count,
+        )
+        mock_session.assert_has_calls(
+            [
+                call(),
+                call().get(
+                    "https://example.com/v1/db/coll",
+                    params={
+                        "count_records": "True",
+                        "filter": '{"_id": "abc"}',
+                    },
+                ),
+                call().close(),
+            ]
         )
 
 
@@ -363,7 +373,7 @@ class TestMetadataDbClient(unittest.TestCase):
     """Test methods in MetadataDbClient class."""
 
     example_client_args = {
-        "host": "acmecorp.com/",
+        "host": "example.com/",
         "database": "metadata_db",
         "collection": "data_assets",
     }
@@ -1029,7 +1039,7 @@ class TestSchemaDbClient(unittest.TestCase):
 
         schema_type = "procedures"
         schema_version = "abc-123"
-        client = SchemaDbClient(host="acmecorp.com/", collection=schema_type)
+        client = SchemaDbClient(host="example.com/", collection=schema_type)
         expected_response = [
             {
                 "_id": "abc-123",
