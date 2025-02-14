@@ -43,8 +43,8 @@ class Client:
         self.database = database
         self.collection = collection
         self.version = version
-        self.boto = boto
-        self.session = session
+        self._boto = boto
+        self._session = session
 
     @property
     def _base_url(self) -> str:
@@ -95,18 +95,18 @@ class Client:
         )
 
     @property
-    def _boto(self) -> BotoSession:
+    def boto(self) -> BotoSession:
         """Boto3 session"""
-        if self.boto is None:
-            self.boto = boto3.session.Session()
-        return self.boto
+        if self._boto is None:
+            self._boto = boto3.session.Session()
+        return self._boto
 
     @property
-    def _session(self) -> Session:
+    def session(self) -> Session:
         """Requests session"""
-        if self.session is None:
-            self.session = Session()
-        return self.session
+        if self._session is None:
+            self._session = Session()
+        return self._session
 
     def _signed_request(
         self,
@@ -125,9 +125,9 @@ class Client:
             headers={"Content-Type": "application/json"},
         )
         SigV4Auth(
-            self._boto.get_credentials(),
+            self.boto.get_credentials(),
             "execute-api",
-            self._boto.region_name,
+            self.boto.region_name,
         ).add_auth(aws_request)
         return aws_request
 
@@ -151,7 +151,7 @@ class Client:
         }
         if filter_query is not None:
             params["filter"] = json.dumps(filter_query)
-        response = self._session.get(self._base_url, params=params)
+        response = self.session.get(self._base_url, params=params)
         response.raise_for_status()
         response_body = response.json()
         return response_body
@@ -193,7 +193,7 @@ class Client:
         if sort is not None:
             params["sort"] = json.dumps(sort)
 
-        response = self._session.get(self._base_url, params=params)
+        response = self.session.get(self._base_url, params=params)
         response.raise_for_status()
         response_body = response.json()
         return response_body
@@ -201,7 +201,7 @@ class Client:
     def _aggregate_records(self, pipeline: List[dict]) -> List[dict]:
         """Aggregate records from collection using an aggregation pipeline."""
         # Do not need to sign request since API supports readonly aggregations
-        response = self._session.post(url=self._aggregate_url, json=pipeline)
+        response = self.session.post(url=self._aggregate_url, json=pipeline)
         response.raise_for_status()
         response_body = response.json()
         return response_body
@@ -216,7 +216,7 @@ class Client:
         signed_header = self._signed_request(
             method="POST", url=self._update_one_url, data=data
         )
-        response = self._session.post(
+        response = self.session.post(
             url=self._update_one_url,
             headers=dict(signed_header.headers),
             data=data,
@@ -230,7 +230,7 @@ class Client:
         signed_header = self._signed_request(
             method="DELETE", url=self._delete_one_url, data=data
         )
-        response = self._session.delete(
+        response = self.session.delete(
             url=self._delete_one_url,
             headers=dict(signed_header.headers),
             data=data,
@@ -243,7 +243,7 @@ class Client:
         signed_header = self._signed_request(
             method="DELETE", url=self._delete_many_url, data=data
         )
-        response = self._session.delete(
+        response = self.session.delete(
             url=self._delete_many_url,
             headers=dict(signed_header.headers),
             data=data,
@@ -258,7 +258,7 @@ class Client:
         signed_header = self._signed_request(
             method="POST", url=self._bulk_write_url, data=data
         )
-        response = self._session.post(
+        response = self.session.post(
             url=self._bulk_write_url,
             headers=dict(signed_header.headers),
             data=data,
@@ -267,8 +267,8 @@ class Client:
 
     def close(self):
         """Close the clients."""
-        if self._session is not None:
-            self._session.close()
+        if self.session is not None:
+            self.session.close()
 
     def __enter__(self):
         """Enter the context manager."""
