@@ -18,7 +18,6 @@ dynamic = ["version"]
 
 dependencies = [
     "requests",
-    "aind-codeocean-api>=0.4.0",
     "boto3",
     "pydantic>=2.0",
     "pydantic-settings>=2.0",
