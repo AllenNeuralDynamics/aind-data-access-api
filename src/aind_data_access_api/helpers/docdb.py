@@ -1,4 +1,4 @@
-"""Utilities that go through the MetadataDBClient """
+"""Utilities that go through the MetadataDBClient"""
 
 import logging
 from typing import Optional

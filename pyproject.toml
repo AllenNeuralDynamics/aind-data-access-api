@@ -52,6 +52,7 @@ full = [
     "aind-data-access-api[secrets]",
     "aind-data-access-api[docdb]",
     "aind-data-access-api[rds]",
+    "aind-data-access-api[helpers]",
 ]
 [tool.setuptools.packages.find]
 where = ["src"]
