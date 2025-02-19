@@ -100,7 +100,7 @@ def get_record_from_docdb(
 
     """
     records = docdb_api_client.retrieve_docdb_records(
-        filter_query={"_id": record_id}, limit=1
+        filter_query={"_id": record_id}, paginate=False, limit=1
     )
     if len(records) > 0:
         return records[0]
@@ -110,7 +110,7 @@ def get_record_from_docdb(
 
 def paginate_docdb(
     docdb_api_client: MetadataDbClient,
-    page_size: int = 1000,
+    page_size: int = 500,
     filter_query: Optional[dict] = None,
     projection: Optional[dict] = None,
 ) -> Iterator[List[dict]]:
