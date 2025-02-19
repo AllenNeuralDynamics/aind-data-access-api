@@ -42,7 +42,7 @@ REST API (Read-Only)
    import requests
 
    URL = "https://api.allenneuraldynamics.org/v1/metadata_index/data_assets"
-   filter = {"subject.subject_id": "123456"}
+   filter = {"subject.subject_id": "731015"}
    limit = 500
    response = requests.get(URL, params={"filter": json.dumps(filter), "limit": limit})
    print(response.json())
@@ -63,7 +63,7 @@ REST API (Read-Only)
       collection=COLLECTION,
    )
 
-   filter = {"subject.subject_id": "123456"}
+   filter = {"subject.subject_id": "731015"}
    response = docdb_api_client.retrieve_docdb_records(
       filter_query=filter,
    )
@@ -170,7 +170,7 @@ To use the client:
 
    with DocumentDbSSHClient(credentials=credentials) as doc_db_client:
       # To get a list of filtered records:
-      filter = {"subject.subject_id": "123456"}
+      filter = {"subject.subject_id": "731015"}
       projection = {
          "name": 1, "created": 1, "location": 1, "subject.subject_id": 1, "subject.date_of_birth": 1,
       }
@@ -212,6 +212,54 @@ explicitly setting credentials, or downloading from AWS Secrets Manager.
 
    # It's also possible to save a pandas dataframe as a table. Please check internal documentation for more details.
    ds_client.overwrite_table_with_df(df, table_name)
+
+
+Installation
+------------
+
+Basic installation:
+
+.. code:: bash
+
+   pip install aind-data-access-api
+
+Optional Dependencies
+~~~~~~~~~~~~~~~~~~~
+
+Different features require different optional dependencies:
+
+- To use DocDB features (including ``MetadataDbClient``):
+
+.. code:: bash
+
+   pip install "aind-data-access-api[docdb]"
+
+- To use RDS features:
+
+.. code:: bash
+
+   pip install "aind-data-access-api[rds]"
+
+- To use AWS Secrets management:
+
+.. code:: bash
+
+   pip install "aind-data-access-api[secrets]"
+
+- To use the helpers package:
+
+.. code:: bash
+
+   pip install "aind-data-access-api[helpers]"
+
+- To install all optional dependencies:
+
+.. code:: bash
+
+   pip install "aind-data-access-api[full]"
+
+Note: When using zsh or other shells that interpret square brackets, the quotes around the install argument are required.
+
 
 Reporting bugs or making feature requests
 -----------------------------------------

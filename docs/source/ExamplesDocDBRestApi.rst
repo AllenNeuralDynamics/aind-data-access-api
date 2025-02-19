@@ -27,7 +27,7 @@ Count Example 1: Get # of records with a certain subject_id
       collection=COLLECTION,
   )
 
-  filter = {"subject.subject_id": "689418"}
+  filter = {"subject.subject_id": "731015"}
   count = docdb_api_client._count_records(
       filter_query=filter,
   )
@@ -38,7 +38,7 @@ Filter Example 1: Get records with a certain subject_id
 
 .. code:: python
 
-  filter = {"subject.subject_id": "689418"}
+  filter = {"subject.subject_id": "731015"}
   records = docdb_api_client.retrieve_docdb_records(
       filter_query=filter,
   )
@@ -49,7 +49,7 @@ With projection (recommended):
       
 .. code:: python
 
-  filter = {"subject.subject_id": "689418"}
+  filter = {"subject.subject_id": "731015"}
   projection = {
       "name": 1,
       "created": 1,
@@ -70,7 +70,7 @@ Filter Example 2: Get records with a certain breeding group
 .. code:: python
 
   filter = {
-      "subject.breeding_info.breeding_group": "Chat-IRES-Cre_Jax006410"
+      "subject.breeding_info.breeding_group": "Slc17a6-IRES-Cre;Ai230-hyg(ND)"
   }
   records = docdb_api_client.retrieve_docdb_records(
       filter_query=filter
@@ -83,7 +83,7 @@ With projection (recommended):
 .. code:: python
 
   filter = {
-      "subject.breeding_info.breeding_group": "Chat-IRES-Cre_Jax006410"
+      "subject.breeding_info.breeding_group": "Slc17a6-IRES-Cre;Ai230-hyg(ND)"
   }
   projection = {
       "name": 1,
@@ -121,3 +121,100 @@ Aggregation Example 1: Get all subjects per breeding group
 
 For more info about aggregations, please see MongoDB documentation:
 https://www.mongodb.com/docs/manual/aggregation/
+
+Advanced Example: Custom Session Object
+-------------------------------------------
+
+It's possible to attach a custom Session to retry certain requests errors
+
+.. code:: python
+
+    import requests
+    from requests.adapters import HTTPAdapter
+    from urllib3.util import Retry
+
+    from aind_data_access_api.document_db import MetadataDbClient
+
+    API_GATEWAY_HOST = "api.allenneuraldynamics.org"
+    DATABASE = "metadata_index"
+    COLLECTION = "data_assets"
+
+    retry = Retry(
+        total=5,
+        backoff_factor=1,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["GET", "POST", "DELETE"],
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    session = requests.Session()
+    session.mount("https://", adapter)
+
+    with MetadataDbClient(
+        host=API_GATEWAY_HOST,
+        database=DATABASE,
+        collection=COLLECTION,
+        session=session,
+    ) as docdb_api_client:
+        records = docdb_api_client.retrieve_docdb_records(limit=10)
+
+
+
+Updating Metadata
+~~~~~~~~~~~~~~~~~~~~~~
+
+1. **Permissions**: Request permissions for AWS Credentials to write to DocDB through the API Gateway.
+2. **Query DocDB**: Filter for the records you want to update.
+3. **Update DocDB**: Use ``upsert_one_docdb_record`` or ``upsert_list_of_docdb_records`` to update the records.
+
+Please note that records are read and written as dictionaries from DocDB (not Pydantic models).
+For example, to update the "instrument" and "session" metadata of a record in DocDB:
+
+.. code:: python
+
+  # filter for records you want to update
+  records = docdb_api_client.retrieve_docdb_records(
+      filter_query=filter,
+      projection=projection, # recommended
+  )
+  print(f"Found {len(records)} records in DocDB matching filter.")
+
+  for record in records:
+      # NOTE: provide core metadata as dictionaries
+      # e.g. update some field from the queried result
+      instrument = record["instrument"] # dictionary
+      instrument["instrument_type"] = "New Instrument Type"  
+      # e.g. replace entirely from file
+      with open(INSTRUMENT_FILE_PATH, "r") as f:
+          instrument = json.load(f)
+      # e.g. convert Pydantic model to dictionary
+      session = session_model.model_dump()
+
+      # update record in docdb
+      record_update = {
+          "_id": record["_id"],
+          "instrument": instrument,
+          "session": session
+      }
+      response = docdb_api_client.upsert_one_docdb_record(
+          record=record_update
+      )
+      print(response.json())
+
+You can also make updates to individual nested fields:
+
+.. code:: python
+
+  record_update = {
+      "_id": record["_id"],
+      "data_description.project_name": project_name, # nested field
+  }
+
+  response = docdb_api_client.upsert_one_docdb_record(
+      record=record_update
+  )
+  print(response.json())
+
+Please note that while DocumentDB supports fieldnames with special characters ("$" and "."), they are not recommended.
+There may be issues querying or updating these fields.
+
+It is recommended to avoid these special chars in dictionary keys, e.g. ``{"abc.py": "data"}`` can be written as ``{"filename": "abc.py", "some_file_property": "data"}`` instead.

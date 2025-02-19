@@ -2,19 +2,14 @@
 
 import json
 import logging
-import warnings
-from functools import cached_property
 from sys import getsizeof
 from typing import List, Optional
 
 import boto3
-import requests
+from boto3.session import Session as BotoSession
 from botocore.auth import SigV4Auth
 from botocore.awsrequest import AWSRequest
-from requests import Response
-
-from aind_data_access_api.models import DataAssetRecord
-from aind_data_access_api.utils import is_dict_corrupt
+from requests import Response, Session
 
 
 class Client:
@@ -26,17 +21,29 @@ class Client:
         database: str,
         collection: str,
         version: str = "v1",
-        boto_session=None,
+        boto: Optional[BotoSession] = None,
+        session: Optional[Session] = None,
     ):
-        """Class constructor."""
+        """
+        Instantiate a Client.
+        Parameters
+        ----------
+        host : str
+        database : str
+        collection : str
+        version : str
+        boto : Optional[BotoSession]
+        session : Optional[Session]
+        """
         self.host = host.strip("/")
         self.database = database
         self.collection = collection
         self.version = version
-        self._boto_session = boto_session
+        self._boto = boto
+        self._session = session
 
     @property
-    def _base_url(self):
+    def _base_url(self) -> str:
         """Construct base url to interface with a collection in a database."""
         return (
             f"https://{self.host}/{self.version}/{self.database}/"
@@ -44,7 +51,7 @@ class Client:
         )
 
     @property
-    def _aggregate_url(self):
+    def _aggregate_url(self) -> str:
         """Url to aggregate records."""
         return (
             f"https://{self.host}/{self.version}/{self.database}/"
@@ -52,7 +59,15 @@ class Client:
         )
 
     @property
-    def _update_one_url(self):
+    def _insert_one_url(self) -> str:
+        """Url to insert one record"""
+        return (
+            f"https://{self.host}/{self.version}/{self.database}/"
+            f"{self.collection}/insert_one"
+        )
+
+    @property
+    def _update_one_url(self) -> str:
         """Url to update one record"""
         return (
             f"https://{self.host}/{self.version}/{self.database}/"
@@ -60,7 +75,7 @@ class Client:
         )
 
     @property
-    def _delete_one_url(self):
+    def _delete_one_url(self) -> str:
         """Url to update one record"""
         return (
             f"https://{self.host}/{self.version}/{self.database}/"
@@ -68,7 +83,7 @@ class Client:
         )
 
     @property
-    def _delete_many_url(self):
+    def _delete_many_url(self) -> str:
         """Url to update one record"""
         return (
             f"https://{self.host}/{self.version}/{self.database}/"
@@ -76,19 +91,26 @@ class Client:
         )
 
     @property
-    def _bulk_write_url(self):
+    def _bulk_write_url(self) -> str:
         """Url to bulk write many records."""
         return (
             f"https://{self.host}/{self.version}/{self.database}/"
             f"{self.collection}/bulk_write"
         )
 
-    @cached_property
-    def __boto_session(self):
+    @property
+    def boto(self) -> BotoSession:
         """Boto3 session"""
-        if self._boto_session is None:
-            self._boto_session = boto3.session.Session()
-        return self._boto_session
+        if self._boto is None:
+            self._boto = boto3.session.Session()
+        return self._boto
+
+    @property
+    def session(self) -> Session:
+        """Requests session"""
+        if self._session is None:
+            self._session = Session()
+        return self._session
 
     def _signed_request(
         self,
@@ -107,9 +129,9 @@ class Client:
             headers={"Content-Type": "application/json"},
         )
         SigV4Auth(
-            self.__boto_session.get_credentials(),
+            self.boto.get_credentials(),
             "execute-api",
-            self.__boto_session.region_name,
+            self.boto.region_name,
         ).add_auth(aws_request)
         return aws_request
 
@@ -133,10 +155,8 @@ class Client:
         }
         if filter_query is not None:
             params["filter"] = json.dumps(filter_query)
-        response = requests.get(self._base_url, params=params)
-        if response.status_code != 200:
-            error_msg = response.text if response.text else "Unknown error"
-            raise ValueError(f"{response.status_code} Error: {error_msg}")
+        response = self.session.get(self._base_url, params=params)
+        response.raise_for_status()
         response_body = response.json()
         return response_body
 
@@ -177,26 +197,32 @@ class Client:
         if sort is not None:
             params["sort"] = json.dumps(sort)
 
-        response = requests.get(self._base_url, params=params)
-        if response.status_code != 200:
-            error_msg = response.text if response.text else "Unknown error"
-            raise ValueError(f"{response.status_code} Error: {error_msg}")
-        if not response.content:
-            raise ValueError("No payload in response")
+        response = self.session.get(self._base_url, params=params)
+        response.raise_for_status()
         response_body = response.json()
         return response_body
 
     def _aggregate_records(self, pipeline: List[dict]) -> List[dict]:
         """Aggregate records from collection using an aggregation pipeline."""
         # Do not need to sign request since API supports readonly aggregations
-        response = requests.post(url=self._aggregate_url, json=pipeline)
-        if response.status_code != 200:
-            error_msg = response.text if response.text else "Unknown error"
-            raise ValueError(f"{response.status_code} Error: {error_msg}")
-        if not response.content:
-            raise ValueError("No payload in response")
+        response = self.session.post(url=self._aggregate_url, json=pipeline)
+        response.raise_for_status()
         response_body = response.json()
         return response_body
+
+    def _insert_one_record(self, record: dict) -> Response:
+        """Insert a single record into the collection."""
+        data = json.dumps(record)
+        signed_header = self._signed_request(
+            method="POST", url=self._insert_one_url, data=data
+        )
+        response = self.session.post(
+            url=self._insert_one_url,
+            headers=dict(signed_header.headers),
+            data=data,
+        )
+        response.raise_for_status()
+        return response
 
     def _upsert_one_record(
         self, record_filter: dict, update: dict
@@ -208,11 +234,13 @@ class Client:
         signed_header = self._signed_request(
             method="POST", url=self._update_one_url, data=data
         )
-        return requests.post(
+        response = self.session.post(
             url=self._update_one_url,
             headers=dict(signed_header.headers),
             data=data,
         )
+        response.raise_for_status()
+        return response
 
     def _delete_one_record(self, record_filter: dict) -> Response:
         """Upsert a single record into the collection."""
@@ -220,11 +248,12 @@ class Client:
         signed_header = self._signed_request(
             method="DELETE", url=self._delete_one_url, data=data
         )
-        return requests.delete(
+        response = self.session.delete(
             url=self._delete_one_url,
             headers=dict(signed_header.headers),
             data=data,
         )
+        return response
 
     def _delete_many_records(self, record_filter: dict) -> Response:
         """Upsert a single record into the collection."""
@@ -232,11 +261,13 @@ class Client:
         signed_header = self._signed_request(
             method="DELETE", url=self._delete_many_url, data=data
         )
-        return requests.delete(
+        response = self.session.delete(
             url=self._delete_many_url,
             headers=dict(signed_header.headers),
             data=data,
         )
+        response.raise_for_status()
+        return response
 
     def _bulk_write(self, operations: List[dict]) -> Response:
         """Bulk write many records into the collection."""
@@ -245,11 +276,25 @@ class Client:
         signed_header = self._signed_request(
             method="POST", url=self._bulk_write_url, data=data
         )
-        return requests.post(
+        response = self.session.post(
             url=self._bulk_write_url,
             headers=dict(signed_header.headers),
             data=data,
         )
+        return response
+
+    def close(self):
+        """Close the clients."""
+        if self.session is not None:
+            self.session.close()
+
+    def __enter__(self):
+        """Enter the context manager."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit the context manager."""
+        self.close()
 
 
 class MetadataDbClient(Client):
@@ -307,7 +352,10 @@ class MetadataDbClient(Client):
             filtered_record_count = record_counts["filtered_record_count"]
             if filtered_record_count <= paginate_batch_size:
                 records = self._get_records(
-                    filter_query=filter_query, projection=projection, sort=sort
+                    filter_query=filter_query,
+                    projection=projection,
+                    sort=sort,
+                    limit=limit,
                 )
             else:
                 records = []
@@ -348,145 +396,22 @@ class MetadataDbClient(Client):
         """Aggregate records using an aggregation pipeline."""
         return self._aggregate_records(pipeline=pipeline)
 
-    # TODO: remove this method
-    def retrieve_data_asset_records(
-        self,
-        filter_query: Optional[dict] = None,
-        projection: Optional[dict] = None,
-        sort: Optional[dict] = None,
-        limit: int = 0,
-        paginate: bool = True,
-        paginate_batch_size: int = 10,
-        paginate_max_iterations: int = 20000,
-    ) -> List[DataAssetRecord]:
-        """
-        DEPRECATED: This method is deprecated. Use `retrieve_docdb_records`
-        instead.
-
-        Retrieve data asset records
-
-        Parameters
-        ----------
-        filter_query : Optional[dict]
-          Filter to apply to the records being returned. Default is None.
-        projection : Optional[dict]
-          Subset of document fields to return. Default is None.
-        sort : Optional[dict]
-          Sort records when returned. Default is None.
-        limit : int
-          Return a smaller set of records. 0 for all records. Default is 0.
-        paginate : bool
-          If set to true, will batch the queries to the API Gateway. It may
-          be faster to set to false if the number of records expected to be
-          returned is small.
-        paginate_batch_size : int
-          Number of records to return at a time. Default is 10.
-        paginate_max_iterations : int
-          Max number of iterations to run to prevent indefinite calls to the
-          API Gateway. Default is 20000.
-
-        Returns
-        -------
-        List[DataAssetRecord]
-
-        """
-        warnings.warn(
-            "retrieve_data_asset_records is deprecated. "
-            "Use retrieve_docdb_records instead."
-            "",
-            DeprecationWarning,
-            stacklevel=2,
+    def insert_one_docdb_record(self, record: dict) -> Response:
+        """Insert one new record"""
+        if record.get("_id") is None:
+            raise ValueError("Record does not have an _id field.")
+        response = self._insert_one_record(
+            json.loads(json.dumps(record, default=str)),
         )
-        if paginate is False:
-            records = self._get_records(
-                filter_query=filter_query,
-                projection=projection,
-                sort=sort,
-                limit=limit,
-            )
-        else:
-            # Get record count
-            record_counts = self._count_records(filter_query)
-            total_record_count = record_counts["total_record_count"]
-            filtered_record_count = record_counts["filtered_record_count"]
-            if filtered_record_count <= paginate_batch_size:
-                records = self._get_records(
-                    filter_query=filter_query, projection=projection, sort=sort
-                )
-            else:
-                records = []
-                errors = []
-                num_of_records_collected = 0
-                limit = filtered_record_count if limit == 0 else limit
-                skip = 0
-                iter_count = 0
-                while (
-                    skip < total_record_count
-                    and num_of_records_collected
-                    < min(filtered_record_count, limit)
-                    and iter_count < paginate_max_iterations
-                ):
-                    try:
-                        batched_records = self._get_records(
-                            filter_query=filter_query,
-                            projection=projection,
-                            sort=sort,
-                            limit=paginate_batch_size,
-                            skip=skip,
-                        )
-                        num_of_records_collected += len(batched_records)
-                        records.extend(batched_records)
-                    except Exception as e:
-                        errors.append(repr(e))
-                    skip = skip + paginate_batch_size
-                    iter_count += 1
-                    # TODO: Add optional progress bar?
-                records = records[0:limit]
-                if len(errors) > 0:
-                    logging.error(
-                        f"There were errors retrieving records. {errors}"
-                    )
-        data_asset_records = []
-        for record in records:
-            data_asset_records.append(DataAssetRecord(**record))
-        return data_asset_records
+        return response
 
     def upsert_one_docdb_record(self, record: dict) -> Response:
         """Upsert one record if the record is not corrupt"""
         if record.get("_id") is None:
             raise ValueError("Record does not have an _id field.")
-        if is_dict_corrupt(record):
-            raise ValueError("Record is corrupt and cannot be upserted.")
         response = self._upsert_one_record(
             record_filter={"_id": record["_id"]},
             update={"$set": json.loads(json.dumps(record, default=str))},
-        )
-        return response
-
-    # TODO: remove this method
-    def upsert_one_record(
-        self, data_asset_record: DataAssetRecord
-    ) -> Response:
-        """
-        DEPRECATED: This method is deprecated. Use `upsert_one_docdb_record`
-        instead.
-
-        Upsert one record
-        """
-        warnings.warn(
-            "upsert_one_record is deprecated. "
-            "Use upsert_one_docdb_record instead."
-            "",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        response = self._upsert_one_record(
-            record_filter={"_id": data_asset_record.id},
-            update={
-                "$set": json.loads(
-                    data_asset_record.model_dump_json(by_alias=True)
-                )
-            },
         )
         return response
 
@@ -553,10 +478,6 @@ class MetadataDbClient(Client):
             for record in records:
                 if record.get("_id") is None:
                     raise ValueError("A record does not have an _id field.")
-                if is_dict_corrupt(record):
-                    raise ValueError(
-                        "A record is corrupt and cannot be upserted."
-                    )
             # chunk records
             first_index = 0
             end_index = len(records)
@@ -602,92 +523,6 @@ class MetadataDbClient(Client):
                 second_index = second_index + 1
         return responses
 
-    # TODO: remove this method
-    def upsert_list_of_records(
-        self,
-        data_asset_records: List[DataAssetRecord],
-        max_payload_size: int = 2e6,
-    ) -> List[Response]:
-        """
-        DEPRECATED: This method is deprecated. Use
-        `upsert_list_of_docdb_records` instead.
-
-        Upsert a list of records. There's a limit to the size of the
-        request that can be sent, so we chunk the requests.
-
-        Parameters
-        ----------
-
-        data_asset_records : List[DataAssetRecord]
-          List of records to upsert into the DocDB database
-        max_payload_size : int
-          Chunk requests into smaller lists no bigger than this value in bytes.
-          If a single record is larger than this value in bytes, an attempt
-          will be made to upsert the record but will most likely receive a 413
-          status code. The Default is 2e6 bytes. The max payload for the API
-          Gateway including headers is 10MB.
-
-        Returns
-        -------
-        List[Response]
-          A list of responses from the API Gateway.
-
-        """
-        warnings.warn(
-            "upsert_list_of_records is deprecated. "
-            "Use upsert_list_of_docdb_records instead."
-            "",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        if len(data_asset_records) == 0:
-            return []
-        else:
-            first_index = 0
-            end_index = len(data_asset_records)
-            second_index = 1
-            responses = []
-            record_json = data_asset_records[first_index].model_dump_json(
-                by_alias=True
-            )
-            total_size = getsizeof(record_json)
-            operations = [
-                self._record_to_operation(
-                    record=record_json,
-                    record_id=data_asset_records[first_index].id,
-                )
-            ]
-            while second_index < end_index + 1:
-                if second_index == end_index:
-                    response = self._bulk_write(operations)
-                    responses.append(response)
-                else:
-                    record_json = data_asset_records[
-                        second_index
-                    ].model_dump_json(by_alias=True)
-                    record_size = getsizeof(record_json)
-                    if total_size + record_size > max_payload_size:
-                        response = self._bulk_write(operations)
-                        responses.append(response)
-                        first_index = second_index
-                        operations = [
-                            self._record_to_operation(
-                                record=record_json,
-                                record_id=data_asset_records[first_index].id,
-                            )
-                        ]
-                        total_size = record_size
-                    else:
-                        operations.append(
-                            self._record_to_operation(
-                                record=record_json,
-                                record_id=data_asset_records[second_index].id,
-                            )
-                        )
-                        total_size += record_size
-                second_index = second_index + 1
-        return responses
-
 
 class SchemaDbClient(Client):
     """Class to manage reading and writing to schema db"""
@@ -698,7 +533,8 @@ class SchemaDbClient(Client):
         collection: str,
         database: str = "schemas",
         version: str = "v1",
-        boto_session=None,
+        boto: Optional[BotoSession] = None,
+        session: Optional[Session] = None,
     ):
         """Class constructor"""
         super().__init__(
@@ -706,7 +542,8 @@ class SchemaDbClient(Client):
             database=database,
             collection=collection,
             version=version,
-            boto_session=boto_session,
+            boto=boto,
+            session=session,
         )
 
     def retrieve_schema_records(

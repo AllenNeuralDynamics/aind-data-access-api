@@ -15,7 +15,6 @@ from pathlib import Path
 from aind_data_access_api import __version__ as package_version
 from aind_data_access_api import (  # noqa: F401
     document_db_ssh,
-    document_store,
     rds_tables,
 )
 
