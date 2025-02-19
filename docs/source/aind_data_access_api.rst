@@ -44,14 +44,6 @@ aind\_data\_access\_api.document\_store module
    :undoc-members:
    :show-inheritance:
 
-aind\_data\_access\_api.models module
--------------------------------------
-
-.. automodule:: aind_data_access_api.models
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 aind\_data\_access\_api.rds\_tables module
 ------------------------------------------
 
