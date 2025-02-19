@@ -352,7 +352,10 @@ class MetadataDbClient(Client):
             filtered_record_count = record_counts["filtered_record_count"]
             if filtered_record_count <= paginate_batch_size:
                 records = self._get_records(
-                    filter_query=filter_query, projection=projection, sort=sort
+                    filter_query=filter_query,
+                    projection=projection,
+                    sort=sort,
+                    limit=limit,
                 )
             else:
                 records = []
