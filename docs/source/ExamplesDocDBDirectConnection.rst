@@ -140,20 +140,8 @@ functions to update records in DocDB.
       DocumentDbSSHCredentials,
   )
   from aind_data_schema.core.metadata import Metadata
-  from aind_data_access_api.utils import paginate_docdb
 
   logging.basicConfig(level="INFO")
-
-  def _process_docdb_records(records: List[dict], doc_db_client: DocumentDbSSHClient, dryrun: bool) -> None:
-      """
-      Process records.
-      Parameters
-      ----------
-      records : List[dict]
-
-      """
-      for record in records:
-          _process_docdb_record(record=record, doc_db_client=doc_db_client, dryrun=dryrun)
 
   def _process_docdb_record(record: dict, doc_db_client: DocumentDbSSHClient, dryrun: bool) -> None:
       """
@@ -278,13 +266,9 @@ functions to update records in DocDB.
           # logging.info(f"{db_name}.{col_name}: Found {count} records with {filter}: {count}")
 
           logging.info(f"{db_name}.{col_name}: Starting to scan for {filter}.")
-          docdb_pages = paginate_docdb(
-              db_name=doc_db_client.database_name,
-              collection_name=doc_db_client.collection_name,
-              docdb_client=doc_db_client._client,
-              page_size=500,
-              filter_query=filter,
+          records = doc_db_client.collection.find(
+              filter=filter,
           )
-          for page in docdb_pages:
-              _process_docdb_records(records=page, doc_db_client=doc_db_client, dryrun=dryrun)
+          for record in records:
+              _process_docdb_record(record=record, doc_db_client=doc_db_client, dryrun=dryrun)
           logging.info(f"{db_name}.{col_name}:Finished scanning through DocDb.")

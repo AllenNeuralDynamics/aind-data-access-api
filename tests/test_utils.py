@@ -62,100 +62,72 @@ class TestUtils(unittest.TestCase):
         self.assertEqual("s3://some_bucket/prefix1", result1)
         self.assertEqual("s3://some_bucket/prefix2", result2)
 
-    @patch("pymongo.MongoClient")
+    @patch("aind_data_access_api.document_db.MetadataDbClient")
     def test_does_metadata_record_exist_in_docdb_true(
-        self, mock_docdb_client: MagicMock
+        self, mock_docdb_api_client: MagicMock
     ):
         """Tests does_metadata_record_exist_in_docdb when true"""
 
-        mock_db = MagicMock()
-        mock_docdb_client.__getitem__.return_value = mock_db
-        mock_collection = MagicMock()
-        mock_db.__getitem__.return_value = mock_collection
-        mock_collection.find.return_value = iter(
-            [{"_id": "70bcf356-985f-4a2a-8105-de900e35e788"}]
-        )
+        mock_docdb_api_client.retrieve_docdb_records.return_value = [
+            {"_id": "70bcf356-985f-4a2a-8105-de900e35e788"}
+        ]
         self.assertTrue(
             does_metadata_record_exist_in_docdb(
-                docdb_client=mock_docdb_client,
-                db_name="metadata_index",
-                collection_name="data_assets",
+                docdb_api_client=mock_docdb_api_client,
                 bucket="aind-ephys-data-dev-u5u0i5",
                 prefix="ecephys_642478_2023-01-17_13-56-29",
             )
         )
 
-    @patch("pymongo.MongoClient")
+    @patch("aind_data_access_api.document_db.MetadataDbClient")
     def test_does_metadata_record_exist_in_docdb_false(
-        self, mock_docdb_client: MagicMock
+        self, mock_docdb_api_client: MagicMock
     ):
         """Tests does_metadata_record_exist_in_docdb when false"""
 
-        mock_db = MagicMock()
-        mock_docdb_client.__getitem__.return_value = mock_db
-        mock_collection = MagicMock()
-        mock_db.__getitem__.return_value = mock_collection
-        mock_collection.find.return_value = iter([])
+        mock_docdb_api_client.retrieve_docdb_records.return_value = []
         self.assertFalse(
             does_metadata_record_exist_in_docdb(
-                docdb_client=mock_docdb_client,
-                db_name="metadata_index",
-                collection_name="data_assets",
+                docdb_api_client=mock_docdb_api_client,
                 bucket="aind-ephys-data-dev-u5u0i5",
                 prefix="ecephys_642478_2023-01-17_13-56-29",
             )
         )
 
-    @patch("pymongo.MongoClient")
-    def test_get_record_from_docdb(self, mock_docdb_client: MagicMock):
+    @patch("aind_data_access_api.document_db.MetadataDbClient")
+    def test_get_record_from_docdb(self, mock_docdb_api_client: MagicMock):
         """Tests get_record_from_docdb when record exists"""
-        mock_db = MagicMock()
-        mock_docdb_client.__getitem__.return_value = mock_db
-        mock_collection = MagicMock()
-        mock_db.__getitem__.return_value = mock_collection
-        mock_collection.find.return_value = iter([self.example_metadata_nd])
+        mock_docdb_api_client.retrieve_docdb_records.return_value = [
+            self.example_metadata_nd
+        ]
         record = get_record_from_docdb(
-            docdb_client=mock_docdb_client,
-            db_name="metadata_index",
-            collection_name="data_assets",
+            docdb_api_client=mock_docdb_api_client,
             record_id="488bbe42-832b-4c37-8572-25eb87cc50e2",
         )
         self.assertEqual(self.example_metadata_nd, record)
 
-    @patch("pymongo.MongoClient")
-    def test_get_record_from_docdb_none(self, mock_docdb_client: MagicMock):
+    @patch("aind_data_access_api.document_db.MetadataDbClient")
+    def test_get_record_from_docdb_none(
+        self, mock_docdb_api_client: MagicMock
+    ):
         """Tests get_record_from_docdb when record doesn't exist"""
-        mock_db = MagicMock()
-        mock_docdb_client.__getitem__.return_value = mock_db
-        mock_collection = MagicMock()
-        mock_db.__getitem__.return_value = mock_collection
-        mock_collection.find.return_value = iter([])
+        mock_docdb_api_client.retrieve_docdb_records.return_value = []
         record = get_record_from_docdb(
-            docdb_client=mock_docdb_client,
-            db_name="metadata_index",
-            collection_name="data_assets",
+            docdb_api_client=mock_docdb_api_client,
             record_id="488bbe42-832b-4c37-8572-25eb87cc50ee",
         )
         self.assertIsNone(record)
 
-    @patch("pymongo.MongoClient")
-    def test_paginate_docdb(self, mock_docdb_client: MagicMock):
+    @patch("aind_data_access_api.document_db.MetadataDbClient")
+    def test_paginate_docdb(self, mock_docdb_api_client: MagicMock):
         """Tests paginate_docdb"""
-        mock_db = MagicMock()
-        mock_docdb_client.__getitem__.return_value = mock_db
-        mock_collection = MagicMock()
-        mock_db.__getitem__.return_value = mock_collection
-        mock_collection.find.return_value = iter(
-            [
-                self.example_metadata_nd,
-                self.example_metadata_nd1,
-                self.example_metadata_nd2,
-            ]
-        )
+        mock_docdb_api_client._get_records.side_effect = [
+            [self.example_metadata_nd, self.example_metadata_nd1],
+            [self.example_metadata_nd2],
+            [],
+        ]
         pages = paginate_docdb(
-            docdb_client=mock_docdb_client,
-            db_name="metadata_index",
-            collection_name="data_assets",
+            docdb_api_client=mock_docdb_api_client,
             page_size=2,
         )
         expected_results = [
@@ -165,37 +137,29 @@ class TestUtils(unittest.TestCase):
         actual_results = list(pages)
         self.assertEqual(expected_results, actual_results)
 
-    @patch("pymongo.MongoClient")
+    @patch("aind_data_access_api.document_db.MetadataDbClient")
     def test_build_docdb_location_to_id_map(
-        self, mock_docdb_client: MagicMock
+        self, mock_docdb_api_client: MagicMock
     ):
         """Tests build_docdb_location_to_id_map"""
         bucket = "aind-ephys-data-dev-u5u0i5"
-        mock_db = MagicMock()
-        mock_docdb_client.__getitem__.return_value = mock_db
-        mock_collection = MagicMock()
-        mock_db.__getitem__.return_value = mock_collection
-        mock_collection.find.return_value = iter(
-            [
-                {
-                    "_id": "70bcf356-985f-4a2a-8105-de900e35e788",
-                    "location": (
-                        f"s3://{bucket}/ecephys_655019_2000-04-04_04-00-00"
-                    ),
-                },
-                {
-                    "_id": "5ca4a951-d374-4f4b-8279-d570a35b2286",
-                    "location": (
-                        f"s3://{bucket}/ecephys_567890_2000-01-01_04-00-00"
-                    ),
-                },
-            ]
-        )
+        mock_docdb_api_client.retrieve_docdb_records.return_value = [
+            {
+                "_id": "70bcf356-985f-4a2a-8105-de900e35e788",
+                "location": (
+                    f"s3://{bucket}/ecephys_655019_2000-04-04_04-00-00"
+                ),
+            },
+            {
+                "_id": "5ca4a951-d374-4f4b-8279-d570a35b2286",
+                "location": (
+                    f"s3://{bucket}/ecephys_567890_2000-01-01_04-00-00"
+                ),
+            },
+        ]
 
         actual_map = build_docdb_location_to_id_map(
-            docdb_client=mock_docdb_client,
-            db_name="metadata_index",
-            collection_name="data_assets",
+            docdb_api_client=mock_docdb_api_client,
             bucket=bucket,
             prefixes=[
                 "ecephys_655019_2000-04-04_04-00-00",
