@@ -42,7 +42,7 @@ REST API (Read-Only)
    import requests
 
    URL = "https://api.allenneuraldynamics.org/v1/metadata_index/data_assets"
-   filter = {"subject.subject_id": "123456"}
+   filter = {"subject.subject_id": "731015"}
    limit = 500
    response = requests.get(URL, params={"filter": json.dumps(filter), "limit": limit})
    print(response.json())
@@ -63,7 +63,7 @@ REST API (Read-Only)
       collection=COLLECTION,
    )
 
-   filter = {"subject.subject_id": "123456"}
+   filter = {"subject.subject_id": "731015"}
    response = docdb_api_client.retrieve_docdb_records(
       filter_query=filter,
    )
@@ -170,7 +170,7 @@ To use the client:
 
    with DocumentDbSSHClient(credentials=credentials) as doc_db_client:
       # To get a list of filtered records:
-      filter = {"subject.subject_id": "123456"}
+      filter = {"subject.subject_id": "731015"}
       projection = {
          "name": 1, "created": 1, "location": 1, "subject.subject_id": 1, "subject.date_of_birth": 1,
       }
@@ -245,6 +245,12 @@ Different features require different optional dependencies:
 .. code:: bash
 
    pip install "aind-data-access-api[secrets]"
+
+- To use the helpers package:
+
+.. code:: bash
+
+   pip install "aind-data-access-api[helpers]"
 
 - To install all optional dependencies:
 
