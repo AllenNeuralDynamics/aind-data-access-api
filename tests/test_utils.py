@@ -12,7 +12,6 @@ from aind_data_access_api.utils import (
     get_record_from_docdb,
     get_s3_bucket_and_prefix,
     get_s3_location,
-    is_dict_corrupt,
     paginate_docdb,
 )
 
@@ -39,21 +38,6 @@ class TestUtils(unittest.TestCase):
         cls.example_metadata_nd = example_metadata_nd
         cls.example_metadata_nd1 = example_metadata_nd1
         cls.example_metadata_nd2 = example_metadata_nd2
-
-    def test_is_dict_corrupt(self):
-        """Tests is_dict_corrupt method"""
-        good_contents = {"a": 1, "b": {"c": 2, "d": 3}}
-        bad_contents1 = {"a.1": 1, "b": {"c": 2, "d": 3}}
-        bad_contents2 = {"a": 1, "b": {"c": 2, "$d": 3}}
-        bad_contents3 = {"a": 1, "b": {"c": 2, "d": 3}, "$e": 4}
-        bad_contents4 = {"a": 1, "b": {"c": {"d": 3}, "$e": 4}}
-        bad_contents5 = [{"a": 1}, {"b": {"c": 2, "d": 3}}]
-        self.assertFalse(is_dict_corrupt(good_contents))
-        self.assertTrue(is_dict_corrupt(bad_contents1))
-        self.assertTrue(is_dict_corrupt(bad_contents2))
-        self.assertTrue(is_dict_corrupt(bad_contents3))
-        self.assertTrue(is_dict_corrupt(bad_contents4))
-        self.assertTrue(is_dict_corrupt(bad_contents5))
 
     def test_get_s3_bucket_and_prefix(self):
         """Tests get_s3_bucket_and_prefix"""
