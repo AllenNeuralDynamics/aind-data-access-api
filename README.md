@@ -34,6 +34,7 @@ pip install "aind-data-access-api[rds]"
 
 ### Other Install Options
 - AWS Secrets management: `pip install "aind-data-access-api[secrets]"`
+- Helpers: `pip install "aind-data-access-api[helpers]"`
 - All features: `pip install "aind-data-access-api[full]"`
 
 More information can be found at [readthedocs](https://aind-data-access-api.readthedocs.io).
