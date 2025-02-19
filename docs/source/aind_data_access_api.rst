@@ -36,14 +36,6 @@ aind\_data\_access\_api.document\_db\_ssh module
    :undoc-members:
    :show-inheritance:
 
-aind\_data\_access\_api.document\_store module
-----------------------------------------------
-
-.. automodule:: aind_data_access_api.document_store
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 aind\_data\_access\_api.rds\_tables module
 ------------------------------------------
 
