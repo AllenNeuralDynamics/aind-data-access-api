@@ -121,7 +121,7 @@ def paginate_docdb(
     ----------
     docdb_api_client : MongoClient
     page_size : int
-      Default is 1000
+      Default is 500
     filter_query : Optional[dict]
     projection : Optional[dict]
 
