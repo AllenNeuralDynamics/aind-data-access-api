@@ -27,7 +27,7 @@ Count Example 1: Get # of records with a certain subject_id
       collection=COLLECTION,
   )
 
-  filter = {"subject.subject_id": "689418"}
+  filter = {"subject.subject_id": "731015"}
   count = docdb_api_client._count_records(
       filter_query=filter,
   )
@@ -38,7 +38,7 @@ Filter Example 1: Get records with a certain subject_id
 
 .. code:: python
 
-  filter = {"subject.subject_id": "689418"}
+  filter = {"subject.subject_id": "731015"}
   records = docdb_api_client.retrieve_docdb_records(
       filter_query=filter,
   )
@@ -49,7 +49,7 @@ With projection (recommended):
       
 .. code:: python
 
-  filter = {"subject.subject_id": "689418"}
+  filter = {"subject.subject_id": "731015"}
   projection = {
       "name": 1,
       "created": 1,
@@ -70,7 +70,7 @@ Filter Example 2: Get records with a certain breeding group
 .. code:: python
 
   filter = {
-      "subject.breeding_info.breeding_group": "Chat-IRES-Cre_Jax006410"
+      "subject.breeding_info.breeding_group": "Slc17a6-IRES-Cre;Ai230-hyg(ND)"
   }
   records = docdb_api_client.retrieve_docdb_records(
       filter_query=filter
@@ -83,7 +83,7 @@ With projection (recommended):
 .. code:: python
 
   filter = {
-      "subject.breeding_info.breeding_group": "Chat-IRES-Cre_Jax006410"
+      "subject.breeding_info.breeding_group": "Slc17a6-IRES-Cre;Ai230-hyg(ND)"
   }
   projection = {
       "name": 1,
