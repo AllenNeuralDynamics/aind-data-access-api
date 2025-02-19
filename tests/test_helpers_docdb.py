@@ -63,8 +63,8 @@ class TestHelpersDocDB(unittest.TestCase):
             get_name_from_id(client, _id="abcd")
         self.assertEqual("No record found with _id abcd", str(e.exception))
 
-    def test_get_record_from_docdb(self):
-        """Tests get_record_from_docdb"""
+    def test_get_record_by_id(self):
+        """Tests get_record_by_id"""
         client = MagicMock()
         client.retrieve_docdb_records.return_value = [{"_id": "abcd"}]
         record = get_record_by_id(client, _id="abcd")
