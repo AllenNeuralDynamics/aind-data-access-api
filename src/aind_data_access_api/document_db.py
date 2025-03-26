@@ -59,6 +59,14 @@ class Client:
         )
 
     @property
+    def _find_url(self) -> str:
+        """Url to find records."""
+        return (
+            f"https://{self.host}/{self.version}/{self.database}/"
+            f"{self.collection}/find"
+        )
+
+    @property
     def _aggregate_url(self) -> str:
         """Url to aggregate records."""
         return (
@@ -168,6 +176,50 @@ class Client:
         response_body = response.json()
         return response_body
 
+    def _find_records(
+        self,
+        filter_query: Optional[dict] = None,
+        projection: Optional[dict] = None,
+        sort: Optional[dict] = None,
+        limit: int = 0,
+        skip: int = 0,
+    ) -> List[dict]:
+        """
+        Retrieve records from collection. May return a smaller set of records
+        if requested records exceed the max payload size of the API Gateway.
+
+        Parameters
+        ----------
+        filter_query : Optional[dict]
+          Filter to apply to the records being returned. Default is None.
+        projection : Optional[dict]
+          Subset of document fields to return. Default is None.
+        sort : Optional[dict]
+          Sort records when returned. Default is None.
+        limit : int
+          Return a smaller set of records. 0 for all records. Default is 0.
+        skip : int
+          Skip this amount of records in index when applying search.
+
+        Returns
+        -------
+        List[dict]
+          The list of records returned from the DocumentDB.
+
+        """
+        params = {"limit": str(limit), "skip": str(skip)}
+        if filter_query is not None:
+            params["filter"] = json.dumps(filter_query)
+        if projection is not None:
+            params["projection"] = json.dumps(projection)
+        if sort is not None:
+            params["sort"] = json.dumps(sort)
+
+        response = self.session.get(self._find_url, params=params)
+        response.raise_for_status()
+        response_body = response.json()
+        return response_body
+
     def _get_records(
         self,
         filter_query: Optional[dict] = None,
@@ -177,7 +229,9 @@ class Client:
         skip: int = 0,
     ) -> List[dict]:
         """
-        Retrieve records from collection.
+        Retrieve records from collection. May raise HTTP 413 error if
+        requested records exceed the max payload size of the API Gateway.
+
         Parameters
         ----------
         filter_query : Optional[dict]
