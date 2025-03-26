@@ -51,6 +51,14 @@ class Client:
         )
 
     @property
+    def _count_url(self) -> str:
+        """Url to count records."""
+        return (
+            f"https://{self.host}/{self.version}/{self.database}/"
+            f"{self.collection}/count_documents"
+        )
+
+    @property
     def _aggregate_url(self) -> str:
         """Url to aggregate records."""
         return (
@@ -150,12 +158,12 @@ class Client:
           Has keys {"total_record_count": int, "filtered_record_count": int}
 
         """
-        params = {
-            "count_records": str(True),
-        }
-        if filter_query is not None:
-            params["filter"] = json.dumps(filter_query)
-        response = self.session.get(self._base_url, params=params)
+        params = (
+            {"filter": json.dumps(filter_query)}
+            if filter_query is not None
+            else None
+        )
+        response = self.session.get(self._count_url, params=params)
         response.raise_for_status()
         response_body = response.json()
         return response_body
