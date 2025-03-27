@@ -400,22 +400,10 @@ class MetadataDbClient(Client):
         List[dict]
 
         """
-        # Get record count
-        record_counts = self._count_records(filter_query)
-        total_record_count = record_counts["total_record_count"]
-        filtered_record_count = record_counts["filtered_record_count"]
-        # Paginate DocDB until all filtered records are returned
-        # or limit is reached
+        get_all_records = True if limit == 0 else False
         records = []
-        num_of_records_collected = 0
-        limit = filtered_record_count if limit == 0 else limit
-        expected_num_of_records = min(filtered_record_count, limit)
         skip = 0
-        while (
-            skip < total_record_count
-            and num_of_records_collected < expected_num_of_records
-            and limit > 0
-        ):
+        while get_all_records or limit > 0:
             batched_records = self._find_records(
                 filter_query=filter_query,
                 projection=projection,
@@ -423,11 +411,16 @@ class MetadataDbClient(Client):
                 limit=limit,
                 skip=skip,
             )
-            num_of_records_collected += len(batched_records)
+            batch_size = len(batched_records)
+            logging.debug(
+                f"(skip={skip}, limit={limit}): Retrieved {batch_size} records"
+            )
+            if batch_size == 0:
+                break
             records.extend(batched_records)
-            skip += len(batched_records)
-            limit -= len(batched_records)
-            # TODO: Add optional progress bar?
+            skip += batch_size
+            if not get_all_records:
+                limit -= batch_size
         return records
 
     def aggregate_docdb_records(self, pipeline: List[dict]) -> List[dict]:
