@@ -71,7 +71,6 @@ def does_metadata_record_exist_in_docdb(
     records = docdb_api_client.retrieve_docdb_records(
         filter_query={"location": location},
         projection={"_id": 1},
-        paginate=False,
         limit=1,
     )
     if len(records) == 0:
@@ -100,7 +99,7 @@ def get_record_from_docdb(
 
     """
     records = docdb_api_client.retrieve_docdb_records(
-        filter_query={"_id": record_id}, paginate=False, limit=1
+        filter_query={"_id": record_id}, limit=1
     )
     if len(records) > 0:
         return records[0]
@@ -136,7 +135,7 @@ def paginate_docdb(
         projection = {}
     skip = 0
     while True:
-        page = docdb_api_client._get_records(
+        page = docdb_api_client._find_records(
             filter_query=filter_query,
             projection=projection,
             limit=page_size,
@@ -145,7 +144,7 @@ def paginate_docdb(
         if not page:
             break
         yield page
-        skip += page_size
+        skip += len(page)
 
 
 def build_docdb_location_to_id_map(
