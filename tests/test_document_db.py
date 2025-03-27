@@ -33,6 +33,12 @@ class TestClient(unittest.TestCase):
         self.assertEqual("coll", client.collection)
         self.assertEqual("https://example.com/v1/db/coll", client._base_url)
         self.assertEqual(
+            "https://example.com/v1/db/coll/count_documents", client._count_url
+        )
+        self.assertEqual(
+            "https://example.com/v1/db/coll/find", client._find_url
+        )
+        self.assertEqual(
             "https://example.com/v1/db/coll/update_one",
             client._update_one_url,
         )
@@ -72,6 +78,65 @@ class TestClient(unittest.TestCase):
         with self.assertRaises(requests.exceptions.HTTPError) as e:
             client._count_records(filter_query={"_id": "abc"})
         self.assertIn("400 Client Error", str(e.exception))
+
+    @patch("requests.Session.get")
+    def test_find_records(self, mock_get: MagicMock):
+        """Tests _find_records method"""
+
+        client = Client(**self.example_client_args)
+        mock_response = Response()
+        mock_response.status_code = 200
+        mock_response._content = json.dumps(
+            [
+                {"_id": "abc123", "message": "hi"},
+                {"_id": "efg456", "message": "hello"},
+            ]
+        ).encode("utf-8")
+        mock_response2 = Response()
+        mock_response2.status_code = 200
+        mock_response2._content = json.dumps(
+            [{"_id": "abc123", "message": "hi"}]
+        ).encode("utf-8")
+        mock_response3 = Response()
+        mock_response3.status_code = 200
+        mock_response3._content = None
+
+        mock_get.side_effect = [mock_response, mock_response2, mock_response3]
+        records1 = client._find_records()
+        records2 = client._find_records(
+            filter_query={"_id": "abc123"},
+            projection={"_id": 1, "message": 1},
+            sort={"message": 1},
+            limit=1,
+        )
+        self.assertEqual(
+            [
+                {"_id": "abc123", "message": "hi"},
+                {"_id": "efg456", "message": "hello"},
+            ],
+            records1,
+        )
+        self.assertEqual([{"_id": "abc123", "message": "hi"}], records2)
+
+    @patch("requests.Session.get")
+    def test_find_records_error(self, mock_get: MagicMock):
+        """Tests _find_records method when there is an HTTP error or
+        no payload in response"""
+        client = Client(**self.example_client_args)
+        mock_response1 = Response()
+        mock_response1.status_code = 404
+        mock_response2 = Response()
+        mock_response2.status_code = 200
+        mock_response2._content = None
+        mock_get.side_effect = [mock_response1, mock_response2]
+        with self.assertRaises(requests.exceptions.HTTPError) as e:
+            client._find_records(filter_query={"_id": "abc"})
+        self.assertIn("404 Client Error", str(e.exception))
+        with self.assertRaises(requests.exceptions.JSONDecodeError) as e:
+            client._get_records(filter_query={"_id": "4532654"})
+        self.assertIn(
+            "Expecting value: line 1 column 1 (char 0)", str(e.exception)
+        )
 
     @patch("requests.Session.get")
     def test_get_records(self, mock_get: MagicMock):
@@ -357,9 +422,8 @@ class TestClient(unittest.TestCase):
             [
                 call(),
                 call().get(
-                    "https://example.com/v1/db/coll",
+                    "https://example.com/v1/db/coll/count_documents",
                     params={
-                        "count_records": "True",
                         "filter": '{"_id": "abc"}',
                     },
                 ),
@@ -377,83 +441,104 @@ class TestMetadataDbClient(unittest.TestCase):
         "collection": "data_assets",
     }
 
-    @patch("aind_data_access_api.document_db.Client._get_records")
-    @patch("aind_data_access_api.document_db.Client._count_records")
+    example_record_list = [
+        {
+            "_id": f"{id_num}",
+            "name": "modal_00000_2000-10-10_10-10-10",
+            "location": "some_url",
+            "created": datetime(2000, 10, 10, 10, 10, 10),
+            "subject": {"subject_id": "00000", "sex": "Female"},
+        }
+        for id_num in range(0, 10)
+    ]
+
+    @patch("aind_data_access_api.document_db.Client._find_records")
     def test_retrieve_docdb_records(
         self,
-        mock_count_record_response: MagicMock,
-        mock_get_record_response: MagicMock,
+        mock_find_records_response: MagicMock,
     ):
         """Tests retrieving docdb records"""
-
         client = MetadataDbClient(**self.example_client_args)
-        expected_response = [
-            {
-                "_id": "abc-123",
-                "name": "modal_00000_2000-10-10_10-10-10",
-                "location": "some_url",
-                "created": datetime(2000, 10, 10, 10, 10, 10),
-                "subject": {"subject_id": "00000", "sex": "Female"},
-            }
+        mock_find_records_response.side_effect = [
+            self.example_record_list[0:2],
+            self.example_record_list[2:6],
+            self.example_record_list[6:7],
+            self.example_record_list[7:10],
+            [],
         ]
-        mock_get_record_response.return_value = expected_response
-        mock_count_record_response.return_value = {
-            "total_record_count": 1,
-            "filtered_record_count": 1,
-        }
-        records = client.retrieve_docdb_records()
-        paginate_records = client.retrieve_docdb_records(paginate=False)
-        self.assertEqual(expected_response, records)
-        self.assertEqual(expected_response, paginate_records)
+        with self.assertLogs(level="DEBUG") as captured:
+            records = client.retrieve_docdb_records()
+        expected_logs = [
+            "DEBUG:root:(skip=0, limit=0): Retrieved 2 records",
+            "DEBUG:root:(skip=2, limit=0): Retrieved 4 records",
+            "DEBUG:root:(skip=6, limit=0): Retrieved 1 records",
+            "DEBUG:root:(skip=7, limit=0): Retrieved 3 records",
+            "DEBUG:root:(skip=10, limit=0): Retrieved 0 records",
+        ]
+        self.assertEqual(expected_logs, captured.output)
+        self.assertEqual(self.example_record_list, records)
 
-    @patch("aind_data_access_api.document_db.Client._get_records")
-    @patch("aind_data_access_api.document_db.Client._count_records")
-    @patch("logging.error")
-    def test_retrieve_many_docdb_records(
+    @patch("aind_data_access_api.document_db.Client._find_records")
+    def test_retrieve_many_docdb_records_limit(
         self,
-        mock_log_error: MagicMock,
-        mock_count_record_response: MagicMock,
-        mock_get_record_response: MagicMock,
+        mock_find_records_response: MagicMock,
     ):
-        """Tests retrieving many docdb records"""
-
+        """Tests retrieving docdb records when the limit is reached"""
         client = MetadataDbClient(**self.example_client_args)
-        mocked_record_list = [
-            {
-                "_id": f"{id_num}",
-                "name": "modal_00000_2000-10-10_10-10-10",
-                "location": "some_url",
-                "created": datetime(2000, 10, 10, 10, 10, 10),
-                "subject": {"subject_id": "00000", "sex": "Female"},
-            }
-            for id_num in range(0, 10)
+        mock_find_records_response.side_effect = [
+            self.example_record_list[0:2],
+            self.example_record_list[2:5],
         ]
-        mock_get_record_response.side_effect = [
-            mocked_record_list[0:2],
-            Exception("Test"),
-            mocked_record_list[4:6],
-            mocked_record_list[6:8],
-            mocked_record_list[8:10],
+        with self.assertLogs(level="DEBUG") as captured:
+            records = client.retrieve_docdb_records(limit=5)
+        expected_log_messages = [
+            "DEBUG:root:(skip=0, limit=5): Retrieved 2 records",
+            "DEBUG:root:(skip=2, limit=3): Retrieved 3 records",
         ]
-        mock_count_record_response.return_value = {
-            "total_record_count": len(mocked_record_list),
-            "filtered_record_count": len(mocked_record_list),
-        }
-        expected_response = [
-            {
-                "_id": f"{id_num}",
-                "name": "modal_00000_2000-10-10_10-10-10",
-                "location": "some_url",
-                "created": datetime(2000, 10, 10, 10, 10, 10),
-                "subject": {"subject_id": "00000", "sex": "Female"},
-            }
-            for id_num in [0, 1, 4, 5, 6, 7, 8, 9]
+        self.assertEqual(expected_log_messages, captured.output)
+        self.assertEqual(self.example_record_list[0:5], records)
+
+    @patch("aind_data_access_api.document_db.Client._find_records")
+    def test_retrieve_many_docdb_records_limit_not_reached(
+        self,
+        mock_find_records_response: MagicMock,
+    ):
+        """Tests retrieving docdb records when the limit is not reached"""
+        client = MetadataDbClient(**self.example_client_args)
+        mock_find_records_response.side_effect = [
+            self.example_record_list[0:2],
+            self.example_record_list[2:6],
+            self.example_record_list[6:7],
+            self.example_record_list[7:10],
+            [],
         ]
-        records = client.retrieve_docdb_records(paginate_batch_size=2)
-        mock_log_error.assert_called_once_with(
-            "There were errors retrieving records. [\"Exception('Test')\"]"
+        with self.assertLogs(level="DEBUG") as captured:
+            records = client.retrieve_docdb_records(limit=20)
+        expected_log_messages = [
+            "DEBUG:root:(skip=0, limit=20): Retrieved 2 records",
+            "DEBUG:root:(skip=2, limit=18): Retrieved 4 records",
+            "DEBUG:root:(skip=6, limit=14): Retrieved 1 records",
+            "DEBUG:root:(skip=7, limit=13): Retrieved 3 records",
+            "DEBUG:root:(skip=10, limit=10): Retrieved 0 records",
+        ]
+        self.assertEqual(expected_log_messages, captured.output)
+        self.assertEqual(self.example_record_list, records)
+
+    @patch("aind_data_access_api.document_db.Client._find_records")
+    def test_retrieve_docdb_records_none(
+        self,
+        mock_find_records_response: MagicMock,
+    ):
+        """Tests retrieving docdb records"""
+        client = MetadataDbClient(**self.example_client_args)
+        mock_find_records_response.return_value = []
+        with self.assertLogs(level="DEBUG") as captured:
+            records = client.retrieve_docdb_records()
+        self.assertEqual(
+            ["DEBUG:root:(skip=0, limit=0): Retrieved 0 records"],
+            captured.output,
         )
-        self.assertEqual(expected_response, records)
+        self.assertEqual([], records)
 
     @patch("aind_data_access_api.document_db.Client._aggregate_records")
     def test_aggregate_docdb_records(self, mock_aggregate: MagicMock):
