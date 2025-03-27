@@ -374,6 +374,7 @@ class MetadataDbClient(Client):
     ) -> List[dict]:
         """
         Retrieve raw json records from DocDB API Gateway as a list of dicts.
+        Queries to the API Gateway are paginated.
 
         Parameters
         ----------
@@ -386,56 +387,47 @@ class MetadataDbClient(Client):
         limit : int
           Return a smaller set of records. 0 for all records. Default is 0.
         paginate : bool
-          If set to true, will batch the queries to the API Gateway. It may
-          be faster to set to false if the number of records expected to be
-          returned is small.
+          (deprecated) If set to true, will batch the queries to the API
+          Gateway.
         paginate_batch_size : int
-          Maximum number of records to return at a time. Default is 500.
+          (deprecated) Number of records to return at a time. Default is 500.
         paginate_max_iterations : int
-          Max number of iterations to run to prevent indefinite calls to the
-          API Gateway. Default is 20000.
+          (deprecated) Max number of iterations to run to prevent indefinite
+          calls to the API Gateway. Default is 20000.
 
         Returns
         -------
         List[dict]
 
         """
-        if paginate is False:
-            records = self._get_records(
+        # Get record count
+        record_counts = self._count_records(filter_query)
+        total_record_count = record_counts["total_record_count"]
+        filtered_record_count = record_counts["filtered_record_count"]
+        # Paginate DocDB until all filtered records are returned
+        # or limit is reached
+        records = []
+        num_of_records_collected = 0
+        limit = filtered_record_count if limit == 0 else limit
+        expected_num_of_records = min(filtered_record_count, limit)
+        skip = 0
+        while (
+            skip < total_record_count
+            and num_of_records_collected < expected_num_of_records
+            and limit > 0
+        ):
+            batched_records = self._find_records(
                 filter_query=filter_query,
                 projection=projection,
                 sort=sort,
                 limit=limit,
+                skip=skip,
             )
-        else:
-            # Get record count
-            record_counts = self._count_records(filter_query)
-            total_record_count = record_counts["total_record_count"]
-            filtered_record_count = record_counts["filtered_record_count"]
-            records = []
-            num_of_records_collected = 0
-            limit = filtered_record_count if limit == 0 else limit
-            skip = 0
-            iter_count = 0
-            while (
-                skip < total_record_count
-                and num_of_records_collected
-                < min(filtered_record_count, limit)
-                and iter_count < paginate_max_iterations
-            ):
-                batched_records = self._find_records(
-                    filter_query=filter_query,
-                    projection=projection,
-                    sort=sort,
-                    limit=paginate_batch_size,
-                    skip=skip,
-                )
-                num_of_records_collected += len(batched_records)
-                records.extend(batched_records)
-                skip += len(batched_records)
-                iter_count += 1
-                # TODO: Add optional progress bar?
-            records = records[0:limit]
+            num_of_records_collected += len(batched_records)
+            records.extend(batched_records)
+            skip += len(batched_records)
+            limit -= len(batched_records)
+            # TODO: Add optional progress bar?
         return records
 
     def aggregate_docdb_records(self, pipeline: List[dict]) -> List[dict]:
