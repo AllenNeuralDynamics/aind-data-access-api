@@ -390,7 +390,7 @@ class MetadataDbClient(Client):
           be faster to set to false if the number of records expected to be
           returned is small.
         paginate_batch_size : int
-          Number of records to return at a time. Default is 500.
+          Maximum number of records to return at a time. Default is 500.
         paginate_max_iterations : int
           Max number of iterations to run to prevent indefinite calls to the
           API Gateway. Default is 20000.
@@ -412,46 +412,30 @@ class MetadataDbClient(Client):
             record_counts = self._count_records(filter_query)
             total_record_count = record_counts["total_record_count"]
             filtered_record_count = record_counts["filtered_record_count"]
-            if filtered_record_count <= paginate_batch_size:
-                records = self._get_records(
+            records = []
+            num_of_records_collected = 0
+            limit = filtered_record_count if limit == 0 else limit
+            skip = 0
+            iter_count = 0
+            while (
+                skip < total_record_count
+                and num_of_records_collected
+                < min(filtered_record_count, limit)
+                and iter_count < paginate_max_iterations
+            ):
+                batched_records = self._find_records(
                     filter_query=filter_query,
                     projection=projection,
                     sort=sort,
-                    limit=limit,
+                    limit=paginate_batch_size,
+                    skip=skip,
                 )
-            else:
-                records = []
-                errors = []
-                num_of_records_collected = 0
-                limit = filtered_record_count if limit == 0 else limit
-                skip = 0
-                iter_count = 0
-                while (
-                    skip < total_record_count
-                    and num_of_records_collected
-                    < min(filtered_record_count, limit)
-                    and iter_count < paginate_max_iterations
-                ):
-                    try:
-                        batched_records = self._get_records(
-                            filter_query=filter_query,
-                            projection=projection,
-                            sort=sort,
-                            limit=paginate_batch_size,
-                            skip=skip,
-                        )
-                        num_of_records_collected += len(batched_records)
-                        records.extend(batched_records)
-                    except Exception as e:
-                        errors.append(repr(e))
-                    skip = skip + paginate_batch_size
-                    iter_count += 1
-                    # TODO: Add optional progress bar?
-                records = records[0:limit]
-                if len(errors) > 0:
-                    logging.error(
-                        f"There were errors retrieving records. {errors}"
-                    )
+                num_of_records_collected += len(batched_records)
+                records.extend(batched_records)
+                skip += len(batched_records)
+                iter_count += 1
+                # TODO: Add optional progress bar?
+            records = records[0:limit]
         return records
 
     def aggregate_docdb_records(self, pipeline: List[dict]) -> List[dict]:
