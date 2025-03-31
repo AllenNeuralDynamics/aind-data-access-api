@@ -51,6 +51,22 @@ class Client:
         )
 
     @property
+    def _count_url(self) -> str:
+        """Url to count records."""
+        return (
+            f"https://{self.host}/{self.version}/{self.database}/"
+            f"{self.collection}/count_documents"
+        )
+
+    @property
+    def _find_url(self) -> str:
+        """Url to find records."""
+        return (
+            f"https://{self.host}/{self.version}/{self.database}/"
+            f"{self.collection}/find"
+        )
+
+    @property
     def _aggregate_url(self) -> str:
         """Url to aggregate records."""
         return (
@@ -150,12 +166,56 @@ class Client:
           Has keys {"total_record_count": int, "filtered_record_count": int}
 
         """
-        params = {
-            "count_records": str(True),
-        }
+        params = (
+            {"filter": json.dumps(filter_query)}
+            if filter_query is not None
+            else None
+        )
+        response = self.session.get(self._count_url, params=params)
+        response.raise_for_status()
+        response_body = response.json()
+        return response_body
+
+    def _find_records(
+        self,
+        filter_query: Optional[dict] = None,
+        projection: Optional[dict] = None,
+        sort: Optional[dict] = None,
+        limit: int = 0,
+        skip: int = 0,
+    ) -> List[dict]:
+        """
+        Retrieve records from collection. May return a smaller set of records
+        if requested records exceed the max payload size of the API Gateway.
+
+        Parameters
+        ----------
+        filter_query : Optional[dict]
+          Filter to apply to the records being returned. Default is None.
+        projection : Optional[dict]
+          Subset of document fields to return. Default is None.
+        sort : Optional[dict]
+          Sort records when returned. Default is None.
+        limit : int
+          Return a smaller set of records. 0 for all records. Default is 0.
+        skip : int
+          Skip this amount of records in index when applying search.
+
+        Returns
+        -------
+        List[dict]
+          The list of records returned from the DocumentDB.
+
+        """
+        params = {"limit": str(limit), "skip": str(skip)}
         if filter_query is not None:
             params["filter"] = json.dumps(filter_query)
-        response = self.session.get(self._base_url, params=params)
+        if projection is not None:
+            params["projection"] = json.dumps(projection)
+        if sort is not None:
+            params["sort"] = json.dumps(sort)
+
+        response = self.session.get(self._find_url, params=params)
         response.raise_for_status()
         response_body = response.json()
         return response_body
@@ -169,7 +229,9 @@ class Client:
         skip: int = 0,
     ) -> List[dict]:
         """
-        Retrieve records from collection.
+        Retrieve records from collection. May raise HTTP 413 error if
+        requested records exceed the max payload size of the API Gateway.
+
         Parameters
         ----------
         filter_query : Optional[dict]
@@ -306,12 +368,13 @@ class MetadataDbClient(Client):
         projection: Optional[dict] = None,
         sort: Optional[dict] = None,
         limit: int = 0,
-        paginate: bool = True,
-        paginate_batch_size: int = 500,
-        paginate_max_iterations: int = 20000,
+        paginate: Optional[bool] = None,
+        paginate_batch_size: Optional[int] = None,
+        paginate_max_iterations: Optional[int] = None,
     ) -> List[dict]:
         """
         Retrieve raw json records from DocDB API Gateway as a list of dicts.
+        Queries to the API Gateway are paginated.
 
         Parameters
         ----------
@@ -324,72 +387,40 @@ class MetadataDbClient(Client):
         limit : int
           Return a smaller set of records. 0 for all records. Default is 0.
         paginate : bool
-          If set to true, will batch the queries to the API Gateway. It may
-          be faster to set to false if the number of records expected to be
-          returned is small.
+          (deprecated) If set to true, will batch the queries to the API
+          Gateway.
         paginate_batch_size : int
-          Number of records to return at a time. Default is 500.
+          (deprecated) Number of records to return at a time. Default is 500.
         paginate_max_iterations : int
-          Max number of iterations to run to prevent indefinite calls to the
-          API Gateway. Default is 20000.
+          (deprecated) Max number of iterations to run to prevent indefinite
+          calls to the API Gateway. Default is 20000.
 
         Returns
         -------
         List[dict]
 
         """
-        if paginate is False:
-            records = self._get_records(
+        get_all_records = True if limit == 0 else False
+        records = []
+        skip = 0
+        while get_all_records or limit > 0:
+            batched_records = self._find_records(
                 filter_query=filter_query,
                 projection=projection,
                 sort=sort,
                 limit=limit,
+                skip=skip,
             )
-        else:
-            # Get record count
-            record_counts = self._count_records(filter_query)
-            total_record_count = record_counts["total_record_count"]
-            filtered_record_count = record_counts["filtered_record_count"]
-            if filtered_record_count <= paginate_batch_size:
-                records = self._get_records(
-                    filter_query=filter_query,
-                    projection=projection,
-                    sort=sort,
-                    limit=limit,
-                )
-            else:
-                records = []
-                errors = []
-                num_of_records_collected = 0
-                limit = filtered_record_count if limit == 0 else limit
-                skip = 0
-                iter_count = 0
-                while (
-                    skip < total_record_count
-                    and num_of_records_collected
-                    < min(filtered_record_count, limit)
-                    and iter_count < paginate_max_iterations
-                ):
-                    try:
-                        batched_records = self._get_records(
-                            filter_query=filter_query,
-                            projection=projection,
-                            sort=sort,
-                            limit=paginate_batch_size,
-                            skip=skip,
-                        )
-                        num_of_records_collected += len(batched_records)
-                        records.extend(batched_records)
-                    except Exception as e:
-                        errors.append(repr(e))
-                    skip = skip + paginate_batch_size
-                    iter_count += 1
-                    # TODO: Add optional progress bar?
-                records = records[0:limit]
-                if len(errors) > 0:
-                    logging.error(
-                        f"There were errors retrieving records. {errors}"
-                    )
+            batch_size = len(batched_records)
+            logging.debug(
+                f"(skip={skip}, limit={limit}): Retrieved {batch_size} records"
+            )
+            if batch_size == 0:
+                break
+            records.extend(batched_records)
+            skip += batch_size
+            if not get_all_records:
+                limit -= batch_size
         return records
 
     def aggregate_docdb_records(self, pipeline: List[dict]) -> List[dict]:
