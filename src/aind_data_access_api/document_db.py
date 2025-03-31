@@ -368,9 +368,9 @@ class MetadataDbClient(Client):
         projection: Optional[dict] = None,
         sort: Optional[dict] = None,
         limit: int = 0,
-        paginate: bool = True,
-        paginate_batch_size: int = 500,
-        paginate_max_iterations: int = 20000,
+        paginate: Optional[bool] = None,
+        paginate_batch_size: Optional[int] = None,
+        paginate_max_iterations: Optional[int] = None,
     ) -> List[dict]:
         """
         Retrieve raw json records from DocDB API Gateway as a list of dicts.
