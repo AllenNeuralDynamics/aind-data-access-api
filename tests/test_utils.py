@@ -121,7 +121,7 @@ class TestUtils(unittest.TestCase):
     @patch("aind_data_access_api.document_db.MetadataDbClient")
     def test_paginate_docdb(self, mock_docdb_api_client: MagicMock):
         """Tests paginate_docdb"""
-        mock_docdb_api_client._get_records.side_effect = [
+        mock_docdb_api_client._find_records.side_effect = [
             [self.example_metadata_nd, self.example_metadata_nd1],
             [self.example_metadata_nd2],
             [],
