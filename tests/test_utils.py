@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, patch
 from aind_data_access_api.utils import (
     build_docdb_location_to_id_map,
     does_metadata_record_exist_in_docdb,
+    fetch_records_by_filter_list,
     get_record_from_docdb,
     get_s3_bucket_and_prefix,
     get_s3_location,
@@ -138,12 +139,93 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(expected_results, actual_results)
 
     @patch("aind_data_access_api.document_db.MetadataDbClient")
-    def test_build_docdb_location_to_id_map(
+    def test_fetch_records_by_filter_list(
         self, mock_docdb_api_client: MagicMock
+    ):
+        """Tests fetch_records_by_filter_list"""
+        expected_records = [
+            {
+                "_id": "70bcf356-985f-4a2a-8105-de900e35e788",
+                "name": "prefix1",
+                "location": "s3://bucket/prefix1",
+            },
+            {
+                "_id": "5ca4a951-d374-4f4b-8279-d570a35b2286",
+                "name": "prefix2",
+                "location": "s3://bucket/prefix2",
+            },
+        ]
+        mock_docdb_api_client.aggregate_docdb_records.return_value = (
+            expected_records
+        )
+
+        records = fetch_records_by_filter_list(
+            docdb_api_client=mock_docdb_api_client,
+            filter_key="name",
+            filter_values=["prefix1", "prefix2", "missing_prefix"],
+        )
+        self.assertEqual(expected_records, records)
+        mock_docdb_api_client.aggregate_docdb_records.assert_called_once_with(
+            pipeline=[
+                {
+                    "$match": {
+                        "name": {
+                            "$in": ["prefix1", "prefix2", "missing_prefix"]
+                        }
+                    }
+                },
+            ]
+        )
+
+    @patch("aind_data_access_api.document_db.MetadataDbClient")
+    def test_fetch_records_by_filter_list_projection(
+        self, mock_docdb_api_client: MagicMock
+    ):
+        """Tests fetch_records_by_filter_list with projection"""
+        expected_records = [
+            {
+                "_id": "70bcf356-985f-4a2a-8105-de900e35e788",
+                "name": "prefix1",
+            },
+            {
+                "_id": "5ca4a951-d374-4f4b-8279-d570a35b2286",
+                "name": "prefix2",
+            },
+        ]
+        mock_docdb_api_client.aggregate_docdb_records.return_value = (
+            expected_records
+        )
+
+        records = fetch_records_by_filter_list(
+            docdb_api_client=mock_docdb_api_client,
+            filter_key="name",
+            filter_values=["prefix1", "prefix2", "missing_prefix"],
+            projection={"_id": 1, "name": 1},
+        )
+        self.assertEqual(expected_records, records)
+        mock_docdb_api_client.aggregate_docdb_records.assert_called_once_with(
+            pipeline=[
+                {
+                    "$match": {
+                        "name": {
+                            "$in": ["prefix1", "prefix2", "missing_prefix"]
+                        }
+                    }
+                },
+                {"$project": {"_id": 1, "name": 1}},
+            ]
+        )
+
+    @patch("aind_data_access_api.utils.fetch_records_by_filter_list")
+    @patch("aind_data_access_api.document_db.MetadataDbClient")
+    def test_build_docdb_location_to_id_map(
+        self,
+        mock_docdb_api_client: MagicMock,
+        mock_fetch_records_by_filter_list: MagicMock,
     ):
         """Tests build_docdb_location_to_id_map"""
         bucket = "aind-ephys-data-dev-u5u0i5"
-        mock_docdb_api_client.retrieve_docdb_records.return_value = [
+        mock_fetch_records_by_filter_list.return_value = [
             {
                 "_id": "70bcf356-985f-4a2a-8105-de900e35e788",
                 "location": (
@@ -176,6 +258,16 @@ class TestUtils(unittest.TestCase):
             ),
         }
         self.assertEqual(expected_map, actual_map)
+        mock_fetch_records_by_filter_list.assert_called_once_with(
+            docdb_api_client=mock_docdb_api_client,
+            filter_key="location",
+            filter_values=[
+                f"s3://{bucket}/ecephys_655019_2000-04-04_04-00-00",
+                f"s3://{bucket}/ecephys_567890_2000-01-01_04-00-00",
+                f"s3://{bucket}/missing_655019_2000-01-01_01-01-02",
+            ],
+            projection={"_id": 1, "location": 1},
+        )
 
 
 if __name__ == "__main__":
