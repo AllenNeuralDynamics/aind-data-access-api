@@ -147,6 +147,37 @@ def paginate_docdb(
         skip += len(page)
 
 
+def fetch_records_by_filter_list(
+    docdb_api_client: MetadataDbClient,
+    filter_key: str,
+    filter_values: List[str],
+    projection: Optional[dict] = None,
+) -> List[dict]:
+    """
+    Queries DocDB for records where the value of a specified field is in a
+    list of values. Uses an aggregation pipeline with $in filter operator.
+
+    Parameters
+    ----------
+    docdb_api_client : MetadataDbClient
+    filter_key : str
+      The field to filter on.
+    filter_values : List[str]
+      The list of values to filter on.
+    projection : Optional[dict]
+      Subset of fields to return. Default is None which returns all fields.
+
+    Returns
+    -------
+    List[dict]
+    """
+    agg_pipeline = [{"$match": {filter_key: {"$in": filter_values}}}]
+    if projection:
+        agg_pipeline.append({"$project": projection})
+    results = docdb_api_client.aggregate_docdb_records(pipeline=agg_pipeline)
+    return results
+
+
 def build_docdb_location_to_id_map(
     docdb_api_client: MetadataDbClient,
     bucket: str,
