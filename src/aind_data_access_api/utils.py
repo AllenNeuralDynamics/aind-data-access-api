@@ -118,7 +118,7 @@ def paginate_docdb(
 
     Parameters
     ----------
-    docdb_api_client : MongoClient
+    docdb_api_client : MetadataDbClient
     page_size : int
       Default is 500
     filter_query : Optional[dict]
@@ -191,7 +191,7 @@ def build_docdb_location_to_id_map(
 
     Parameters
     ----------
-    docdb_api_client : MongoClient
+    docdb_api_client : MetadataDbClient
     bucket : str
     prefixes : List[str]
 
@@ -201,13 +201,12 @@ def build_docdb_location_to_id_map(
 
     """
     locations = [get_s3_location(bucket=bucket, prefix=p) for p in prefixes]
-    filter_query = {"location": {"$regex": f"s3://{bucket}/"}}
     projection = {"_id": 1, "location": 1}
-    results = docdb_api_client.retrieve_docdb_records(
-        filter_query=filter_query, projection=projection
+    results = fetch_records_by_filter_list(
+        docdb_api_client=docdb_api_client,
+        filter_key="location",
+        filter_values=locations,
+        projection=projection,
     )
-    # only return locations that are in the list of prefixes
-    location_to_id_map = {
-        r["location"]: r["_id"] for r in results if r["location"] in locations
-    }
+    location_to_id_map = {r["location"]: r["_id"] for r in results}
     return location_to_id_map

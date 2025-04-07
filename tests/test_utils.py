@@ -216,13 +216,16 @@ class TestUtils(unittest.TestCase):
             ]
         )
 
-    patch("aind_data_access_api.document_db.MetadataDbClient")
+    @patch("aind_data_access_api.utils.fetch_records_by_filter_list")
+    @patch("aind_data_access_api.document_db.MetadataDbClient")
     def test_build_docdb_location_to_id_map(
-        self, mock_docdb_api_client: MagicMock
+        self,
+        mock_docdb_api_client: MagicMock,
+        mock_fetch_records_by_filter_list: MagicMock,
     ):
         """Tests build_docdb_location_to_id_map"""
         bucket = "aind-ephys-data-dev-u5u0i5"
-        mock_docdb_api_client.retrieve_docdb_records.return_value = [
+        mock_fetch_records_by_filter_list.return_value = [
             {
                 "_id": "70bcf356-985f-4a2a-8105-de900e35e788",
                 "location": (
@@ -255,6 +258,16 @@ class TestUtils(unittest.TestCase):
             ),
         }
         self.assertEqual(expected_map, actual_map)
+        mock_fetch_records_by_filter_list.assert_called_once_with(
+            docdb_api_client=mock_docdb_api_client,
+            filter_key="location",
+            filter_values=[
+                f"s3://{bucket}/ecephys_655019_2000-04-04_04-00-00",
+                f"s3://{bucket}/ecephys_567890_2000-01-01_04-00-00",
+                f"s3://{bucket}/missing_655019_2000-01-01_01-01-02",
+            ],
+            projection={"_id": 1, "location": 1},
+        )
 
 
 if __name__ == "__main__":
