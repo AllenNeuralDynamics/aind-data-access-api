@@ -118,7 +118,7 @@ def paginate_docdb(
 
     Parameters
     ----------
-    docdb_api_client : MongoClient
+    docdb_api_client : MetadataDbClient
     page_size : int
       Default is 500
     filter_query : Optional[dict]
@@ -147,6 +147,37 @@ def paginate_docdb(
         skip += len(page)
 
 
+def fetch_records_by_filter_list(
+    docdb_api_client: MetadataDbClient,
+    filter_key: str,
+    filter_values: List[str],
+    projection: Optional[dict] = None,
+) -> List[dict]:
+    """
+    Queries DocDB for records where the value of a specified field is in a
+    list of values. Uses an aggregation pipeline with $in filter operator.
+
+    Parameters
+    ----------
+    docdb_api_client : MetadataDbClient
+    filter_key : str
+      The field to filter on.
+    filter_values : List[str]
+      The list of values to filter on.
+    projection : Optional[dict]
+      Subset of fields to return. Default is None which returns all fields.
+
+    Returns
+    -------
+    List[dict]
+    """
+    agg_pipeline = [{"$match": {filter_key: {"$in": filter_values}}}]
+    if projection:
+        agg_pipeline.append({"$project": projection})
+    results = docdb_api_client.aggregate_docdb_records(pipeline=agg_pipeline)
+    return results
+
+
 def build_docdb_location_to_id_map(
     docdb_api_client: MetadataDbClient,
     bucket: str,
@@ -160,7 +191,7 @@ def build_docdb_location_to_id_map(
 
     Parameters
     ----------
-    docdb_api_client : MongoClient
+    docdb_api_client : MetadataDbClient
     bucket : str
     prefixes : List[str]
 
@@ -170,13 +201,12 @@ def build_docdb_location_to_id_map(
 
     """
     locations = [get_s3_location(bucket=bucket, prefix=p) for p in prefixes]
-    filter_query = {"location": {"$regex": f"s3://{bucket}/"}}
     projection = {"_id": 1, "location": 1}
-    results = docdb_api_client.retrieve_docdb_records(
-        filter_query=filter_query, projection=projection
+    results = fetch_records_by_filter_list(
+        docdb_api_client=docdb_api_client,
+        filter_key="location",
+        filter_values=locations,
+        projection=projection,
     )
-    # only return locations that are in the list of prefixes
-    location_to_id_map = {
-        r["location"]: r["_id"] for r in results if r["location"] in locations
-    }
+    location_to_id_map = {r["location"]: r["_id"] for r in results}
     return location_to_id_map
