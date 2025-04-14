@@ -3,12 +3,24 @@
 import json
 import os
 import unittest
+import pandas as pd
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+from aind_data_schema.core.quality_control import (
+    QualityControl,
+    QCEvaluation,
+    QCMetric,
+    QCStatus,
+    Status,
+    Stage,
+)
+from aind_data_schema_models.modalities import Modality
 
 from aind_data_access_api.helpers.data_schema import (
     get_quality_control_by_id,
     get_quality_control_by_name,
+    get_quality_control_df,
 )
 
 TEST_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
@@ -136,6 +148,50 @@ class TestHelpersDataSchema(unittest.TestCase):
         self.assertRaises(
             ValueError, get_quality_control_by_id, client, _id="123"
         )
+
+    @patch(
+        "aind_data_access_api.helpers.data_schema.get_quality_control_by_id"
+    )
+    def test_get_qc_df(self, mock_get_quality_control_by_id: MagicMock):
+        """Test that a dataframe is correctly returned"""
+
+        status = QCStatus(
+            evaluator="Dan",
+            status=Status.PASS,
+            timestamp=datetime.now(),
+        )
+        metric0 = QCMetric(
+            name="Metric0",
+            value=0,
+            status_history=[
+                status,
+            ],
+        )
+
+        eval = QCEvaluation(
+            name="Evaluation0",
+            modality=Modality.ECEPHYS,
+            stage=Stage.RAW,
+            metrics=[metric0],
+        )
+
+        mock_get_quality_control_by_id.return_value = QualityControl(
+            evaluations=[eval],
+        )
+
+        client = MagicMock()
+
+        test_df = pd.DataFrame(
+            {
+                "_id": ["fake_id"],
+                "Evaluation0_Metric0.value": [0],
+                "Evaluation0_Metric0.status": [Status.PASS],
+            }
+        )
+
+        qc_df = get_quality_control_df(client, ["fake_id"])
+
+        pd.testing.assert_frame_equal(test_df, qc_df)
 
 
 if __name__ == "__main__":
