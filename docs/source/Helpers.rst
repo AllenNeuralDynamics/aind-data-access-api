@@ -28,9 +28,9 @@ To get a `QualityControl` object for a specific ID or name, you can use:
       collection=COLLECTION,
    )
 
-   qc = get_quality_control_by_name(client, ["behavior_711042_2024-08-07_12-20-41"])
+   qc = get_quality_control_by_name(client, "behavior_711042_2024-08-07_12-20-41")
 
-If you want to recover just the QC value or status, you can use:
+If you want to recover just the QC value or status, you can get those packaged conveniently in a `pandas.DataFrame`:
 
 .. code:: python
 
