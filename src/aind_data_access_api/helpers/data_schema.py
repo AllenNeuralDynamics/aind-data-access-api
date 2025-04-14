@@ -93,7 +93,10 @@ def get_quality_control_df(
     allow_invalid : bool, optional
         return invalid QualityControl as dict if True, by default False
     """
-    qcs = [get_quality_control_by_id(client, _id=_id, allow_invalid=False) for _id in ids]
+    qcs = [
+        get_quality_control_by_id(client, _id=_id, allow_invalid=False)
+        for _id in ids
+    ]
 
     data = []
 
@@ -102,8 +105,12 @@ def get_quality_control_df(
         qc_metrics_flat["_id"] = _id
         for eval in qc.evaluations:
             for metric in eval.metrics:
-                qc_metrics_flat[f"{eval.name}_{metric.name}.value"] = metric.value
-                qc_metrics_flat[f"{eval.name}_{metric.name}.status"] = metric.status.status
+                qc_metrics_flat[f"{eval.name}_{metric.name}.value"] = (
+                    metric.value
+                )
+                qc_metrics_flat[f"{eval.name}_{metric.name}.status"] = (
+                    metric.status.status
+                )
 
         data.append(qc_metrics_flat)
 
