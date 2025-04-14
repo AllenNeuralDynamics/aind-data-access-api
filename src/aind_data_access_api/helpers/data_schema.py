@@ -82,7 +82,8 @@ def get_quality_control_df(
     client: MetadataDbClient,
     ids: List[str],
 ):
-    """Using a connected DocumentDB client, retrieve a valid QC object as a dataframe
+    """Using a connected DocumentDB client, retrieve a valid QC object as a 
+    dataframe
 
     Parameters
     ----------
