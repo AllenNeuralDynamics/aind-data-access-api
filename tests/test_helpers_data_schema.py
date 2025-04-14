@@ -151,9 +151,11 @@ class TestHelpersDataSchema(unittest.TestCase):
         )
 
     @patch(
-        "aind_data_access_api.helpers.data_schema.get_quality_control_by_id"
+        "aind_data_access_api.helpers.data_schema.get_quality_control_by_name"
     )
-    def test_get_qc_value_df(self, mock_get_quality_control_by_id: MagicMock):
+    def test_get_qc_value_df(
+        self, mock_get_quality_control_by_name: MagicMock
+    ):
         """Test that a dataframe is correctly returned"""
 
         status = QCStatus(
@@ -176,7 +178,7 @@ class TestHelpersDataSchema(unittest.TestCase):
             metrics=[metric0],
         )
 
-        mock_get_quality_control_by_id.return_value = QualityControl(
+        mock_get_quality_control_by_name.return_value = QualityControl(
             evaluations=[eval],
         )
 
@@ -194,9 +196,11 @@ class TestHelpersDataSchema(unittest.TestCase):
         pd.testing.assert_frame_equal(test_df, qc_df)
 
     @patch(
-        "aind_data_access_api.helpers.data_schema.get_quality_control_by_id"
+        "aind_data_access_api.helpers.data_schema.get_quality_control_by_name"
     )
-    def test_get_qc_status_df(self, mock_get_quality_control_by_id: MagicMock):
+    def test_get_qc_status_df(
+        self, mock_get_quality_control_by_name: MagicMock
+    ):
         """Test that a dataframe is correctly returned"""
 
         status = QCStatus(
@@ -219,7 +223,7 @@ class TestHelpersDataSchema(unittest.TestCase):
             metrics=[metric0],
         )
 
-        mock_get_quality_control_by_id.return_value = QualityControl(
+        mock_get_quality_control_by_name.return_value = QualityControl(
             evaluations=[eval],
         )
 

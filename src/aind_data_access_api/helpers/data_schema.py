@@ -81,7 +81,7 @@ def validate_qc(qc_data: dict, allow_invalid: bool = False):
 
 def get_quality_control_status_df(
     client: MetadataDbClient,
-    ids: List[str],
+    names: List[str],
     date: Optional[datetime] = None,
 ):
     """Using a connected DocumentDB client, retrieve the status of all
@@ -91,15 +91,15 @@ def get_quality_control_status_df(
     ----------
     client : MetadataDbClient
         A connected DocumentDB client.
-    ids : List[str],
-        _id fields in DocDB
+    names : List[str],
+        name fields in DocDB
     """
     if date is None:
         date = datetime.now(tz=timezone.utc)
 
     qcs = [
-        get_quality_control_by_id(client, _id=_id, allow_invalid=False)
-        for _id in ids
+        get_quality_control_by_name(client, name=name, allow_invalid=False)
+        for name in names
     ]
 
     data = []
@@ -124,7 +124,7 @@ def get_quality_control_status_df(
 
 def get_quality_control_value_df(
     client: MetadataDbClient,
-    ids: List[str],
+    names: List[str],
 ):
     """Using a connected DocumentDB client, retrieve the status of all
     QualityControl objects for a list of records.
@@ -133,12 +133,12 @@ def get_quality_control_value_df(
     ----------
     client : MetadataDbClient
         A connected DocumentDB client.
-    ids : List[str],
-        _id fields in DocDB
+    names : List[str],
+        name fields in DocDB
     """
     qcs = [
-        get_quality_control_by_id(client, _id=_id, allow_invalid=False)
-        for _id in ids
+        get_quality_control_by_name(client, name=name, allow_invalid=False)
+        for name in names
     ]
 
     data = []
