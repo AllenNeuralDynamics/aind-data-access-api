@@ -12,6 +12,7 @@ from aind_data_access_api.helpers.docdb import (
     get_field_by_id,
     get_id_from_name,
 )
+from aind_data_access_api.utils import fetch_records_by_filter_list
 
 
 def get_quality_control_by_id(
@@ -79,11 +80,43 @@ def validate_qc(qc_data: dict, allow_invalid: bool = False):
             raise e
 
 
+def get_quality_control_by_names(
+    client: MetadataDbClient,
+    names: List[str],
+    allow_invalid: bool = False,
+) -> List[QualityControl] | List[dict]:
+    """Using a connected DocumentDB client, retrieve the QualityControl object
+    for a list of records.
+
+    Parameters
+    ----------
+    client : MetadataDbClient
+        A connected DocumentDB client.
+    names : List[str],
+        name fields in DocDB
+    allow_invalid : bool, optional
+        return invalid QualityControl as dict if True, by default False
+    """
+    records = fetch_records_by_filter_list(
+        client,
+        filter_key="name",
+        filter_values=names,
+        projection={"quality_control": 1},
+    )
+
+    qcs = [
+        validate_qc(record["quality_control"], allow_invalid=allow_invalid)
+        for record in records
+    ]
+
+    return qcs
+
+
 def get_quality_control_status_df(
     client: MetadataDbClient,
     names: List[str],
     date: Optional[datetime] = None,
-):
+) -> pd.DataFrame:
     """Using a connected DocumentDB client, retrieve the status of all
     QualityControl objects for a list of records.
 
@@ -125,7 +158,7 @@ def get_quality_control_status_df(
 def get_quality_control_value_df(
     client: MetadataDbClient,
     names: List[str],
-):
+) -> pd.DataFrame:
     """Using a connected DocumentDB client, retrieve the value of all
     QualityControl objects for a list of records.
 

@@ -22,6 +22,7 @@ from aind_data_access_api.helpers.data_schema import (
     get_quality_control_by_name,
     get_quality_control_value_df,
     get_quality_control_status_df,
+    get_quality_control_by_names,
 )
 
 TEST_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
@@ -239,6 +240,78 @@ class TestHelpersDataSchema(unittest.TestCase):
         qc_df = get_quality_control_value_df(client, ["fake_name"])
 
         pd.testing.assert_frame_equal(test_df, qc_df)
+
+    @patch("aind_data_access_api.utils.fetch_records_by_filter_list")
+    def test_get_quality_control_by_names_valid(self, mock_fetch_records):
+        """Test retrieving valid QualityControl objects."""
+        mock_client = MagicMock()
+        mock_records = [
+            {"quality_control": {"evaluations": [{"name": "eval1"}]}},
+            {"quality_control": {"evaluations": [{"name": "eval2"}]}},
+        ]
+        mock_fetch_records.return_value = mock_records
+
+        result = get_quality_control_by_names(
+            client=mock_client,
+            names=["name1", "name2"],
+            allow_invalid=False,
+        )
+
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0].evaluations[0].name, "eval1")
+        self.assertEqual(result[1].evaluations[0].name, "eval2")
+        mock_fetch_records.assert_called_once_with(
+            mock_client,
+            filter_key="name",
+            filter_values=["name1", "name2"],
+            projection={"quality_control": 1},
+        )
+
+    @patch("aind_data_access_api.utils.fetch_records_by_filter_list")
+    def test_get_quality_control_by_names_invalid(self, mock_fetch_records):
+        """Test retrieving invalid QualityControl objects."""
+        mock_client = MagicMock()
+        mock_records = [
+            {"quality_control": {"invalid_field": "invalid_value"}},
+            {"quality_control": {"invalid_field": "another_invalid_value"}},
+        ]
+        mock_fetch_records.return_value = mock_records
+
+        result = get_quality_control_by_names(
+            client=mock_client,
+            names=["name1", "name2"],
+            allow_invalid=True,
+        )
+
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0]["invalid_field"], "invalid_value")
+        self.assertEqual(result[1]["invalid_field"], "another_invalid_value")
+        mock_fetch_records.assert_called_once_with(
+            mock_client,
+            filter_key="name",
+            filter_values=["name1", "name2"],
+            projection={"quality_control": 1},
+        )
+
+    @patch("aind_data_access_api.utils.fetch_records_by_filter_list")
+    def test_get_quality_control_by_names_no_records(self, mock_fetch_records):
+        """Test when no records are found."""
+        mock_client = MagicMock()
+        mock_fetch_records.return_value = []
+
+        result = get_quality_control_by_names(
+            client=mock_client,
+            names=["name1", "name2"],
+            allow_invalid=False,
+        )
+
+        self.assertEqual(result, [])
+        mock_fetch_records.assert_called_once_with(
+            mock_client,
+            filter_key="name",
+            filter_values=["name1", "name2"],
+            projection={"quality_control": 1},
+        )
 
 
 if __name__ == "__main__":
