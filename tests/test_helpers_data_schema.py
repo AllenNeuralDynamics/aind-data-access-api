@@ -186,12 +186,12 @@ class TestHelpersDataSchema(unittest.TestCase):
 
         test_df = pd.DataFrame(
             {
-                "_id": ["fake_id"],
+                "name": ["fake_name"],
                 "Evaluation0_Metric0": [Status.PASS],
             }
         )
 
-        qc_df = get_quality_control_status_df(client, ["fake_id"])
+        qc_df = get_quality_control_status_df(client, ["fake_name"])
 
         pd.testing.assert_frame_equal(test_df, qc_df)
 
@@ -231,12 +231,12 @@ class TestHelpersDataSchema(unittest.TestCase):
 
         test_df = pd.DataFrame(
             {
-                "_id": ["fake_id"],
+                "name": ["fake_name"],
                 "Evaluation0_Metric0": [0],
             }
         )
 
-        qc_df = get_quality_control_value_df(client, ["fake_id"])
+        qc_df = get_quality_control_value_df(client, ["fake_name"])
 
         pd.testing.assert_frame_equal(test_df, qc_df)
 

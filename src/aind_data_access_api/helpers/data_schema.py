@@ -104,9 +104,9 @@ def get_quality_control_status_df(
 
     data = []
 
-    for _id, qc in zip(ids, qcs):
+    for name, qc in zip(names, qcs):
         qc_metrics_flat = {}
-        qc_metrics_flat["_id"] = _id
+        qc_metrics_flat["name"] = name
         for eval in qc.evaluations:
             for metric in eval.metrics:
                 # Find the most recent status before the given datetime
@@ -143,9 +143,9 @@ def get_quality_control_value_df(
 
     data = []
 
-    for _id, qc in zip(ids, qcs):
+    for name, qc in zip(names, qcs):
         qc_metrics_flat = {}
-        qc_metrics_flat["_id"] = _id
+        qc_metrics_flat["name"] = name
         for eval in qc.evaluations:
             for metric in eval.metrics:
                 qc_metrics_flat[f"{eval.name}_{metric.name}"] = metric.value
