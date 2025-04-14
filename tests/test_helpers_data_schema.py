@@ -185,18 +185,18 @@ class TestHelpersDataSchema(unittest.TestCase):
         test_df = pd.DataFrame(
             {
                 "_id": ["fake_id"],
-                "Evaluation0_Metric0": [0],
+                "Evaluation0_Metric0": [Status.PASS],
             }
         )
 
-        qc_df = get_quality_control_value_df(client, ["fake_id"])
+        qc_df = get_quality_control_status_df(client, ["fake_id"])
 
         pd.testing.assert_frame_equal(test_df, qc_df)
 
     @patch(
         "aind_data_access_api.helpers.data_schema.get_quality_control_by_id"
     )
-    def test_get_qc_value_df(self, mock_get_quality_control_by_id: MagicMock):
+    def test_get_qc_status_df(self, mock_get_quality_control_by_id: MagicMock):
         """Test that a dataframe is correctly returned"""
 
         status = QCStatus(
@@ -228,7 +228,7 @@ class TestHelpersDataSchema(unittest.TestCase):
         test_df = pd.DataFrame(
             {
                 "_id": ["fake_id"],
-                "Evaluation0_Metric0": [Status.PASS],
+                "Evaluation0_Metric0": [0],
             }
         )
 
