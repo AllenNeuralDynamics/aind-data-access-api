@@ -3,7 +3,7 @@
 import json
 import pandas as pd
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from aind_data_schema.core.quality_control import QualityControl
 
@@ -95,7 +95,7 @@ def get_quality_control_status_df(
         _id fields in DocDB
     """
     if date is None:
-        datetime = datetime.now()
+        date = datetime.now(tz=timezone.utc)
 
     qcs = [
         get_quality_control_by_id(client, _id=_id, allow_invalid=False)
