@@ -20,7 +20,8 @@ from aind_data_schema_models.modalities import Modality
 from aind_data_access_api.helpers.data_schema import (
     get_quality_control_by_id,
     get_quality_control_by_name,
-    get_quality_control_df,
+    get_quality_control_value_df,
+    get_quality_control_status_df,
 )
 
 TEST_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
@@ -152,7 +153,7 @@ class TestHelpersDataSchema(unittest.TestCase):
     @patch(
         "aind_data_access_api.helpers.data_schema.get_quality_control_by_id"
     )
-    def test_get_qc_df(self, mock_get_quality_control_by_id: MagicMock):
+    def test_get_qc_value_df(self, mock_get_quality_control_by_id: MagicMock):
         """Test that a dataframe is correctly returned"""
 
         status = QCStatus(
@@ -184,12 +185,54 @@ class TestHelpersDataSchema(unittest.TestCase):
         test_df = pd.DataFrame(
             {
                 "_id": ["fake_id"],
-                "Evaluation0_Metric0.value": [0],
-                "Evaluation0_Metric0.status": [Status.PASS],
+                "Evaluation0_Metric0": [0],
             }
         )
 
-        qc_df = get_quality_control_df(client, ["fake_id"])
+        qc_df = get_quality_control_value_df(client, ["fake_id"])
+
+        pd.testing.assert_frame_equal(test_df, qc_df)
+
+    @patch(
+        "aind_data_access_api.helpers.data_schema.get_quality_control_by_id"
+    )
+    def test_get_qc_value_df(self, mock_get_quality_control_by_id: MagicMock):
+        """Test that a dataframe is correctly returned"""
+
+        status = QCStatus(
+            evaluator="Dan",
+            status=Status.PASS,
+            timestamp=datetime.now(),
+        )
+        metric0 = QCMetric(
+            name="Metric0",
+            value=0,
+            status_history=[
+                status,
+            ],
+        )
+
+        eval = QCEvaluation(
+            name="Evaluation0",
+            modality=Modality.ECEPHYS,
+            stage=Stage.RAW,
+            metrics=[metric0],
+        )
+
+        mock_get_quality_control_by_id.return_value = QualityControl(
+            evaluations=[eval],
+        )
+
+        client = MagicMock()
+
+        test_df = pd.DataFrame(
+            {
+                "_id": ["fake_id"],
+                "Evaluation0_Metric0": [Status.PASS],
+            }
+        )
+
+        qc_df = get_quality_control_value_df(client, ["fake_id"])
 
         pd.testing.assert_frame_equal(test_df, qc_df)
 

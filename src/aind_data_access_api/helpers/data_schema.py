@@ -2,7 +2,8 @@
 
 import json
 import pandas as pd
-from typing import List
+from typing import List, Optional
+from datetime import datetime
 
 from aind_data_schema.core.quality_control import QualityControl
 
@@ -78,21 +79,62 @@ def validate_qc(qc_data: dict, allow_invalid: bool = False):
             raise e
 
 
-def get_quality_control_df(
+def get_quality_control_status_df(
     client: MetadataDbClient,
     ids: List[str],
+    date: Optional[datetime] = None,
 ):
-    """Using a connected DocumentDB client, retrieve a valid QC object as a 
-    dataframe
+    """Using a connected DocumentDB client, retrieve the status of all
+    QualityControl objects for a list of records.
 
     Parameters
     ----------
     client : MetadataDbClient
         A connected DocumentDB client.
-    _id : str, optional
-        _id field in DocDB, by default empty
-    allow_invalid : bool, optional
-        return invalid QualityControl as dict if True, by default False
+    ids : List[str],
+        _id fields in DocDB
+    """
+    if date is None:
+        datetime = datetime.now()
+
+    qcs = [
+        get_quality_control_by_id(client, _id=_id, allow_invalid=False)
+        for _id in ids
+    ]
+
+    data = []
+
+    for _id, qc in zip(ids, qcs):
+        qc_metrics_flat = {}
+        qc_metrics_flat["_id"] = _id
+        for eval in qc.evaluations:
+            for metric in eval.metrics:
+                # Find the most recent status before the given datetime
+                for status in reversed(metric.status_history):
+                    if status.timestamp <= date:
+                        qc_metrics_flat[f"{eval.name}_{metric.name}"] = (
+                            status.status
+                        )
+                        break
+
+        data.append(qc_metrics_flat)
+
+    return pd.DataFrame(data)
+
+
+def get_quality_control_value_df(
+    client: MetadataDbClient,
+    ids: List[str],
+):
+    """Using a connected DocumentDB client, retrieve the status of all
+    QualityControl objects for a list of records.
+
+    Parameters
+    ----------
+    client : MetadataDbClient
+        A connected DocumentDB client.
+    ids : List[str],
+        _id fields in DocDB
     """
     qcs = [
         get_quality_control_by_id(client, _id=_id, allow_invalid=False)
@@ -106,12 +148,7 @@ def get_quality_control_df(
         qc_metrics_flat["_id"] = _id
         for eval in qc.evaluations:
             for metric in eval.metrics:
-                qc_metrics_flat[f"{eval.name}_{metric.name}.value"] = (
-                    metric.value
-                )
-                qc_metrics_flat[f"{eval.name}_{metric.name}.status"] = (
-                    metric.status.status
-                )
+                qc_metrics_flat[f"{eval.name}_{metric.name}"] = metric.value
 
         data.append(qc_metrics_flat)
 
