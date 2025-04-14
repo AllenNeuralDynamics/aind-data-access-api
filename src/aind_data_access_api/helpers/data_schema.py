@@ -126,7 +126,7 @@ def get_quality_control_value_df(
     client: MetadataDbClient,
     names: List[str],
 ):
-    """Using a connected DocumentDB client, retrieve the status of all
+    """Using a connected DocumentDB client, retrieve the value of all
     QualityControl objects for a list of records.
 
     Parameters
