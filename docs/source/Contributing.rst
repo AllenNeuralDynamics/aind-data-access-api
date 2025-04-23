@@ -32,7 +32,7 @@ For development,
    off of ``main``
 
 Consult the `Branches and Pull Requests <#branches-and-pull-requests>`__
-and `Release Cycles <#release-cycles>`__ for more details.
+and `Release Cycles <#release-cycles>`__ sections for more details.
 
 From the root directory, run:
 
@@ -164,7 +164,7 @@ Hotfixes
 ~~~~~~~~
 
 -  A ``hotfix`` branch is created off of ``main``
--  A Pull Request into is ``main`` is opened, reviewed, and merged into
+-  A Pull Request into ``main`` is opened, reviewed, and merged into
    ``main``
 -  A new ``tag`` with a patch bump is created, and a new ``release`` is
    deployed
