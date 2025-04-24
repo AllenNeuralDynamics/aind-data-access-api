@@ -1,11 +1,15 @@
-Examples - DocDB Direct Connection
-==================================
+Examples - DocDB Direct Connection (SSH)
+========================================
 
-This page provides examples for interact with the Document Database (DocDB)
-using the provided Python client.
+This page provides examples to interact with the Document Database (DocDB)
+using the provided Python client and SSH tunneling.
 
 It is assumed that the required credentials are set in environment.
 Please refer to the User Guide for more details.
+
+.. note::
+
+    It is recommended to use the REST API client instead of the SSH client for ease of use.
 
 
 Querying Metadata
@@ -43,7 +47,7 @@ Filter Example 1: Get records with a certain subject_id
 
 
 With projection (recommended):
-      
+
 .. code:: python
 
   with DocumentDbSSHClient(credentials=credentials) as doc_db_client:
@@ -115,94 +119,8 @@ Aggregation Example 1: Get all subjects per breeding group
           doc_db_client.collection.aggregate(pipeline=agg_pipeline)
       )
       print(f"Total breeding groups: {len(result)}")
-      print(f"First 3 breeding groups and corresponding subjects:")
+      print("First 3 breeding groups and corresponding subjects:")
       print(json.dumps(result[:3], indent=3))
 
 For more info about aggregations, please see MongoDB documentation:
 https://www.mongodb.com/docs/manual/aggregation/
-
-
-Updating Metadata
-~~~~~~~~~~~~~~~~~~~~~~
-
-Below is an example of how to update records in DocDB using ``DocumentDbSSHClient``.
-
-.. code:: python
-
-  import logging
-
-  from aind_data_access_api.document_db_ssh import (
-      DocumentDbSSHClient,
-      DocumentDbSSHCredentials,
-  )
-
-  logging.basicConfig(level="INFO")
-
-  def _process_docdb_record(record: dict, doc_db_client: DocumentDbSSHClient, dryrun: bool) -> None:
-      """
-      Process record. This example updates the data_description.name field
-      if it does not match the record.name field.
-
-      Parameters
-      ----------
-      record : dict
-
-      """
-      _id = record.get("_id")
-      name = record.get("name")
-      location = record.get("location")
-      if _id:
-          if record.get("data_description") and record["data_description"].get("name") != name:
-              # update specific fields(s) only
-              new_fields = {
-                  "data_description.name": name
-              }
-              update_docdb_record_partial(record_id=_id, new_fields=new_fields, doc_db_client=doc_db_client, dryrun=dryrun)
-          # else:
-          #     logging.info(f"Record for {location} does not need to be updated.")
-      else:
-          logging.warning(f"Record for {location} does not have an _id field! Skipping.")
-
-
-  def update_docdb_record_partial(record_id: str, new_fields: dict, doc_db_client: DocumentDbSSHClient, dryrun: bool) -> None:
-      """
-      Update record in docdb by updating specific fields only.
-      Parameters
-      ----------
-      record_id : str
-          The _id of the record to update.
-      new_fields : dict
-          New fields to update. E.g. {"data_description.name": "new_name"}
-
-      """
-      if dryrun:
-          logging.info(f"(dryrun) doc_db_client.collection.update_one (partial): {record_id}")
-      else:
-          logging.info(f"doc_db_client.collection.update_one (partial): {record_id}")
-          response = doc_db_client.collection.update_one(
-              {"_id": record_id},
-              {"$set": new_fields},
-              upsert=False,
-          )
-          logging.info(response.raw_result)
-            
-          
-  if __name__ == "__main__":
-      credentials = DocumentDbSSHCredentials()    # credentials in environment
-      dryrun = True
-      filter = {"location": {"$regex": ".*s3://aind-open-data.*"}}
-      projection = None
-      
-      with DocumentDbSSHClient(credentials=credentials) as doc_db_client:
-          db_name = doc_db_client.database_name
-          col_name = doc_db_client.collection_name
-          # count = doc_db_client.collection.count_documents(filter)
-          # logging.info(f"{db_name}.{col_name}: Found {count} records with {filter}")
-
-          logging.info(f"{db_name}.{col_name}: Starting to scan for {filter}.")
-          records = doc_db_client.collection.find(
-              filter=filter,
-          )
-          for record in records:
-              _process_docdb_record(record=record, doc_db_client=doc_db_client, dryrun=dryrun)
-          logging.info(f"{db_name}.{col_name}:Finished scanning through DocDb.")

@@ -6,8 +6,7 @@
 
 API to interact with a few AIND databases. We have two primary databases:
 
-1. A document database (DocDB) to store
-   unstructured json documents. The DocDB contains AIND metadata.
+1. A document database (DocDB) to store unstructured JSON documents. The DocDB contains AIND metadata.
 2. A relational database to store structured tables.
 
 ## Installation

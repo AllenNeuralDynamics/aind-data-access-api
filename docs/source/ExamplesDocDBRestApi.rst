@@ -1,7 +1,7 @@
 Examples - DocDB REST API
 ==================================
 
-This page provides examples for interact with the Document Database (DocDB)
+This page provides examples to interact with the Document Database (DocDB)
 REST API using the provided Python client.
 
 
@@ -46,7 +46,7 @@ Filter Example 1: Get records with a certain subject_id
 
 
 With projection (recommended):
-      
+
 .. code:: python
 
   filter = {"subject.subject_id": "731015"}
@@ -110,13 +110,13 @@ Aggregation Example 1: Get all subjects per breeding group
               "subject_ids": {"$addToSet": "$subject.subject_id"},
               "count": {"$sum": 1},
           }
-    }
+      }
   ]
   result = docdb_api_client.aggregate_docdb_records(
       pipeline=agg_pipeline
   )
   print(f"Total breeding groups: {len(result)}")
-  print(f"First 3 breeding groups and corresponding subjects:")
+  print("First 3 breeding groups and corresponding subjects:")
   print(json.dumps(result[:3], indent=3))
 
 For more info about aggregations, please see MongoDB documentation:
@@ -125,7 +125,7 @@ https://www.mongodb.com/docs/manual/aggregation/
 Advanced Example: Custom Session Object
 -------------------------------------------
 
-It's possible to attach a custom Session to retry certain requests errors
+It's possible to attach a custom Session to retry certain requests errors:
 
 .. code:: python
 
@@ -157,6 +157,31 @@ It's possible to attach a custom Session to retry certain requests errors
     ) as docdb_api_client:
         records = docdb_api_client.retrieve_docdb_records(limit=10)
 
+Utility Methods
+---------------
+
+A few utility methods are provided in the :mod:`aind_data_access_api.utils` module
+to help with interacting with the DocDB API.
+
+For example, to fetch records that match any value in a list of subject IDs:
+
+.. code:: python
+
+    from aind_data_access_api.utils import fetch_records_by_filter_list
+
+    records = fetch_records_by_filter_list(
+        docdb_api_client=docdb_api_client,
+        filter_key="subject.subject_id",
+        filter_values=["731015", "741137", "789012"],
+        projection={
+            "name": 1,
+            "location": 1,
+            "subject.subject_id": 1,
+            "data_description.project_name": 1,
+        },
+    )
+    print(f"Found {len(records)} records. First 3 records:")
+    print(json.dumps(records[:3], indent=3))
 
 
 Updating Metadata
@@ -166,7 +191,10 @@ Updating Metadata
 2. **Query DocDB**: Filter for the records you want to update.
 3. **Update DocDB**: Use ``upsert_one_docdb_record`` or ``upsert_list_of_docdb_records`` to update the records.
 
-Please note that records are read and written as dictionaries from DocDB (not Pydantic models).
+.. note::
+
+    Records must be read and written as dictionaries from DocDB (not Pydantic models).
+
 For example, to update the "instrument" and "session" metadata of a record in DocDB:
 
 .. code:: python
@@ -214,7 +242,10 @@ You can also make updates to individual nested fields:
   )
   print(response.json())
 
-Please note that while DocumentDB supports fieldnames with special characters ("$" and "."), they are not recommended.
-There may be issues querying or updating these fields.
+.. note::
 
-It is recommended to avoid these special chars in dictionary keys, e.g. ``{"abc.py": "data"}`` can be written as ``{"filename": "abc.py", "some_file_property": "data"}`` instead.
+    While DocumentDB supports fieldnames with special characters ("$" and "."), they are not recommended.
+    There may be issues querying or updating these fields.
+
+    It is recommended to avoid these special chars in dictionary keys. E.g. ``{"abc.py": "data"}`` can be
+    written as ``{"filename": "abc.py", "some_file_property": "data"}`` instead.
