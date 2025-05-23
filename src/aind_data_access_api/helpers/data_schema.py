@@ -168,10 +168,9 @@ def get_quality_control_value_df(
     names : List[str],
         name fields in DocDB
     """
-    qcs = [
-        get_quality_control_by_name(client, name=name, allow_invalid=False)
-        for name in names
-    ]
+    qcs = get_quality_control_by_names(
+        client=client, names=names, allow_invalid=False
+    )
 
     data = []
 
