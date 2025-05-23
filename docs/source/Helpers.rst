@@ -16,7 +16,10 @@ To get a `QualityControl` object for a specific ID or name, you can use:
 .. code:: python
 
    from aind_data_access_api.document_db import MetadataDbClient
-   from aind_data_access_api.helpers.data_schema import get_quality_control_by_id
+   from aind_data_access_api.helpers.data_schema import (
+       get_quality_control_by_name,
+       get_quality_control_value_df,
+   )
 
    API_GATEWAY_HOST = "api.allenneuraldynamics.org"
    DATABASE = "metadata_index"
