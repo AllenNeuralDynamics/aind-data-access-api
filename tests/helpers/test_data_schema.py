@@ -271,7 +271,10 @@ class TestHelpersDataSchema(unittest.TestCase):
         )
 
     @patch(
-        "aind_data_access_api.helpers.data_schema.fetch_records_by_filter_list",
+        (
+            "aind_data_access_api.helpers.data_schema."
+            "fetch_records_by_filter_list"
+        ),
         name="mock_fetch",
     )
     def test_get_quality_control_by_names_invalid(self, mock_fetch):
