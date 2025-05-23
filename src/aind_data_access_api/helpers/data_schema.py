@@ -84,7 +84,7 @@ def get_quality_control_by_names(
     client: MetadataDbClient,
     names: List[str],
     allow_invalid: bool = False,
-) -> List[QualityControl] | List[dict]:
+) -> List[QualityControl | dict]:
     """Using a connected DocumentDB client, retrieve the QualityControl object
     for a list of records.
 
