@@ -130,10 +130,9 @@ def get_quality_control_status_df(
     if date is None:
         date = datetime.now(tz=timezone.utc)
 
-    qcs = [
-        get_quality_control_by_name(client, name=name, allow_invalid=False)
-        for name in names
-    ]
+    qcs = get_quality_control_by_names(
+        client=client, names=names, allow_invalid=False
+    )
 
     data = []
 
