@@ -7,7 +7,7 @@
 Welcome to this repository's documentation!
 ===========================================
 
-`aind-data-access-api <https://github.com/AllenNeuralDynamics/aind-data-access-api>`_
+`aind-data-access-api code <https://github.com/AllenNeuralDynamics/aind-data-access-api>`_
 
 .. toctree::
    :maxdepth: 2
