@@ -16,6 +16,7 @@ Welcome to this repository's documentation!
    UserGuide
    ExamplesDocDBRestApi
    ExamplesDocDBDirectConnection
+   Helpers
    Contributing
    modules
 
