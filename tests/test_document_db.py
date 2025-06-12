@@ -580,6 +580,29 @@ class TestMetadataDbClient(unittest.TestCase):
         )
 
     @patch("aind_data_access_api.document_db.Client._insert_one_record")
+    def test_insert_one_docdb_record_managed(self, mock_insert: MagicMock):
+        """Tests inserting one docdb record when the target collection is
+        managed."""
+        client = MetadataDbClient(
+            host=self.example_client_args["host"],
+            database="metadata_index",
+            collection="assets",
+        )
+        mock_insert.return_value = {"message": "success"}
+        # _id is not required for managed collections
+        record = {
+            "name": "modal_00000_2000-10-10_10-10-10",
+            "created": datetime(2000, 10, 10, 10, 10, 10),
+            "location": "some_url",
+            "subject": {"subject_id": "00000", "sex": "Female"},
+        }
+        response = client.insert_one_docdb_record(record)
+        self.assertEqual({"message": "success"}, response)
+        mock_insert.assert_called_once_with(
+            json.loads(json.dumps(record, default=str)),
+        )
+
+    @patch("aind_data_access_api.document_db.Client._insert_one_record")
     def test_insert_one_docdb_record_invalid(self, mock_insert: MagicMock):
         """Tests inserting one docdb record if record is invalid"""
         client = MetadataDbClient(**self.example_client_args)
