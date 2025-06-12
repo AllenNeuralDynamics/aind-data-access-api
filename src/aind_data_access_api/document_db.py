@@ -429,7 +429,10 @@ class MetadataDbClient(Client):
 
     def insert_one_docdb_record(self, record: dict) -> Response:
         """Insert one new record"""
-        if record.get("_id") is None:
+        is_managed_collection = (
+            self.database == "metadata_index" and self.collection == "assets"
+        )
+        if record.get("_id") is None and not is_managed_collection:
             raise ValueError("Record does not have an _id field.")
         response = self._insert_one_record(
             json.loads(json.dumps(record, default=str)),
