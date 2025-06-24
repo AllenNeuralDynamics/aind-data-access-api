@@ -19,13 +19,11 @@ Count Example 1: Get # of records with a certain subject_id
 
   API_GATEWAY_HOST = "api.allenneuraldynamics.org"
   # Default database and collection names are set in the client
-  # DATABASE = "metadata_index"
-  # COLLECTION = "data_assets"
+  # To override the defaults, provide the database and collection
+  # parameters in the constructor
 
   docdb_api_client = MetadataDbClient(
       host=API_GATEWAY_HOST,
-      # database=DATABASE,
-      # collection=COLLECTION,
   )
 
   filter = {"subject.subject_id": "731015"}
