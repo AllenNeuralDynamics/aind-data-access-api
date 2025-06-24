@@ -362,6 +362,36 @@ class Client:
 class MetadataDbClient(Client):
     """Class to manage reading and writing to metadata db"""
 
+    def __init__(
+        self,
+        host: str,
+        database: str = "metadata_index",
+        collection: str = "data_assets",
+        version: str = "v1",
+        boto: Optional[BotoSession] = None,
+        session: Optional[Session] = None,
+    ):
+        """
+        Instantiate a MetadataDbClient.
+
+        Parameters
+        ----------
+        host : str
+        database : str
+        collection : str
+        version : str
+        boto : Optional[BotoSession]
+        session : Optional[Session]
+        """
+        super().__init__(
+            host=host,
+            database=database,
+            collection=collection,
+            version=version,
+            boto=boto,
+            session=session,
+        )
+
     def retrieve_docdb_records(
         self,
         filter_query: Optional[dict] = None,
