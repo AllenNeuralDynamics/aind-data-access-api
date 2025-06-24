@@ -437,8 +437,6 @@ class TestMetadataDbClient(unittest.TestCase):
 
     example_client_args = {
         "host": "example.com/",
-        "database": "metadata_db",
-        "collection": "data_assets",
     }
 
     example_record_list = [
@@ -451,6 +449,26 @@ class TestMetadataDbClient(unittest.TestCase):
         }
         for id_num in range(0, 10)
     ]
+
+    def test_metadatadbclient_constructor(self):
+        """Tests class constructor"""
+        client = MetadataDbClient(**self.example_client_args)
+
+        self.assertEqual("example.com", client.host)
+        self.assertEqual("metadata_index", client.database)
+        self.assertEqual("data_assets", client.collection)
+        self.assertEqual("v1", client.version)
+        self.assertEqual(
+            "https://example.com/v1/metadata_index/data_assets",
+            client._base_url,
+        )
+
+        client = MetadataDbClient(**self.example_client_args, version="v2")
+        self.assertEqual("v2", client.version)
+        self.assertEqual(
+            "https://example.com/v2/metadata_index/data_assets",
+            client._base_url,
+        )
 
     @patch("aind_data_access_api.document_db.Client._find_records")
     def test_retrieve_docdb_records(

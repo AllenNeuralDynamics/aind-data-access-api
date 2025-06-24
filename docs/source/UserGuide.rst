@@ -54,13 +54,12 @@ REST API
    from aind_data_access_api.document_db import MetadataDbClient
 
    API_GATEWAY_HOST = "api.allenneuraldynamics.org"
-   DATABASE = "metadata_index"
-   COLLECTION = "data_assets"
+   # Default database and collection names are set in the client
+   # To override the defaults, provide the database and collection
+   # parameters in the constructor
 
    docdb_api_client = MetadataDbClient(
       host=API_GATEWAY_HOST,
-      database=DATABASE,
-      collection=COLLECTION,
    )
 
    filter = {"subject.subject_id": "731015"}
