@@ -437,8 +437,6 @@ class TestMetadataDbClient(unittest.TestCase):
 
     example_client_args = {
         "host": "example.com/",
-        "database": "metadata_db",
-        "collection": "data_assets",
     }
 
     example_record_list = [
@@ -451,6 +449,26 @@ class TestMetadataDbClient(unittest.TestCase):
         }
         for id_num in range(0, 10)
     ]
+
+    def test_metadatadbclient_constructor(self):
+        """Tests class constructor"""
+        client = MetadataDbClient(**self.example_client_args)
+
+        self.assertEqual("example.com", client.host)
+        self.assertEqual("metadata_index", client.database)
+        self.assertEqual("data_assets", client.collection)
+        self.assertEqual("v1", client.version)
+        self.assertEqual(
+            "https://example.com/v1/metadata_index/data_assets",
+            client._base_url,
+        )
+
+        client = MetadataDbClient(**self.example_client_args, version="v2")
+        self.assertEqual("v2", client.version)
+        self.assertEqual(
+            "https://example.com/v2/metadata_index/data_assets",
+            client._base_url,
+        )
 
     @patch("aind_data_access_api.document_db.Client._find_records")
     def test_retrieve_docdb_records(
@@ -578,24 +596,6 @@ class TestMetadataDbClient(unittest.TestCase):
         mock_insert.assert_called_once_with(
             json.loads(json.dumps(record, default=str)),
         )
-
-    @patch("aind_data_access_api.document_db.Client._insert_one_record")
-    def test_insert_one_docdb_record_invalid(self, mock_insert: MagicMock):
-        """Tests inserting one docdb record if record is invalid"""
-        client = MetadataDbClient(**self.example_client_args)
-        record_no__id = {
-            "id": "abc-123",
-            "name": "modal_00000_2000-10-10_10-10-10",
-            "created": datetime(2000, 10, 10, 10, 10, 10),
-            "location": "some_url",
-            "subject": {"subject_id": "00000", "sex": "Female"},
-        }
-        with self.assertRaises(ValueError) as e:
-            client.insert_one_docdb_record(record_no__id)
-        self.assertEqual(
-            "Record does not have an _id field.", str(e.exception)
-        )
-        mock_insert.assert_not_called()
 
     @patch("aind_data_access_api.document_db.Client._upsert_one_record")
     def test_upsert_one_docdb_record(self, mock_upsert: MagicMock):

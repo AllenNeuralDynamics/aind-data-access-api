@@ -18,13 +18,12 @@ Count Example 1: Get # of records with a certain subject_id
   from aind_data_access_api.document_db import MetadataDbClient
 
   API_GATEWAY_HOST = "api.allenneuraldynamics.org"
-  DATABASE = "metadata_index"
-  COLLECTION = "data_assets"
+  # Default database and collection names are set in the client
+  # To override the defaults, provide the database and collection
+  # parameters in the constructor
 
   docdb_api_client = MetadataDbClient(
       host=API_GATEWAY_HOST,
-      database=DATABASE,
-      collection=COLLECTION,
   )
 
   filter = {"subject.subject_id": "731015"}
@@ -136,8 +135,6 @@ It's possible to attach a custom Session to retry certain requests errors:
     from aind_data_access_api.document_db import MetadataDbClient
 
     API_GATEWAY_HOST = "api.allenneuraldynamics.org"
-    DATABASE = "metadata_index"
-    COLLECTION = "data_assets"
 
     retry = Retry(
         total=5,
@@ -151,8 +148,6 @@ It's possible to attach a custom Session to retry certain requests errors:
 
     with MetadataDbClient(
         host=API_GATEWAY_HOST,
-        database=DATABASE,
-        collection=COLLECTION,
         session=session,
     ) as docdb_api_client:
         records = docdb_api_client.retrieve_docdb_records(limit=10)
