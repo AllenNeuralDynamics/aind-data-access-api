@@ -598,8 +598,42 @@ class MetadataDbClient(Client):
         return response.json()
 
 
+class AnalysisDbClient(Client):
+    """Class to manage reading and writing to analysis db"""
+
+    def __init__(
+        self,
+        host: str,
+        collection: str,
+        database: str = "analysis",
+        version: str = "v1",
+        boto: Optional[BotoSession] = None,
+        session: Optional[Session] = None,
+    ):
+        """
+        Instantiate a AnalysisDbClient.
+
+        Parameters
+        ----------
+        host : str
+        collection : str
+        database : str
+        version : str
+        boto : Optional[BotoSession]
+        session : Optional[Session]
+        """
+        super().__init__(
+            host=host,
+            database=database,
+            collection=collection,
+            version=version,
+            boto=boto,
+            session=session,
+        )
+
+
 class SchemaDbClient(Client):
-    """Class to manage reading and writing to schema db"""
+    """Class to manage reading and writing to schemas db"""
 
     def __init__(
         self,

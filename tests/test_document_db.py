@@ -9,6 +9,7 @@ import requests.exceptions
 from requests import Response
 
 from aind_data_access_api.document_db import (
+    AnalysisDbClient,
     Client,
     MetadataDbClient,
     SchemaDbClient,
@@ -883,6 +884,28 @@ class TestMetadataDbClient(unittest.TestCase):
             headers={"Content-Type": "application/json"},
         )
         self.assertEqual(response_message, response)
+
+
+class TestAnalysisDbClient(unittest.TestCase):
+    """Test methods in AnalysisDbClient class."""
+
+    example_client_args = {
+        "host": "example.com/",
+        "collection": "dynamic-foraging-nm",
+    }
+
+    def test_analysisdbclient_constructor(self):
+        """Tests class constructor"""
+        client = AnalysisDbClient(**self.example_client_args)
+
+        self.assertEqual("example.com", client.host)
+        self.assertEqual("analysis", client.database)
+        self.assertEqual("dynamic-foraging-nm", client.collection)
+        self.assertEqual("v1", client.version)
+        self.assertEqual(
+            "https://example.com/v1/analysis/dynamic-foraging-nm",
+            client._base_url,
+        )
 
 
 class TestSchemaDbClient(unittest.TestCase):
