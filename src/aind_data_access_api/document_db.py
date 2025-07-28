@@ -392,6 +392,21 @@ class MetadataDbClient(Client):
             session=session,
         )
 
+    @property
+    def _data_summary_url(self) -> str:
+        """Url to get LLM-generated summaries"""
+        return f"https://{self.host}/{self.version}/data_summary"
+
+    def generate_data_summary(self, record_id: str) -> Response:
+        """Get an LLM-generated summary for a data asset."""
+        url = f"{self._data_summary_url}/{record_id}"
+        signed_header = self._signed_request(method="GET", url=url)
+        response = self.session.get(
+            url=url, headers=dict(signed_header.headers)
+        )
+        response.raise_for_status()
+        return response.json()
+
     def retrieve_docdb_records(
         self,
         filter_query: Optional[dict] = None,

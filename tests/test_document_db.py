@@ -462,6 +462,9 @@ class TestMetadataDbClient(unittest.TestCase):
             "https://example.com/v1/metadata_index/data_assets",
             client._base_url,
         )
+        self.assertEqual(
+            "https://example.com/v1/data_summary", client._data_summary_url
+        )
 
         client = MetadataDbClient(**self.example_client_args, version="v2")
         self.assertEqual("v2", client.version)
@@ -469,6 +472,47 @@ class TestMetadataDbClient(unittest.TestCase):
             "https://example.com/v2/metadata_index/data_assets",
             client._base_url,
         )
+        self.assertEqual(
+            "https://example.com/v2/data_summary", client._data_summary_url
+        )
+
+    @patch("boto3.session.Session")
+    @patch("botocore.auth.SigV4Auth.add_auth")
+    @patch("requests.Session.get")
+    def test_generate_data_summary(
+        self,
+        mock_get: MagicMock,
+        mock_auth: MagicMock,
+        mock_session: MagicMock,
+    ):
+        """Tests generate_data_summary method"""
+        mock_creds = MagicMock()
+        mock_creds.access_key = "abc"
+        mock_creds.secret_key = "efg"
+        mock_session.return_value.region_name = "us-west-2"
+        mock_session.get_credentials.return_value = mock_creds
+        mock_response = Response()
+        mock_response.status_code = 200
+        response_message = {
+            "message": "Summary of data asset.",
+            "parameters": {
+                "docdb_id": "abc-123",
+                "langchain_hub_prompt_id": "prompt_id",
+                "bedrock_chat_model_name": "model_name",
+                "bedrock_chat_model_kwargs": {"temperature": 0},
+            },
+        }
+        mock_response._content = json.dumps(response_message).encode("utf-8")
+        mock_get.return_value = mock_response
+
+        client = MetadataDbClient(**self.example_client_args)
+        response = client.generate_data_summary("abc-123")
+        mock_auth.assert_called_once()
+        mock_get.assert_called_once_with(
+            url="https://example.com/v1/data_summary/abc-123",
+            headers={"Content-Type": "application/json"},
+        )
+        self.assertEqual(response_message, response)
 
     @patch("aind_data_access_api.document_db.Client._find_records")
     def test_retrieve_docdb_records(
