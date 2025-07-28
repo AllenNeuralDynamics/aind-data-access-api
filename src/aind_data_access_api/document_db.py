@@ -345,68 +345,6 @@ class Client:
         )
         return response
 
-    def close(self):
-        """Close the clients."""
-        if self.session is not None:
-            self.session.close()
-
-    def __enter__(self):
-        """Enter the context manager."""
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Exit the context manager."""
-        self.close()
-
-
-class MetadataDbClient(Client):
-    """Class to manage reading and writing to metadata db"""
-
-    def __init__(
-        self,
-        host: str,
-        database: str = "metadata_index",
-        collection: str = "data_assets",
-        version: str = "v1",
-        boto: Optional[BotoSession] = None,
-        session: Optional[Session] = None,
-    ):
-        """
-        Instantiate a MetadataDbClient.
-
-        Parameters
-        ----------
-        host : str
-        database : str
-        collection : str
-        version : str
-        boto : Optional[BotoSession]
-        session : Optional[Session]
-        """
-        super().__init__(
-            host=host,
-            database=database,
-            collection=collection,
-            version=version,
-            boto=boto,
-            session=session,
-        )
-
-    @property
-    def _data_summary_url(self) -> str:
-        """Url to get LLM-generated summaries"""
-        return f"https://{self.host}/{self.version}/data_summary"
-
-    def generate_data_summary(self, record_id: str) -> Dict[str, Any]:
-        """Get an LLM-generated summary for a data asset."""
-        url = f"{self._data_summary_url}/{record_id}"
-        signed_header = self._signed_request(method="GET", url=url)
-        response = self.session.get(
-            url=url, headers=dict(signed_header.headers)
-        )
-        response.raise_for_status()
-        return response.json()
-
     def retrieve_docdb_records(
         self,
         filter_query: Optional[dict] = None,
@@ -596,6 +534,68 @@ class MetadataDbClient(Client):
                         total_size += record_size
                 second_index = second_index + 1
         return responses
+
+    def close(self):
+        """Close the clients."""
+        if self.session is not None:
+            self.session.close()
+
+    def __enter__(self):
+        """Enter the context manager."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit the context manager."""
+        self.close()
+
+
+class MetadataDbClient(Client):
+    """Class to manage reading and writing to metadata db"""
+
+    def __init__(
+        self,
+        host: str,
+        database: str = "metadata_index",
+        collection: str = "data_assets",
+        version: str = "v1",
+        boto: Optional[BotoSession] = None,
+        session: Optional[Session] = None,
+    ):
+        """
+        Instantiate a MetadataDbClient.
+
+        Parameters
+        ----------
+        host : str
+        database : str
+        collection : str
+        version : str
+        boto : Optional[BotoSession]
+        session : Optional[Session]
+        """
+        super().__init__(
+            host=host,
+            database=database,
+            collection=collection,
+            version=version,
+            boto=boto,
+            session=session,
+        )
+
+    @property
+    def _data_summary_url(self) -> str:
+        """Url to get LLM-generated summaries"""
+        return f"https://{self.host}/{self.version}/data_summary"
+
+    def generate_data_summary(self, record_id: str) -> Dict[str, Any]:
+        """Get an LLM-generated summary for a data asset."""
+        url = f"{self._data_summary_url}/{record_id}"
+        signed_header = self._signed_request(method="GET", url=url)
+        response = self.session.get(
+            url=url, headers=dict(signed_header.headers)
+        )
+        response.raise_for_status()
+        return response.json()
 
 
 class SchemaDbClient(Client):
