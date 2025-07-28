@@ -3,7 +3,7 @@
 import json
 import logging
 from sys import getsizeof
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 import boto3
 from boto3.session import Session as BotoSession
@@ -397,7 +397,7 @@ class MetadataDbClient(Client):
         """Url to get LLM-generated summaries"""
         return f"https://{self.host}/{self.version}/data_summary"
 
-    def generate_data_summary(self, record_id: str) -> Response:
+    def generate_data_summary(self, record_id: str) -> Dict[str, Any]:
         """Get an LLM-generated summary for a data asset."""
         url = f"{self._data_summary_url}/{record_id}"
         signed_header = self._signed_request(method="GET", url=url)
