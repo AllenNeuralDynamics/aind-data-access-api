@@ -256,7 +256,7 @@ class TestClient(unittest.TestCase):
         mock_auth: MagicMock,
         mock_session: MagicMock,
     ):
-        """Tests _insert_one method"""
+        """Tests insert_one method"""
         mock_creds = MagicMock()
         mock_creds.access_key = "abc"
         mock_creds.secret_key = "efg"
@@ -283,7 +283,7 @@ class TestClient(unittest.TestCase):
         mock_auth: MagicMock,
         mock_session: MagicMock,
     ):
-        """Tests _upsert_one method"""
+        """Tests upsert_one method"""
         mock_creds = MagicMock()
         mock_creds.access_key = "abc"
         mock_creds.secret_key = "efg"
@@ -315,7 +315,7 @@ class TestClient(unittest.TestCase):
         mock_auth: MagicMock,
         mock_session: MagicMock,
     ):
-        """Tests _bulk_write method"""
+        """Tests bulk_write method"""
         mock_creds = MagicMock()
         mock_creds.access_key = "abc"
         mock_creds.secret_key = "efg"
