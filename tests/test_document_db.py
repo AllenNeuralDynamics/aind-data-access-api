@@ -9,6 +9,7 @@ import requests.exceptions
 from requests import Response
 
 from aind_data_access_api.document_db import (
+    AnalysisDbClient,
     Client,
     MetadataDbClient,
     SchemaDbClient,
@@ -23,6 +24,17 @@ class TestClient(unittest.TestCase):
         "database": "db",
         "collection": "coll",
     }
+
+    example_record_list = [
+        {
+            "_id": f"{id_num}",
+            "name": "modal_00000_2000-10-10_10-10-10",
+            "location": "some_url",
+            "created": datetime(2000, 10, 10, 10, 10, 10),
+            "subject": {"subject_id": "00000", "sex": "Female"},
+        }
+        for id_num in range(0, 10)
+    ]
 
     def test_client_constructor(self):
         """Tests class constructor"""
@@ -344,183 +356,13 @@ class TestClient(unittest.TestCase):
             ),
         )
 
-    @patch("boto3.session.Session")
-    @patch("botocore.auth.SigV4Auth.add_auth")
-    @patch("requests.Session.delete")
-    def test_delete_one_record(
-        self,
-        mock_delete: MagicMock,
-        mock_auth: MagicMock,
-        mock_session: MagicMock,
-    ):
-        """Tests delete_one method"""
-        mock_creds = MagicMock()
-        mock_creds.access_key = "abc"
-        mock_creds.secret_key = "efg"
-        mock_session.return_value.region_name = "us-west-2"
-        mock_session.get_credentials.return_value = mock_creds
-
-        client = Client(**self.example_client_args)
-        client._delete_one_record(record_filter={"_id": "123"})
-        mock_auth.assert_called_once()
-        mock_delete.assert_called_once_with(
-            url="https://example.com/v1/db/coll/delete_one",
-            headers={"Content-Type": "application/json"},
-            data=('{"filter": {"_id": "123"}}'),
-        )
-
-    @patch("boto3.session.Session")
-    @patch("botocore.auth.SigV4Auth.add_auth")
-    @patch("requests.Session.delete")
-    def test_delete_many_records(
-        self,
-        mock_delete: MagicMock,
-        mock_auth: MagicMock,
-        mock_session: MagicMock,
-    ):
-        """Tests delete_many_records method"""
-        mock_creds = MagicMock()
-        mock_creds.access_key = "abc"
-        mock_creds.secret_key = "efg"
-        mock_session.return_value.region_name = "us-west-2"
-        mock_session.get_credentials.return_value = mock_creds
-
-        client = Client(**self.example_client_args)
-        client._delete_many_records(
-            record_filter={"_id": {"$in": ["123", "456"]}}
-        )
-        mock_auth.assert_called_once()
-        mock_delete.assert_called_once_with(
-            url="https://example.com/v1/db/coll/delete_many",
-            headers={"Content-Type": "application/json"},
-            data=('{"filter": {"_id": {"$in": ["123", "456"]}}}'),
-        )
-
-    @patch("aind_data_access_api.document_db.Session")
-    def test_content_manager(
-        self,
-        mock_session: MagicMock,
-    ):
-        """Tests request session closes when client is in context manager."""
-        mock_response = Response()
-        mock_response.status_code = 200
-        mock_records_counts = {
-            "total_record_count": 1234,
-            "filtered_record_count": 47,
-        }
-        mock_response._content = json.dumps(mock_records_counts).encode(
-            "utf-8"
-        )
-        mock_session.return_value.get.return_value = mock_response
-        with Client(**self.example_client_args) as client:
-            record_count = client._count_records(filter_query={"_id": "abc"})
-        self.assertEqual(
-            mock_records_counts,
-            record_count,
-        )
-        mock_session.assert_has_calls(
-            [
-                call(),
-                call().get(
-                    "https://example.com/v1/db/coll/count_documents",
-                    params={
-                        "filter": '{"_id": "abc"}',
-                    },
-                ),
-                call().close(),
-            ]
-        )
-
-
-class TestMetadataDbClient(unittest.TestCase):
-    """Test methods in MetadataDbClient class."""
-
-    example_client_args = {
-        "host": "example.com/",
-    }
-
-    example_record_list = [
-        {
-            "_id": f"{id_num}",
-            "name": "modal_00000_2000-10-10_10-10-10",
-            "location": "some_url",
-            "created": datetime(2000, 10, 10, 10, 10, 10),
-            "subject": {"subject_id": "00000", "sex": "Female"},
-        }
-        for id_num in range(0, 10)
-    ]
-
-    def test_metadatadbclient_constructor(self):
-        """Tests class constructor"""
-        client = MetadataDbClient(**self.example_client_args)
-
-        self.assertEqual("example.com", client.host)
-        self.assertEqual("metadata_index", client.database)
-        self.assertEqual("data_assets", client.collection)
-        self.assertEqual("v1", client.version)
-        self.assertEqual(
-            "https://example.com/v1/metadata_index/data_assets",
-            client._base_url,
-        )
-        self.assertEqual(
-            "https://example.com/v1/data_summary", client._data_summary_url
-        )
-
-        client = MetadataDbClient(**self.example_client_args, version="v2")
-        self.assertEqual("v2", client.version)
-        self.assertEqual(
-            "https://example.com/v2/metadata_index/data_assets",
-            client._base_url,
-        )
-        self.assertEqual(
-            "https://example.com/v2/data_summary", client._data_summary_url
-        )
-
-    @patch("boto3.session.Session")
-    @patch("botocore.auth.SigV4Auth.add_auth")
-    @patch("requests.Session.get")
-    def test_generate_data_summary(
-        self,
-        mock_get: MagicMock,
-        mock_auth: MagicMock,
-        mock_session: MagicMock,
-    ):
-        """Tests generate_data_summary method"""
-        mock_creds = MagicMock()
-        mock_creds.access_key = "abc"
-        mock_creds.secret_key = "efg"
-        mock_session.return_value.region_name = "us-west-2"
-        mock_session.get_credentials.return_value = mock_creds
-        mock_response = Response()
-        mock_response.status_code = 200
-        response_message = {
-            "message": "Summary of data asset.",
-            "parameters": {
-                "docdb_id": "abc-123",
-                "langchain_hub_prompt_id": "prompt_id",
-                "bedrock_chat_model_name": "model_name",
-                "bedrock_chat_model_kwargs": {"temperature": 0},
-            },
-        }
-        mock_response._content = json.dumps(response_message).encode("utf-8")
-        mock_get.return_value = mock_response
-
-        client = MetadataDbClient(**self.example_client_args)
-        response = client.generate_data_summary("abc-123")
-        mock_auth.assert_called_once()
-        mock_get.assert_called_once_with(
-            url="https://example.com/v1/data_summary/abc-123",
-            headers={"Content-Type": "application/json"},
-        )
-        self.assertEqual(response_message, response)
-
     @patch("aind_data_access_api.document_db.Client._find_records")
     def test_retrieve_docdb_records(
         self,
         mock_find_records_response: MagicMock,
     ):
         """Tests retrieving docdb records"""
-        client = MetadataDbClient(**self.example_client_args)
+        client = Client(**self.example_client_args)
         mock_find_records_response.side_effect = [
             self.example_record_list[0:2],
             self.example_record_list[2:6],
@@ -546,7 +388,7 @@ class TestMetadataDbClient(unittest.TestCase):
         mock_find_records_response: MagicMock,
     ):
         """Tests retrieving docdb records when the limit is reached"""
-        client = MetadataDbClient(**self.example_client_args)
+        client = Client(**self.example_client_args)
         mock_find_records_response.side_effect = [
             self.example_record_list[0:2],
             self.example_record_list[2:5],
@@ -566,7 +408,7 @@ class TestMetadataDbClient(unittest.TestCase):
         mock_find_records_response: MagicMock,
     ):
         """Tests retrieving docdb records when the limit is not reached"""
-        client = MetadataDbClient(**self.example_client_args)
+        client = Client(**self.example_client_args)
         mock_find_records_response.side_effect = [
             self.example_record_list[0:2],
             self.example_record_list[2:6],
@@ -592,7 +434,7 @@ class TestMetadataDbClient(unittest.TestCase):
         mock_find_records_response: MagicMock,
     ):
         """Tests retrieving docdb records"""
-        client = MetadataDbClient(**self.example_client_args)
+        client = Client(**self.example_client_args)
         mock_find_records_response.return_value = []
         with self.assertLogs(level="DEBUG") as captured:
             records = client.retrieve_docdb_records()
@@ -614,7 +456,7 @@ class TestMetadataDbClient(unittest.TestCase):
                 "subject": {"subject_id": "00000", "sex": "Female"},
             }
         ]
-        client = MetadataDbClient(**self.example_client_args)
+        client = Client(**self.example_client_args)
         mock_aggregate.return_value = expected_result
         pipeline = [{"$match": {"_id": "abc-123"}}]
         result = client.aggregate_docdb_records(pipeline)
@@ -626,7 +468,7 @@ class TestMetadataDbClient(unittest.TestCase):
     @patch("aind_data_access_api.document_db.Client._insert_one_record")
     def test_insert_one_docdb_record(self, mock_insert: MagicMock):
         """Tests inserting one docdb record"""
-        client = MetadataDbClient(**self.example_client_args)
+        client = Client(**self.example_client_args)
         mock_insert.return_value = {"message": "success"}
         record = {
             "_id": "abc-123",
@@ -644,7 +486,7 @@ class TestMetadataDbClient(unittest.TestCase):
     @patch("aind_data_access_api.document_db.Client._upsert_one_record")
     def test_upsert_one_docdb_record(self, mock_upsert: MagicMock):
         """Tests upserting one docdb record"""
-        client = MetadataDbClient(**self.example_client_args)
+        client = Client(**self.example_client_args)
         mock_upsert.return_value = {"message": "success"}
         record = {
             "_id": "abc-123",
@@ -663,7 +505,7 @@ class TestMetadataDbClient(unittest.TestCase):
     @patch("aind_data_access_api.document_db.Client._upsert_one_record")
     def test_upsert_one_docdb_record_invalid(self, mock_upsert: MagicMock):
         """Tests upserting one docdb record if record is invalid"""
-        client = MetadataDbClient(**self.example_client_args)
+        client = Client(**self.example_client_args)
         record_no__id = {
             "id": "abc-123",
             "name": "modal_00000_2000-10-10_10-10-10",
@@ -682,7 +524,7 @@ class TestMetadataDbClient(unittest.TestCase):
     def test_upsert_list_of_docdb_records(self, mock_bulk_write: MagicMock):
         """Tests upserting a list of docdb records"""
 
-        client = MetadataDbClient(**self.example_client_args)
+        client = Client(**self.example_client_args)
         mock_bulk_write.return_value = {"message": "success"}
         records = [
             {
@@ -735,7 +577,7 @@ class TestMetadataDbClient(unittest.TestCase):
     ):
         """Tests upserting an empty list of docdb records"""
 
-        client = MetadataDbClient(**self.example_client_args)
+        client = Client(**self.example_client_args)
         records = []
 
         response = client.upsert_list_of_docdb_records(records)
@@ -748,7 +590,7 @@ class TestMetadataDbClient(unittest.TestCase):
     ):
         """Tests upserting a list of docdb records in chunks"""
 
-        client = MetadataDbClient(**self.example_client_args)
+        client = Client(**self.example_client_args)
         mock_bulk_write.return_value = {"message": "success"}
         records = [
             {
@@ -814,7 +656,7 @@ class TestMetadataDbClient(unittest.TestCase):
     ):
         """Tests upserting a list of docdb records if a record is invalid"""
 
-        client = MetadataDbClient(**self.example_client_args)
+        client = Client(**self.example_client_args)
         records_no__id = [
             {
                 "_id": "abc-123",
@@ -838,14 +680,26 @@ class TestMetadataDbClient(unittest.TestCase):
         )
         mock_bulk_write.assert_not_called()
 
-    @patch("aind_data_access_api.document_db.Client._delete_one_record")
-    def test_delete_one_record(self, mock_delete: MagicMock):
+    @patch("boto3.session.Session")
+    @patch("botocore.auth.SigV4Auth.add_auth")
+    @patch("requests.Session.delete")
+    def test_delete_one_record(
+        self,
+        mock_delete: MagicMock,
+        mock_auth: MagicMock,
+        mock_session: MagicMock,
+    ):
         """Tests deleting one data asset record"""
-        client = MetadataDbClient(**self.example_client_args)
+        mock_creds = MagicMock()
+        mock_creds.access_key = "abc"
+        mock_creds.secret_key = "efg"
+        mock_session.return_value.region_name = "us-west-2"
+        mock_session.get_credentials.return_value = mock_creds
+        client = Client(**self.example_client_args)
         successful_response = Response()
         successful_response.status_code = 200
         # n is the number of records removed. It will be 0 if the id does
-        # exist
+        # not exist
         response_message = {
             "n": 1,
             "ok": 1.0,
@@ -856,19 +710,34 @@ class TestMetadataDbClient(unittest.TestCase):
         )
         mock_delete.return_value = successful_response
         response = client.delete_one_record("abc-123")
+        mock_auth.assert_called_once()
         self.assertEqual(successful_response.json(), response.json())
         mock_delete.assert_called_once_with(
-            record_filter={"_id": "abc-123"},
+            url="https://example.com/v1/db/coll/delete_one",
+            headers={"Content-Type": "application/json"},
+            data=('{"filter": {"_id": "abc-123"}}'),
         )
 
-    @patch("aind_data_access_api.document_db.Client._delete_many_records")
-    def test_delete_many_records(self, mock_delete: MagicMock):
+    @patch("boto3.session.Session")
+    @patch("botocore.auth.SigV4Auth.add_auth")
+    @patch("requests.Session.delete")
+    def test_delete_many_records(
+        self,
+        mock_delete: MagicMock,
+        mock_auth: MagicMock,
+        mock_session: MagicMock,
+    ):
         """Tests deleting many data asset records"""
-        client = MetadataDbClient(**self.example_client_args)
+        mock_creds = MagicMock()
+        mock_creds.access_key = "abc"
+        mock_creds.secret_key = "efg"
+        mock_session.return_value.region_name = "us-west-2"
+        mock_session.get_credentials.return_value = mock_creds
+        client = Client(**self.example_client_args)
         successful_response = Response()
         successful_response.status_code = 200
         # n is the number of records removed. It will be 0 if the id does
-        # exist
+        # not exist
         response_message = {
             "n": 2,
             "ok": 1.0,
@@ -880,8 +749,140 @@ class TestMetadataDbClient(unittest.TestCase):
         mock_delete.return_value = successful_response
         response = client.delete_many_records(["abc-123", "def-456"])
         self.assertEqual(successful_response.json(), response.json())
+        mock_auth.assert_called_once()
         mock_delete.assert_called_once_with(
-            record_filter={"_id": {"$in": ["abc-123", "def-456"]}},
+            url="https://example.com/v1/db/coll/delete_many",
+            headers={"Content-Type": "application/json"},
+            data=('{"filter": {"_id": {"$in": ["abc-123", "def-456"]}}}'),
+        )
+
+    @patch("aind_data_access_api.document_db.Session")
+    def test_content_manager(
+        self,
+        mock_session: MagicMock,
+    ):
+        """Tests request session closes when client is in context manager."""
+        mock_response = Response()
+        mock_response.status_code = 200
+        mock_records_counts = {
+            "total_record_count": 1234,
+            "filtered_record_count": 47,
+        }
+        mock_response._content = json.dumps(mock_records_counts).encode(
+            "utf-8"
+        )
+        mock_session.return_value.get.return_value = mock_response
+        with Client(**self.example_client_args) as client:
+            record_count = client._count_records(filter_query={"_id": "abc"})
+        self.assertEqual(
+            mock_records_counts,
+            record_count,
+        )
+        mock_session.assert_has_calls(
+            [
+                call(),
+                call().get(
+                    "https://example.com/v1/db/coll/count_documents",
+                    params={
+                        "filter": '{"_id": "abc"}',
+                    },
+                ),
+                call().close(),
+            ]
+        )
+
+
+class TestMetadataDbClient(unittest.TestCase):
+    """Test methods in MetadataDbClient class."""
+
+    example_client_args = {
+        "host": "example.com/",
+    }
+
+    def test_metadatadbclient_constructor(self):
+        """Tests class constructor"""
+        client = MetadataDbClient(**self.example_client_args)
+
+        self.assertEqual("example.com", client.host)
+        self.assertEqual("metadata_index", client.database)
+        self.assertEqual("data_assets", client.collection)
+        self.assertEqual("v1", client.version)
+        self.assertEqual(
+            "https://example.com/v1/metadata_index/data_assets",
+            client._base_url,
+        )
+        self.assertEqual(
+            "https://example.com/v1/data_summary", client._data_summary_url
+        )
+
+        client = MetadataDbClient(**self.example_client_args, version="v2")
+        self.assertEqual("v2", client.version)
+        self.assertEqual(
+            "https://example.com/v2/metadata_index/data_assets",
+            client._base_url,
+        )
+        self.assertEqual(
+            "https://example.com/v2/data_summary", client._data_summary_url
+        )
+
+    @patch("boto3.session.Session")
+    @patch("botocore.auth.SigV4Auth.add_auth")
+    @patch("requests.Session.get")
+    def test_generate_data_summary(
+        self,
+        mock_get: MagicMock,
+        mock_auth: MagicMock,
+        mock_session: MagicMock,
+    ):
+        """Tests generate_data_summary method"""
+        mock_creds = MagicMock()
+        mock_creds.access_key = "abc"
+        mock_creds.secret_key = "efg"
+        mock_session.return_value.region_name = "us-west-2"
+        mock_session.get_credentials.return_value = mock_creds
+        mock_response = Response()
+        mock_response.status_code = 200
+        response_message = {
+            "message": "Summary of data asset.",
+            "parameters": {
+                "docdb_id": "abc-123",
+                "langchain_hub_prompt_id": "prompt_id",
+                "bedrock_chat_model_name": "model_name",
+                "bedrock_chat_model_kwargs": {"temperature": 0},
+            },
+        }
+        mock_response._content = json.dumps(response_message).encode("utf-8")
+        mock_get.return_value = mock_response
+
+        client = MetadataDbClient(**self.example_client_args)
+        response = client.generate_data_summary("abc-123")
+        mock_auth.assert_called_once()
+        mock_get.assert_called_once_with(
+            url="https://example.com/v1/data_summary/abc-123",
+            headers={"Content-Type": "application/json"},
+        )
+        self.assertEqual(response_message, response)
+
+
+class TestAnalysisDbClient(unittest.TestCase):
+    """Test methods in AnalysisDbClient class."""
+
+    example_client_args = {
+        "host": "example.com/",
+        "collection": "dynamic-foraging-nm",
+    }
+
+    def test_analysisdbclient_constructor(self):
+        """Tests class constructor"""
+        client = AnalysisDbClient(**self.example_client_args)
+
+        self.assertEqual("example.com", client.host)
+        self.assertEqual("analysis", client.database)
+        self.assertEqual("dynamic-foraging-nm", client.collection)
+        self.assertEqual("v1", client.version)
+        self.assertEqual(
+            "https://example.com/v1/analysis/dynamic-foraging-nm",
+            client._base_url,
         )
 
 
