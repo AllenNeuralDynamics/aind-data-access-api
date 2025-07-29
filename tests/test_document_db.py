@@ -60,7 +60,7 @@ class TestClient(unittest.TestCase):
         )
 
     @patch("requests.Session.get")
-    def test__count_records(self, mock_get: MagicMock):
+    def test_count_records(self, mock_get: MagicMock):
         """Tests _count_records method"""
 
         client = Client(**self.example_client_args)
@@ -81,7 +81,7 @@ class TestClient(unittest.TestCase):
         )
 
     @patch("requests.Session.get")
-    def test__count_records_error(self, mock_get: MagicMock):
+    def test_count_records_error(self, mock_get: MagicMock):
         """Tests _count_records when there is a HTTP error"""
         client = Client(**self.example_client_args)
         mock_response = Response()
@@ -92,7 +92,7 @@ class TestClient(unittest.TestCase):
         self.assertIn("400 Client Error", str(e.exception))
 
     @patch("requests.Session.get")
-    def test__find_records(self, mock_get: MagicMock):
+    def test_find_records(self, mock_get: MagicMock):
         """Tests _find_records method"""
 
         client = Client(**self.example_client_args)
@@ -131,7 +131,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual([{"_id": "abc123", "message": "hi"}], records2)
 
     @patch("requests.Session.get")
-    def test__find_records_error(self, mock_get: MagicMock):
+    def test_find_records_error(self, mock_get: MagicMock):
         """Tests _find_records method when there is an HTTP error or
         no payload in response"""
         client = Client(**self.example_client_args)
@@ -151,7 +151,7 @@ class TestClient(unittest.TestCase):
         )
 
     @patch("requests.Session.get")
-    def test__get_records(self, mock_get: MagicMock):
+    def test_get_records(self, mock_get: MagicMock):
         """Tests _get_records method"""
 
         client = Client(**self.example_client_args)
@@ -189,7 +189,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual([{"_id": "abc123", "message": "hi"}], records2)
 
     @patch("requests.Session.get")
-    def test__get_records_error(self, mock_get: MagicMock):
+    def test_get_records_error(self, mock_get: MagicMock):
         """Tests _get_records method when there is an HTTP error or
         no payload in response"""
         client = Client(**self.example_client_args)
@@ -209,7 +209,7 @@ class TestClient(unittest.TestCase):
         )
 
     @patch("requests.Session.post")
-    def test__aggregate_records(self, mock_post: MagicMock):
+    def test_aggregate_records(self, mock_post: MagicMock):
         """Tests _aggregate_records method"""
         pipeline = [{"$match": {"_id": "abc123"}}]
         client = Client(**self.example_client_args)
@@ -227,7 +227,7 @@ class TestClient(unittest.TestCase):
         )
 
     @patch("requests.Session.post")
-    def test__aggregate_records_error(self, mock_post: MagicMock):
+    def test_aggregate_records_error(self, mock_post: MagicMock):
         """Tests _aggregate_records method when there is an HTTP error or
         no payload in response"""
         invalid_pipeline = [{"$match_invalid": {"_id": "abc123"}}]
@@ -250,7 +250,7 @@ class TestClient(unittest.TestCase):
     @patch("boto3.session.Session")
     @patch("botocore.auth.SigV4Auth.add_auth")
     @patch("requests.Session.post")
-    def test__insert_one_record(
+    def test_insert_one_record(
         self,
         mock_post: MagicMock,
         mock_auth: MagicMock,
@@ -277,7 +277,7 @@ class TestClient(unittest.TestCase):
     @patch("boto3.session.Session")
     @patch("botocore.auth.SigV4Auth.add_auth")
     @patch("requests.Session.post")
-    def test__upsert_one_record(
+    def test_upsert_one_record(
         self,
         mock_post: MagicMock,
         mock_auth: MagicMock,
@@ -309,7 +309,7 @@ class TestClient(unittest.TestCase):
     @patch("boto3.session.Session")
     @patch("botocore.auth.SigV4Auth.add_auth")
     @patch("requests.Session.post")
-    def test__bulk_write(
+    def test_bulk_write(
         self,
         mock_post: MagicMock,
         mock_auth: MagicMock,
@@ -354,58 +354,6 @@ class TestClient(unittest.TestCase):
                 ' "update": {"$set": {"notes": "hi again"}},'
                 ' "upsert": "True"}}]'
             ),
-        )
-
-    @patch("boto3.session.Session")
-    @patch("botocore.auth.SigV4Auth.add_auth")
-    @patch("requests.Session.delete")
-    def test__delete_one_record(
-        self,
-        mock_delete: MagicMock,
-        mock_auth: MagicMock,
-        mock_session: MagicMock,
-    ):
-        """Tests _delete_one method"""
-        mock_creds = MagicMock()
-        mock_creds.access_key = "abc"
-        mock_creds.secret_key = "efg"
-        mock_session.return_value.region_name = "us-west-2"
-        mock_session.get_credentials.return_value = mock_creds
-
-        client = Client(**self.example_client_args)
-        client._delete_one_record(record_filter={"_id": "123"})
-        mock_auth.assert_called_once()
-        mock_delete.assert_called_once_with(
-            url="https://example.com/v1/db/coll/delete_one",
-            headers={"Content-Type": "application/json"},
-            data=('{"filter": {"_id": "123"}}'),
-        )
-
-    @patch("boto3.session.Session")
-    @patch("botocore.auth.SigV4Auth.add_auth")
-    @patch("requests.Session.delete")
-    def test__delete_many_records(
-        self,
-        mock_delete: MagicMock,
-        mock_auth: MagicMock,
-        mock_session: MagicMock,
-    ):
-        """Tests _delete_many_records method"""
-        mock_creds = MagicMock()
-        mock_creds.access_key = "abc"
-        mock_creds.secret_key = "efg"
-        mock_session.return_value.region_name = "us-west-2"
-        mock_session.get_credentials.return_value = mock_creds
-
-        client = Client(**self.example_client_args)
-        client._delete_many_records(
-            record_filter={"_id": {"$in": ["123", "456"]}}
-        )
-        mock_auth.assert_called_once()
-        mock_delete.assert_called_once_with(
-            url="https://example.com/v1/db/coll/delete_many",
-            headers={"Content-Type": "application/json"},
-            data=('{"filter": {"_id": {"$in": ["123", "456"]}}}'),
         )
 
     @patch("aind_data_access_api.document_db.Client._find_records")
@@ -732,14 +680,26 @@ class TestClient(unittest.TestCase):
         )
         mock_bulk_write.assert_not_called()
 
-    @patch("aind_data_access_api.document_db.Client._delete_one_record")
-    def test_delete_one_record(self, mock_delete: MagicMock):
+    @patch("boto3.session.Session")
+    @patch("botocore.auth.SigV4Auth.add_auth")
+    @patch("requests.Session.delete")
+    def test_delete_one_record(
+        self,
+        mock_delete: MagicMock,
+        mock_auth: MagicMock,
+        mock_session: MagicMock,
+    ):
         """Tests deleting one data asset record"""
+        mock_creds = MagicMock()
+        mock_creds.access_key = "abc"
+        mock_creds.secret_key = "efg"
+        mock_session.return_value.region_name = "us-west-2"
+        mock_session.get_credentials.return_value = mock_creds
         client = Client(**self.example_client_args)
         successful_response = Response()
         successful_response.status_code = 200
         # n is the number of records removed. It will be 0 if the id does
-        # exist
+        # not exist
         response_message = {
             "n": 1,
             "ok": 1.0,
@@ -750,19 +710,34 @@ class TestClient(unittest.TestCase):
         )
         mock_delete.return_value = successful_response
         response = client.delete_one_record("abc-123")
+        mock_auth.assert_called_once()
         self.assertEqual(successful_response.json(), response.json())
         mock_delete.assert_called_once_with(
-            record_filter={"_id": "abc-123"},
+            url="https://example.com/v1/db/coll/delete_one",
+            headers={"Content-Type": "application/json"},
+            data=('{"filter": {"_id": "abc-123"}}'),
         )
 
-    @patch("aind_data_access_api.document_db.Client._delete_many_records")
-    def test_delete_many_records(self, mock_delete: MagicMock):
+    @patch("boto3.session.Session")
+    @patch("botocore.auth.SigV4Auth.add_auth")
+    @patch("requests.Session.delete")
+    def test_delete_many_records(
+        self,
+        mock_delete: MagicMock,
+        mock_auth: MagicMock,
+        mock_session: MagicMock,
+    ):
         """Tests deleting many data asset records"""
+        mock_creds = MagicMock()
+        mock_creds.access_key = "abc"
+        mock_creds.secret_key = "efg"
+        mock_session.return_value.region_name = "us-west-2"
+        mock_session.get_credentials.return_value = mock_creds
         client = Client(**self.example_client_args)
         successful_response = Response()
         successful_response.status_code = 200
         # n is the number of records removed. It will be 0 if the id does
-        # exist
+        # not exist
         response_message = {
             "n": 2,
             "ok": 1.0,
@@ -774,8 +749,11 @@ class TestClient(unittest.TestCase):
         mock_delete.return_value = successful_response
         response = client.delete_many_records(["abc-123", "def-456"])
         self.assertEqual(successful_response.json(), response.json())
+        mock_auth.assert_called_once()
         mock_delete.assert_called_once_with(
-            record_filter={"_id": {"$in": ["abc-123", "def-456"]}},
+            url="https://example.com/v1/db/coll/delete_many",
+            headers={"Content-Type": "application/json"},
+            data=('{"filter": {"_id": {"$in": ["abc-123", "def-456"]}}}'),
         )
 
     @patch("aind_data_access_api.document_db.Session")
