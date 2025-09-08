@@ -791,6 +791,77 @@ class TestClient(unittest.TestCase):
             ]
         )
 
+    @patch("aind_data_access_api.document_db.Client._aggregate_records")
+    def test_fetch_records_by_filter_list(self, mock_aggregate: MagicMock):
+        """Tests fetch_records_by_filter_list"""
+        expected_records = [
+            {
+                "_id": "70bcf356-985f-4a2a-8105-de900e35e788",
+                "name": "prefix1",
+                "location": "s3://bucket/prefix1",
+            },
+            {
+                "_id": "5ca4a951-d374-4f4b-8279-d570a35b2286",
+                "name": "prefix2",
+                "location": "s3://bucket/prefix2",
+            },
+        ]
+        client = Client(**self.example_client_args)
+        mock_aggregate.return_value = expected_records
+        records = client.fetch_records_by_filter_list(
+            filter_key="name",
+            filter_values=["prefix1", "prefix2", "missing_prefix"],
+        )
+        self.assertEqual(expected_records, records)
+        mock_aggregate.assert_called_once_with(
+            pipeline=[
+                {
+                    "$match": {
+                        "name": {
+                            "$in": ["prefix1", "prefix2", "missing_prefix"]
+                        }
+                    }
+                },
+            ]
+        )
+
+    @patch("aind_data_access_api.document_db.Client._aggregate_records")
+    def test_fetch_records_by_filter_list_projection(
+        self, mock_aggregate: MagicMock
+    ):
+        """Tests fetch_records_by_filter_list with projection"""
+        expected_records = [
+            {
+                "_id": "70bcf356-985f-4a2a-8105-de900e35e788",
+                "name": "prefix1",
+            },
+            {
+                "_id": "5ca4a951-d374-4f4b-8279-d570a35b2286",
+                "name": "prefix2",
+            },
+        ]
+
+        client = Client(**self.example_client_args)
+        mock_aggregate.return_value = expected_records
+        records = client.fetch_records_by_filter_list(
+            filter_key="name",
+            filter_values=["prefix1", "prefix2", "missing_prefix"],
+            projection={"_id": 1, "name": 1},
+        )
+        self.assertEqual(expected_records, records)
+        mock_aggregate.assert_called_once_with(
+            pipeline=[
+                {
+                    "$match": {
+                        "name": {
+                            "$in": ["prefix1", "prefix2", "missing_prefix"]
+                        }
+                    }
+                },
+                {"$project": {"_id": 1, "name": 1}},
+            ]
+        )
+
 
 class TestMetadataDbClient(unittest.TestCase):
     """Test methods in MetadataDbClient class."""

@@ -410,6 +410,34 @@ class Client:
         """Aggregate records using an aggregation pipeline."""
         return self._aggregate_records(pipeline=pipeline)
 
+    def fetch_records_by_filter_list(
+        self,
+        filter_key: str,
+        filter_values: List[str],
+        projection: Optional[dict] = None,
+    ) -> List[dict]:
+        """
+        Queries DocDB for records where the value of a specified field is in a
+        list of values. Uses an aggregation pipeline with $in filter operator.
+
+        Parameters
+        ----------
+        filter_key : str
+          The field to filter on.
+        filter_values : List[str]
+          The list of values to filter on.
+        projection : Optional[dict]
+          Subset of fields to return. Default is None which returns all fields.
+
+        Returns
+        -------
+        List[dict]
+        """
+        agg_pipeline = [{"$match": {filter_key: {"$in": filter_values}}}]
+        if projection:
+            agg_pipeline.append({"$project": projection})
+        return self.aggregate_docdb_records(pipeline=agg_pipeline)
+
     def insert_one_docdb_record(self, record: dict) -> Response:
         """Insert one new record"""
         response = self._insert_one_record(
