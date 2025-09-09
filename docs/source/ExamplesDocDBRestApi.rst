@@ -118,8 +118,30 @@ Aggregation Example 1: Get all subjects per breeding group
   print("First 3 breeding groups and corresponding subjects:")
   print(json.dumps(result[:3], indent=3))
 
+Aggregation Example 2: Fetch records by filter list
+---------------------------------------------------
+
+A utility method is provided in the client to help with fetching records
+that match any value in a list of subject IDs.
+
+.. code:: python
+
+    records = docdb_api_client.fetch_records_by_filter_list(
+        filter_key="subject.subject_id",
+        filter_values=["731015", "741137", "789012"],
+        projection={
+            "name": 1,
+            "location": 1,
+            "subject.subject_id": 1,
+            "data_description.project_name": 1,
+        },
+    )
+    print(f"Found {len(records)} records. First 3 records:")
+    print(json.dumps(records[:3], indent=3))
+
 For more info about aggregations, please see MongoDB documentation:
 https://www.mongodb.com/docs/manual/aggregation/
+
 
 Advanced Example: Custom Session Object
 -------------------------------------------
@@ -152,31 +174,6 @@ It's possible to attach a custom Session to retry certain requests errors:
     ) as docdb_api_client:
         records = docdb_api_client.retrieve_docdb_records(limit=10)
 
-Utility Methods
----------------
-
-A few utility methods are provided in the :mod:`aind_data_access_api.utils` module
-to help with interacting with the DocDB API.
-
-For example, to fetch records that match any value in a list of subject IDs:
-
-.. code:: python
-
-    from aind_data_access_api.utils import fetch_records_by_filter_list
-
-    records = fetch_records_by_filter_list(
-        docdb_api_client=docdb_api_client,
-        filter_key="subject.subject_id",
-        filter_values=["731015", "741137", "789012"],
-        projection={
-            "name": 1,
-            "location": 1,
-            "subject.subject_id": 1,
-            "data_description.project_name": 1,
-        },
-    )
-    print(f"Found {len(records)} records. First 3 records:")
-    print(json.dumps(records[:3], indent=3))
 
 
 Updating Metadata
@@ -205,7 +202,7 @@ For example, to update the "instrument" and "session" metadata of a record in Do
       # NOTE: provide core metadata as dictionaries
       # e.g. update some field from the queried result
       instrument = record["instrument"] # dictionary
-      instrument["instrument_type"] = "New Instrument Type"  
+      instrument["instrument_type"] = "New Instrument Type"
       # e.g. replace entirely from file
       with open(INSTRUMENT_FILE_PATH, "r") as f:
           instrument = json.load(f)
