@@ -615,12 +615,32 @@ class MetadataDbClient(Client):
         """Url to get LLM-generated summaries"""
         return f"https://{self.host}/{self.version}/data_summary"
 
+    @property
+    def _register_asset_url(self) -> str:
+        """Url to register an asset to DocDB and Code Ocean"""
+        return f"https://{self.host}/{self.version}/assets/register"
+
     def generate_data_summary(self, record_id: str) -> Dict[str, Any]:
         """Get an LLM-generated summary for a data asset."""
         url = f"{self._data_summary_url}/{record_id}"
         signed_header = self._signed_request(method="GET", url=url)
         response = self.session.get(
             url=url, headers=dict(signed_header.headers)
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def register_asset(self, s3_location: str) -> Dict[str, Any]:
+        """Register a data asset to Code Ocean and the DocDB metadata index."""
+
+        data = json.dumps({"s3_location": s3_location})
+        signed_header = self._signed_request(
+            method="POST", url=self._register_asset_url, data=data
+        )
+        response = self.session.post(
+            url=self._register_asset_url,
+            headers=dict(signed_header.headers),
+            data=data,
         )
         response.raise_for_status()
         return response.json()
