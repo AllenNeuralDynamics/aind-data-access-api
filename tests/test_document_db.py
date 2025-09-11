@@ -885,6 +885,10 @@ class TestMetadataDbClient(unittest.TestCase):
         self.assertEqual(
             "https://example.com/v1/data_summary", client._data_summary_url
         )
+        self.assertEqual(
+            "https://example.com/v1/assets/register",
+            client._register_asset_url,
+        )
 
         client = MetadataDbClient(**self.example_client_args, version="v2")
         self.assertEqual("v2", client.version)
@@ -931,6 +935,43 @@ class TestMetadataDbClient(unittest.TestCase):
         mock_get.assert_called_once_with(
             url="https://example.com/v1/data_summary/abc-123",
             headers={"Content-Type": "application/json"},
+        )
+        self.assertEqual(response_message, response)
+
+    @patch("boto3.session.Session")
+    @patch("botocore.auth.SigV4Auth.add_auth")
+    @patch("requests.Session.post")
+    def test_register_asset(
+        self,
+        mock_post: MagicMock,
+        mock_auth: MagicMock,
+        mock_session: MagicMock,
+    ):
+        """Tests register_asset method"""
+        mock_creds = MagicMock()
+        mock_creds.access_key = "abc"
+        mock_creds.secret_key = "efg"
+        mock_session.return_value.region_name = "us-west-2"
+        mock_session.get_credentials.return_value = mock_creds
+        mock_response = Response()
+        mock_response.status_code = 201
+        response_message = {
+            "message": (
+                "Processed s3://bucket/prefix for CO and DocDB registration."
+            ),
+            "registered_co": True,
+            "registered_docdb": True,
+        }
+        mock_response._content = json.dumps(response_message).encode("utf-8")
+        mock_post.return_value = mock_response
+
+        client = MetadataDbClient(**self.example_client_args)
+        response = client.register_asset("s3://bucket/prefix")
+        mock_auth.assert_called_once()
+        mock_post.assert_called_once_with(
+            url="https://example.com/v1/assets/register",
+            headers={"Content-Type": "application/json"},
+            data='{"s3_location": "s3://bucket/prefix"}',
         )
         self.assertEqual(response_message, response)
 
