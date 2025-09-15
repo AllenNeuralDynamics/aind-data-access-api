@@ -410,6 +410,34 @@ class Client:
         """Aggregate records using an aggregation pipeline."""
         return self._aggregate_records(pipeline=pipeline)
 
+    def fetch_records_by_filter_list(
+        self,
+        filter_key: str,
+        filter_values: List[str],
+        projection: Optional[dict] = None,
+    ) -> List[dict]:
+        """
+        Queries DocDB for records where the value of a specified field is in a
+        list of values. Uses an aggregation pipeline with $in filter operator.
+
+        Parameters
+        ----------
+        filter_key : str
+          The field to filter on.
+        filter_values : List[str]
+          The list of values to filter on.
+        projection : Optional[dict]
+          Subset of fields to return. Default is None which returns all fields.
+
+        Returns
+        -------
+        List[dict]
+        """
+        agg_pipeline = [{"$match": {filter_key: {"$in": filter_values}}}]
+        if projection:
+            agg_pipeline.append({"$project": projection})
+        return self.aggregate_docdb_records(pipeline=agg_pipeline)
+
     def insert_one_docdb_record(self, record: dict) -> Response:
         """Insert one new record"""
         response = self._insert_one_record(
@@ -587,12 +615,32 @@ class MetadataDbClient(Client):
         """Url to get LLM-generated summaries"""
         return f"https://{self.host}/{self.version}/data_summary"
 
+    @property
+    def _register_asset_url(self) -> str:
+        """Url to register an asset to DocDB and Code Ocean"""
+        return f"https://{self.host}/{self.version}/assets/register"
+
     def generate_data_summary(self, record_id: str) -> Dict[str, Any]:
         """Get an LLM-generated summary for a data asset."""
         url = f"{self._data_summary_url}/{record_id}"
         signed_header = self._signed_request(method="GET", url=url)
         response = self.session.get(
             url=url, headers=dict(signed_header.headers)
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def register_asset(self, s3_location: str) -> Dict[str, Any]:
+        """Register a data asset to Code Ocean and the DocDB metadata index."""
+
+        data = json.dumps({"s3_location": s3_location})
+        signed_header = self._signed_request(
+            method="POST", url=self._register_asset_url, data=data
+        )
+        response = self.session.post(
+            url=self._register_asset_url,
+            headers=dict(signed_header.headers),
+            data=data,
         )
         response.raise_for_status()
         return response.json()
