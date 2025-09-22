@@ -179,9 +179,11 @@ class TestHelpersDataSchema(unittest.TestCase):
             metrics=[metric0],
         )
 
-        mock_get_quality_control_by_names.return_value = [QualityControl(
-            evaluations=[eval],
-        )]
+        mock_get_quality_control_by_names.return_value = [
+            QualityControl(
+                evaluations=[eval],
+            )
+        ]
 
         client = MagicMock()
 
@@ -224,9 +226,11 @@ class TestHelpersDataSchema(unittest.TestCase):
             metrics=[metric0],
         )
 
-        mock_get_quality_control_by_names.return_value = [QualityControl(
-            evaluations=[eval],
-        )]
+        mock_get_quality_control_by_names.return_value = [
+            QualityControl(
+                evaluations=[eval],
+            )
+        ]
 
         client = MagicMock()
 
