@@ -239,7 +239,9 @@ class TestHelpersDataSchema(unittest.TestCase):
 
         qc_df = get_quality_control_status_df(client, ["fake_name"])
 
-        pd.testing.assert_frame_equal(test_df, qc_df)    @patch(
+        pd.testing.assert_frame_equal(test_df, qc_df)
+
+    @patch(
         "aind_data_access_api.helpers.data_schema.fetch_records_by_filter_list"
     )
     def test_get_quality_control_by_names_valid(self, mock_fetch):
