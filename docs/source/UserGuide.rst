@@ -8,7 +8,7 @@ with AIND databases.
 We have two primary databases:
 
 1. A `document database (DocDB) <#document-database-docdb>`__ to store
-   unstructured json documents. The DocDB contains AIND metadata.
+   unstructured JSON documents. The DocDB contains AIND metadata.
 2. A `relational database <#rds-tables>`__ to store structured tables.
 
 Document Database (DocDB)
@@ -30,7 +30,7 @@ The DocDB can be accessed through a public read-only REST API or
 through a direct connection using SSH. For a direct connection,
 it is assumed you have the appropriate credentials.
 
-REST API (Read-Only)
+REST API
 ~~~~~~~~~~~~~~~~~~~~~~
 
 1. A GET request to ``https://api.allenneuraldynamics.org/v1/metadata_index/data_assets``
@@ -47,20 +47,19 @@ REST API (Read-Only)
    response = requests.get(URL, params={"filter": json.dumps(filter), "limit": limit})
    print(response.json())
 
-2. Alternatively, we provide a Python client:
+2. **We provide a Python client (recommended):**
 
 .. code:: python
 
    from aind_data_access_api.document_db import MetadataDbClient
 
    API_GATEWAY_HOST = "api.allenneuraldynamics.org"
-   DATABASE = "metadata_index"
-   COLLECTION = "data_assets"
+   # Default database and collection names are set in the client
+   # To override the defaults, provide the database and collection
+   # parameters in the constructor
 
    docdb_api_client = MetadataDbClient(
       host=API_GATEWAY_HOST,
-      database=DATABASE,
-      collection=COLLECTION,
    )
 
    filter = {"subject.subject_id": "731015"}
@@ -78,7 +77,7 @@ with our document database.
 
 To connect:
 
-1. If provided a temporary SSH password, please first run ``ssh {ssh-username}@{ssh_host}``
+1. If provided a temporary SSH password, please first run ``ssh {ssh_username}@{ssh_host}``
    and set a new password.
 2. Download the full version of `MongoDB Compass <https://www.mongodb.com/try/download/compass>`__.
 3. When connecting, click “Advanced Connection Options” and use the configurations below.
@@ -107,7 +106,7 @@ To connect:
      - SSL/TLS Connection
      - OFF
    * - Proxy/SSH
-     - SSH Tunnel/ Proxy Method	
+     - SSH Tunnel/ Proxy Method
      - SSH with Password
    * -
      - SSH Hostname
@@ -119,10 +118,16 @@ To connect:
      - SSH Username
      - ``ssh_username``
    * -
-     - SSH Username
+     - SSH Password
      - ``ssh_password``
-   
-4. You should be able to see the home page with the ``metadata-index`` database.
+   * - (Optional) Advanced
+     - Read Preference
+     - Secondary Preferred
+   * - 
+     - Replica Set Name
+     - rs0
+
+4. You should be able to see the home page with the ``metadata_index`` database.
    It should have 1 single collection called ``data_assets``.
 5. If provided with a temporary DocDB password, please change it using the embedded
    mongo shell in Compass, and then reconnect.
@@ -180,6 +185,7 @@ To use the client:
 
 RDS Tables
 ------------------
+
 We have some convenience methods to interact with our Relational Database. You can create a client by 
 explicitly setting credentials, or downloading from AWS Secrets Manager.
 

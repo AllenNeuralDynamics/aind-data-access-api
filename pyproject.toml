@@ -46,7 +46,7 @@ rds = [
     "SQLAlchemy==1.4.49"
 ]
 helpers = [
-    "aind-data-schema<2.0.0",
+    "aind-data-schema>=1.1.0,<2.0",
     "pandas",
 ]
 full = [

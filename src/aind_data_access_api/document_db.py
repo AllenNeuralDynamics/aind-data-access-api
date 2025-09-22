@@ -3,7 +3,7 @@
 import json
 import logging
 from sys import getsizeof
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 import boto3
 from boto3.session import Session as BotoSession
@@ -345,23 +345,6 @@ class Client:
         )
         return response
 
-    def close(self):
-        """Close the clients."""
-        if self.session is not None:
-            self.session.close()
-
-    def __enter__(self):
-        """Enter the context manager."""
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Exit the context manager."""
-        self.close()
-
-
-class MetadataDbClient(Client):
-    """Class to manage reading and writing to metadata db"""
-
     def retrieve_docdb_records(
         self,
         filter_query: Optional[dict] = None,
@@ -427,10 +410,36 @@ class MetadataDbClient(Client):
         """Aggregate records using an aggregation pipeline."""
         return self._aggregate_records(pipeline=pipeline)
 
+    def fetch_records_by_filter_list(
+        self,
+        filter_key: str,
+        filter_values: List[str],
+        projection: Optional[dict] = None,
+    ) -> List[dict]:
+        """
+        Queries DocDB for records where the value of a specified field is in a
+        list of values. Uses an aggregation pipeline with $in filter operator.
+
+        Parameters
+        ----------
+        filter_key : str
+          The field to filter on.
+        filter_values : List[str]
+          The list of values to filter on.
+        projection : Optional[dict]
+          Subset of fields to return. Default is None which returns all fields.
+
+        Returns
+        -------
+        List[dict]
+        """
+        agg_pipeline = [{"$match": {filter_key: {"$in": filter_values}}}]
+        if projection:
+            agg_pipeline.append({"$project": projection})
+        return self.aggregate_docdb_records(pipeline=agg_pipeline)
+
     def insert_one_docdb_record(self, record: dict) -> Response:
         """Insert one new record"""
-        if record.get("_id") is None:
-            raise ValueError("Record does not have an _id field.")
         response = self._insert_one_record(
             json.loads(json.dumps(record, default=str)),
         )
@@ -554,9 +563,146 @@ class MetadataDbClient(Client):
                 second_index = second_index + 1
         return responses
 
+    def close(self):
+        """Close the clients."""
+        if self.session is not None:
+            self.session.close()
+
+    def __enter__(self):
+        """Enter the context manager."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit the context manager."""
+        self.close()
+
+
+class MetadataDbClient(Client):
+    """Class to manage reading and writing to metadata db"""
+
+    def __init__(
+        self,
+        host: str,
+        database: str = "metadata_index",
+        collection: str = "data_assets",
+        version: str = "v1",
+        boto: Optional[BotoSession] = None,
+        session: Optional[Session] = None,
+    ):
+        """
+        Instantiate a MetadataDbClient.
+
+        Parameters
+        ----------
+        host : str
+        database : str
+        collection : str
+        version : str
+        boto : Optional[BotoSession]
+        session : Optional[Session]
+        """
+        super().__init__(
+            host=host,
+            database=database,
+            collection=collection,
+            version=version,
+            boto=boto,
+            session=session,
+        )
+
+    @property
+    def _data_summary_url(self) -> str:
+        """Url to get LLM-generated summaries"""
+        return f"https://{self.host}/{self.version}/data_summary"
+
+    @property
+    def _register_asset_url(self) -> str:
+        """Url to register an asset to DocDB and Code Ocean"""
+        return f"https://{self.host}/{self.version}/assets/register"
+
+    @property
+    def _deregister_asset_url(self) -> str:
+        """Url to deregister (delete) an asset in DocDB and Code Ocean"""
+        return f"https://{self.host}/{self.version}/assets/deregister"
+
+    def generate_data_summary(self, record_id: str) -> Dict[str, Any]:
+        """Get an LLM-generated summary for a data asset."""
+        url = f"{self._data_summary_url}/{record_id}"
+        signed_header = self._signed_request(method="GET", url=url)
+        response = self.session.get(
+            url=url, headers=dict(signed_header.headers)
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def register_asset(self, s3_location: str) -> Dict[str, Any]:
+        """Register a data asset to Code Ocean and the DocDB metadata index."""
+
+        data = json.dumps({"s3_location": s3_location})
+        signed_header = self._signed_request(
+            method="POST", url=self._register_asset_url, data=data
+        )
+        response = self.session.post(
+            url=self._register_asset_url,
+            headers=dict(signed_header.headers),
+            data=data,
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def deregister_asset(self, s3_location: str) -> Dict[str, Any]:
+        """De-register (delete) a data asset in Code Ocean and the
+        DocDB metadata index."""
+
+        data = json.dumps({"s3_location": s3_location})
+        signed_header = self._signed_request(
+            method="DELETE", url=self._deregister_asset_url, data=data
+        )
+        response = self.session.delete(
+            url=self._deregister_asset_url,
+            headers=dict(signed_header.headers),
+            data=data,
+        )
+        response.raise_for_status()
+        return response.json()
+
+
+class AnalysisDbClient(Client):
+    """Class to manage reading and writing to analysis db"""
+
+    def __init__(
+        self,
+        host: str,
+        collection: str,
+        database: str = "analysis",
+        version: str = "v1",
+        boto: Optional[BotoSession] = None,
+        session: Optional[Session] = None,
+    ):
+        """
+        Instantiate a AnalysisDbClient.
+
+        Parameters
+        ----------
+        host : str
+        collection : str
+        database : str
+        version : str
+        boto : Optional[BotoSession]
+        session : Optional[Session]
+        """
+        super().__init__(
+            host=host,
+            database=database,
+            collection=collection,
+            version=version,
+            boto=boto,
+            session=session,
+        )
+
 
 class SchemaDbClient(Client):
-    """Class to manage reading and writing to schema db"""
+    """Class to manage reading and writing to schemas db"""
 
     def __init__(
         self,
