@@ -152,10 +152,10 @@ class TestHelpersDataSchema(unittest.TestCase):
         )
 
     @patch(
-        "aind_data_access_api.helpers.data_schema.get_quality_control_by_name"
+        "aind_data_access_api.helpers.data_schema.get_quality_control_by_names"
     )
     def test_get_qc_value_df(
-        self, mock_get_quality_control_by_name: MagicMock
+        self, mock_get_quality_control_by_names: MagicMock
     ):
         """Test that a dataframe is correctly returned"""
 
@@ -179,54 +179,9 @@ class TestHelpersDataSchema(unittest.TestCase):
             metrics=[metric0],
         )
 
-        mock_get_quality_control_by_name.return_value = QualityControl(
+        mock_get_quality_control_by_names.return_value = [QualityControl(
             evaluations=[eval],
-        )
-
-        client = MagicMock()
-
-        test_df = pd.DataFrame(
-            {
-                "name": ["fake_name"],
-                "Evaluation0_Metric0": [Status.PASS],
-            }
-        )
-
-        qc_df = get_quality_control_status_df(client, ["fake_name"])
-
-        pd.testing.assert_frame_equal(test_df, qc_df)
-
-    @patch(
-        "aind_data_access_api.helpers.data_schema.get_quality_control_by_name"
-    )
-    def test_get_qc_status_df(
-        self, mock_get_quality_control_by_name: MagicMock
-    ):
-        """Test that a dataframe is correctly returned"""
-
-        status = QCStatus(
-            evaluator="Dan",
-            status=Status.PASS,
-            timestamp=datetime.now(),
-        )
-        metric0 = QCMetric(
-            name="Metric0",
-            value=0,
-            status_history=[
-                status,
-            ],
-        )
-
-        eval = QCEvaluation(
-            name="Evaluation0",
-            modality=Modality.ECEPHYS,
-            stage=Stage.RAW,
-            metrics=[metric0],
-        )
-
-        mock_get_quality_control_by_name.return_value = QualityControl(
-            evaluations=[eval],
-        )
+        )]
 
         client = MagicMock()
 
@@ -242,6 +197,49 @@ class TestHelpersDataSchema(unittest.TestCase):
         pd.testing.assert_frame_equal(test_df, qc_df)
 
     @patch(
+        "aind_data_access_api.helpers.data_schema.get_quality_control_by_names"
+    )
+    def test_get_qc_status_df(
+        self, mock_get_quality_control_by_names: MagicMock
+    ):
+        """Test that a dataframe is correctly returned"""
+
+        status = QCStatus(
+            evaluator="Dan",
+            status=Status.PASS,
+            timestamp=datetime.now(),
+        )
+        metric0 = QCMetric(
+            name="Metric0",
+            value=0,
+            status_history=[
+                status,
+            ],
+        )
+
+        eval = QCEvaluation(
+            name="Evaluation0",
+            modality=Modality.ECEPHYS,
+            stage=Stage.RAW,
+            metrics=[metric0],
+        )
+
+        mock_get_quality_control_by_names.return_value = [QualityControl(
+            evaluations=[eval],
+        )]
+
+        client = MagicMock()
+
+        test_df = pd.DataFrame(
+            {
+                "name": ["fake_name"],
+                "Evaluation0_Metric0": [Status.PASS],
+            }
+        )
+
+        qc_df = get_quality_control_status_df(client, ["fake_name"])
+
+        pd.testing.assert_frame_equal(test_df, qc_df)    @patch(
         "aind_data_access_api.helpers.data_schema.fetch_records_by_filter_list"
     )
     def test_get_quality_control_by_names_valid(self, mock_fetch):
