@@ -22,13 +22,10 @@ To get a `QualityControl` object for a specific ID or name, you can use:
    )
 
    API_GATEWAY_HOST = "api.allenneuraldynamics.org"
-   DATABASE = "metadata_index"
-   COLLECTION = "data_assets"
 
    client = MetadataDbClient(
       host=API_GATEWAY_HOST,
-      database=DATABASE,
-      collection=COLLECTION,
+      version="v1",
    )
 
    qc = get_quality_control_by_name(client, "behavior_711042_2024-08-07_12-20-41")
