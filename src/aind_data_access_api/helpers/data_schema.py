@@ -12,7 +12,6 @@ from aind_data_access_api.helpers.docdb import (
     get_field_by_id,
     get_id_from_name,
 )
-from aind_data_access_api.utils import fetch_records_by_filter_list
 
 
 def get_quality_control_by_id(
@@ -97,8 +96,7 @@ def get_quality_control_by_names(
     allow_invalid : bool, optional
         return invalid QualityControl as dict if True, by default False
     """
-    records = fetch_records_by_filter_list(
-        client,
+    records = client.fetch_records_by_filter_list(
         filter_key="name",
         filter_values=names,
         projection={"quality_control": 1},
