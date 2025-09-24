@@ -1,9 +1,9 @@
 name: Run checks in dev
 
 on:
-  pull_request:
+  push:
     branches:
-      - dev
+      - ci-reusable-workflows
 
 jobs:
   ci:
