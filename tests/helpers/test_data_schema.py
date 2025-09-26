@@ -432,14 +432,8 @@ class TestHelpersDataSchema(unittest.TestCase):
         # All metric columns should be missing since no status history entries
         # are before the specified date
         metric_columns = [col for col in result_df.columns if col != "name"]
-        for col in metric_columns:
-            # If the column exists, it should be NaN/None
-            if col in result_df.columns:
-                is_nan_or_none = (
-                    pd.isna(result_df[col].iloc[0])
-                    or result_df[col].iloc[0] is None
-                )
-                self.assertTrue(is_nan_or_none)
+        # No metric columns should exist since no status entries match the date filter
+        self.assertEqual(len(metric_columns), 0)
 
 
 if __name__ == "__main__":
