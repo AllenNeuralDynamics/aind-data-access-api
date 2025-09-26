@@ -330,7 +330,7 @@ class TestHelpersDataSchema(unittest.TestCase):
             "Video 2 num frames",
             "ProbeA",
             "ProbeB",
-            "ProbeC"
+            "ProbeC",
         ]
         self.assertEqual(
             sorted(result_df.columns.tolist()), sorted(expected_columns)
@@ -349,7 +349,7 @@ class TestHelpersDataSchema(unittest.TestCase):
         self.assertIsInstance(probe_a_value, dict)
         self.assertEqual(probe_a_value["value"], "")
         self.assertEqual(probe_a_value["type"], "dropdown")
-        
+
         probe_b_value = result_df["Probe B drift"].iloc[0]
         self.assertIsInstance(probe_b_value, dict)
         self.assertEqual(probe_b_value["value"], "")
@@ -367,7 +367,7 @@ class TestHelpersDataSchema(unittest.TestCase):
         test_date = datetime(
             2022, 11, 23, tzinfo=datetime.now().astimezone().tzinfo
         )
-        
+
         result_df = get_quality_control_status_df(
             client=mock_client, names=["session1", "session2"], date=test_date
         )
@@ -387,7 +387,7 @@ class TestHelpersDataSchema(unittest.TestCase):
             "Video 2 num frames",
             "ProbeA",
             "ProbeB",
-            "ProbeC"
+            "ProbeC",
         ]
         self.assertEqual(
             sorted(result_df.columns.tolist()), sorted(expected_columns)
@@ -419,7 +419,7 @@ class TestHelpersDataSchema(unittest.TestCase):
         early_date = datetime(
             2022, 11, 21, tzinfo=datetime.now().astimezone().tzinfo
         )
-        
+
         result_df = get_quality_control_status_df(
             client=mock_client, names=["session1"], date=early_date
         )
@@ -428,7 +428,7 @@ class TestHelpersDataSchema(unittest.TestCase):
         # The function should only include the name column
         self.assertEqual(len(result_df), 1)
         self.assertEqual(list(result_df["name"]), ["session1"])
-        
+
         # All metric columns should be missing since no status history entries
         # are before the specified date
         metric_columns = [col for col in result_df.columns if col != "name"]
@@ -436,8 +436,8 @@ class TestHelpersDataSchema(unittest.TestCase):
             # If the column exists, it should be NaN/None
             if col in result_df.columns:
                 is_nan_or_none = (
-                    pd.isna(result_df[col].iloc[0]) or
-                    result_df[col].iloc[0] is None
+                    pd.isna(result_df[col].iloc[0])
+                    or result_df[col].iloc[0] is None
                 )
                 self.assertTrue(is_nan_or_none)
 
