@@ -429,10 +429,7 @@ class TestHelpersDataSchema(unittest.TestCase):
         self.assertEqual(len(result_df), 1)
         self.assertEqual(list(result_df["name"]), ["session1"])
 
-        # All metric columns should be missing since no status history entries
-        # are before the specified date
         metric_columns = [col for col in result_df.columns if col != "name"]
-        # No metric columns should exist since no status entries match the date filter
         self.assertEqual(len(metric_columns), 0)
 
 
