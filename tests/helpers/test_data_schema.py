@@ -303,6 +303,144 @@ class TestHelpersDataSchema(unittest.TestCase):
             projection={"quality_control": 1},
         )
 
+    def test_get_qc_value_df_with_example_data(self):
+        """Test get_quality_control_value_df with actual example QC data."""
+        mock_client = MagicMock()
+        mock_client.fetch_records_by_filter_list.return_value = [
+            {"quality_control": self.example_quality_control.copy()},
+            {"quality_control": self.example_quality_control.copy()},
+        ]
+
+        result_df = get_quality_control_value_df(
+            client=mock_client, names=["session1", "session2"]
+        )
+
+        # Check that we got the right shape
+        self.assertEqual(len(result_df), 2)
+        self.assertEqual(list(result_df["name"]), ["session1", "session2"])
+
+        # Check specific values from the example QC data
+        expected_columns = [
+            "name",
+            "Probe A drift",
+            "Probe B drift",
+            "Probe C drift",
+            "Expected frame count",
+            "Video 1 frame count",
+            "Video 2 num frames",
+            "ProbeA",
+            "ProbeB",
+            "ProbeC"
+        ]
+        self.assertEqual(
+            sorted(result_df.columns.tolist()), sorted(expected_columns)
+        )
+
+        # Check specific values
+        self.assertEqual(result_df["Probe C drift"].iloc[0], "Low")
+        self.assertEqual(result_df["Expected frame count"].iloc[0], 662)
+        self.assertEqual(result_df["Video 1 frame count"].iloc[0], 662)
+        self.assertEqual(result_df["ProbeA"].iloc[0], True)
+        self.assertEqual(result_df["ProbeB"].iloc[0], True)
+        self.assertEqual(result_df["ProbeC"].iloc[0], True)
+
+        # Check that Probe A and B drift have complex value structures
+        probe_a_value = result_df["Probe A drift"].iloc[0]
+        self.assertIsInstance(probe_a_value, dict)
+        self.assertEqual(probe_a_value["value"], "")
+        self.assertEqual(probe_a_value["type"], "dropdown")
+        
+        probe_b_value = result_df["Probe B drift"].iloc[0]
+        self.assertIsInstance(probe_b_value, dict)
+        self.assertEqual(probe_b_value["value"], "")
+        self.assertEqual(probe_b_value["type"], "checkbox")
+
+    def test_get_qc_status_df_with_example_data(self):
+        """Test get_quality_control_status_df with actual example QC data."""
+        mock_client = MagicMock()
+        mock_client.fetch_records_by_filter_list.return_value = [
+            {"quality_control": self.example_quality_control.copy()},
+            {"quality_control": self.example_quality_control.copy()},
+        ]
+
+        # Use a date after the timestamps in the example data
+        test_date = datetime(
+            2022, 11, 23, tzinfo=datetime.now().astimezone().tzinfo
+        )
+        
+        result_df = get_quality_control_status_df(
+            client=mock_client, names=["session1", "session2"], date=test_date
+        )
+
+        # Check that we got the right shape
+        self.assertEqual(len(result_df), 2)
+        self.assertEqual(list(result_df["name"]), ["session1", "session2"])
+
+        # Check specific status values from the example QC data
+        expected_columns = [
+            "name",
+            "Probe A drift",
+            "Probe B drift",
+            "Probe C drift",
+            "Expected frame count",
+            "Video 1 frame count",
+            "Video 2 num frames",
+            "ProbeA",
+            "ProbeB",
+            "ProbeC"
+        ]
+        self.assertEqual(
+            sorted(result_df.columns.tolist()), sorted(expected_columns)
+        )
+
+        # Check specific status values
+        self.assertEqual(result_df["Probe C drift"].iloc[0], Status.PASS)
+        self.assertEqual(
+            result_df["Expected frame count"].iloc[0], Status.PASS
+        )
+        self.assertEqual(result_df["Video 1 frame count"].iloc[0], Status.PASS)
+        self.assertEqual(result_df["Video 2 num frames"].iloc[0], Status.PASS)
+        self.assertEqual(result_df["ProbeA"].iloc[0], Status.PASS)
+        self.assertEqual(result_df["ProbeB"].iloc[0], Status.PASS)
+        self.assertEqual(result_df["ProbeC"].iloc[0], Status.PASS)
+
+        # Check that Probe A and B drift have pending status
+        self.assertEqual(result_df["Probe A drift"].iloc[0], Status.PENDING)
+        self.assertEqual(result_df["Probe B drift"].iloc[0], Status.PENDING)
+
+    def test_get_qc_status_df_with_date_filtering(self):
+        """Test get_quality_control_status_df correctly filters by date."""
+        mock_client = MagicMock()
+        mock_client.fetch_records_by_filter_list.return_value = [
+            {"quality_control": self.example_quality_control.copy()}
+        ]
+
+        # Use a date before the timestamps in the example data
+        early_date = datetime(
+            2022, 11, 21, tzinfo=datetime.now().astimezone().tzinfo
+        )
+        
+        result_df = get_quality_control_status_df(
+            client=mock_client, names=["session1"], date=early_date
+        )
+
+        # Since the date is before all status timestamps, no statuses found
+        # The function should only include the name column
+        self.assertEqual(len(result_df), 1)
+        self.assertEqual(list(result_df["name"]), ["session1"])
+        
+        # All metric columns should be missing since no status history entries
+        # are before the specified date
+        metric_columns = [col for col in result_df.columns if col != "name"]
+        for col in metric_columns:
+            # If the column exists, it should be NaN/None
+            if col in result_df.columns:
+                is_nan_or_none = (
+                    pd.isna(result_df[col].iloc[0]) or
+                    result_df[col].iloc[0] is None
+                )
+                self.assertTrue(is_nan_or_none)
+
 
 if __name__ == "__main__":
     unittest.main()
