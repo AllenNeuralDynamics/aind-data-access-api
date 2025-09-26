@@ -1,176 +1,279 @@
 {
-    "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/quality_control.py",
-    "schema_version": "1.1.1",
-    "evaluations": [
-       {
-          "modality": {
-             "name": "Extracellular electrophysiology",
-             "abbreviation": "ecephys"
-          },
-          "stage": "Raw data",
-          "name": "Drift map",
-          "description": "Qualitative check that drift map shows minimal movement",
-          "metrics": [
-             {
-                "name": "Probe A drift",
-                "value": {
-                   "value": "",
-                   "options": [
-                      "Low",
-                      "Medium",
-                      "High"
-                   ],
-                   "status": [
-                      "Pass",
-                      "Fail",
-                      "Fail"
-                   ],
-                   "type": "dropdown"
-                },
-                "description": null,
-                "reference": "ecephys-drift-map",
-                "status_history": [
-                   {
-                      "evaluator": "",
-                      "status": "Pending",
-                      "timestamp": "2022-11-22T00:00:00Z"
-                   }
-                ]
-             },
-             {
-                "name": "Probe B drift",
-                "value": {
-                   "value": "",
-                   "options": [
-                      "Drift visible in entire session",
-                      "Drift visible in part of session",
-                      "Sudden movement event"
-                   ],
-                   "status": [
-                      "Fail",
-                      "Pass",
-                      "Fail"
-                   ],
-                   "type": "checkbox"
-                },
-                "description": null,
-                "reference": "ecephys-drift-map",
-                "status_history": [
-                   {
-                      "evaluator": "",
-                      "status": "Pending",
-                      "timestamp": "2022-11-22T00:00:00Z"
-                   }
-                ]
-             },
-             {
-                "name": "Probe C drift",
-                "value": "Low",
-                "description": null,
-                "reference": "ecephys-drift-map",
-                "status_history": [
-                   {
-                      "evaluator": "Automated",
-                      "status": "Pass",
-                      "timestamp": "2022-11-22T00:00:00Z"
-                   }
-                ]
-             }
-          ],
-          "notes": "",
-          "allow_failed_metrics": false
-       },
-       {
-          "modality": {
-             "name": "Behavior videos",
-             "abbreviation": "behavior-videos"
-          },
-          "stage": "Raw data",
-          "name": "Video frame count check",
-          "description": null,
-          "metrics": [
-             {
-                "name": "video_1_num_frames",
-                "value": 662,
-                "description": null,
-                "reference": null,
-                "status_history": [
-                   {
-                      "evaluator": "Automated",
-                      "status": "Pass",
-                      "timestamp": "2022-11-22T00:00:00Z"
-                   }
-                ]
-             },
-             {
-                "name": "video_2_num_frames",
-                "value": 662,
-                "description": null,
-                "reference": null,
-                "status_history": [
-                   {
-                      "evaluator": "Automated",
-                      "status": "Pass",
-                      "timestamp": "2022-11-22T00:00:00Z"
-                   }
-                ]
-             }
-          ],
-          "notes": "Pass when video_1_num_frames==video_2_num_frames",
-          "allow_failed_metrics": false
-       },
-       {
-          "modality": {
-             "name": "Extracellular electrophysiology",
-             "abbreviation": "ecephys"
-          },
-          "stage": "Raw data",
-          "name": "Probes present",
-          "description": null,
-          "metrics": [
-             {
-                "name": "ProbeA_success",
-                "value": true,
-                "description": null,
-                "reference": null,
-                "status_history": [
-                   {
-                      "evaluator": "Automated",
-                      "status": "Pass",
-                      "timestamp": "2022-11-22T00:00:00Z"
-                   }
-                ]
-             },
-             {
-                "name": "ProbeB_success",
-                "value": true,
-                "description": null,
-                "reference": null,
-                "status_history": [
-                   {
-                      "evaluator": "Automated",
-                      "status": "Pass",
-                      "timestamp": "2022-11-22T00:00:00Z"
-                   }
-                ]
-             },
-             {
-                "name": "ProbeC_success",
-                "value": true,
-                "description": null,
-                "reference": null,
-                "status_history": [
-                   {
-                      "evaluator": "Automated",
-                      "status": "Pass",
-                      "timestamp": "2022-11-22T00:00:00Z"
-                   }
-                ]
-             }
-          ],
-          "notes": null,
-          "allow_failed_metrics": false
-       }
-    ],
-    "notes": null
- }
+   "object_type": "Quality control",
+   "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/quality_control.py",
+   "schema_version": "2.0.6",
+   "metrics": [
+      {
+         "object_type": "QC metric",
+         "name": "Probe A drift",
+         "modality": {
+            "name": "Extracellular electrophysiology",
+            "abbreviation": "ecephys"
+         },
+         "stage": "Raw data",
+         "value": {
+            "value": "",
+            "options": [
+               "Low",
+               "Medium",
+               "High"
+            ],
+            "status": [
+               "Pass",
+               "Fail",
+               "Fail"
+            ],
+            "type": "dropdown"
+         },
+         "status_history": [
+            {
+               "object_type": "QC status",
+               "evaluator": "",
+               "status": "Pending",
+               "timestamp": "2022-11-22T00:00:00Z"
+            }
+         ],
+         "description": "Pass when drift map shows minimal movement",
+         "reference": "ecephys-drift-map",
+         "tags": [
+            "Drift map",
+            "Probe A"
+         ],
+         "evaluated_assets": null
+      },
+      {
+         "object_type": "QC metric",
+         "name": "Probe B drift",
+         "modality": {
+            "name": "Extracellular electrophysiology",
+            "abbreviation": "ecephys"
+         },
+         "stage": "Raw data",
+         "value": {
+            "value": "",
+            "options": [
+               "No Drift",
+               "Drift visible in part of acquisition",
+               "Drift visible in entire acquisition",
+               "Sudden movement event"
+            ],
+            "status": [
+               "Pass",
+               "Pass",
+               "Fail",
+               "Fail"
+            ],
+            "type": "checkbox"
+         },
+         "status_history": [
+            {
+               "object_type": "QC status",
+               "evaluator": "",
+               "status": "Pending",
+               "timestamp": "2022-11-22T00:00:00Z"
+            }
+         ],
+         "description": "Pass when drift map shows minimal movement",
+         "reference": "ecephys-drift-map",
+         "tags": [
+            "Drift map",
+            "Probe B"
+         ],
+         "evaluated_assets": null
+      },
+      {
+         "object_type": "QC metric",
+         "name": "Probe C drift",
+         "modality": {
+            "name": "Extracellular electrophysiology",
+            "abbreviation": "ecephys"
+         },
+         "stage": "Raw data",
+         "value": "Low",
+         "status_history": [
+            {
+               "object_type": "QC status",
+               "evaluator": "Automated",
+               "status": "Pass",
+               "timestamp": "2022-11-22T00:00:00Z"
+            }
+         ],
+         "description": "Pass when drift map shows minimal movement",
+         "reference": "ecephys-drift-map",
+         "tags": [
+            "Drift map",
+            "Probe C"
+         ],
+         "evaluated_assets": null
+      },
+      {
+         "object_type": "QC metric",
+         "name": "Expected frame count",
+         "modality": {
+            "name": "Behavior videos",
+            "abbreviation": "behavior-videos"
+         },
+         "stage": "Raw data",
+         "value": 662,
+         "status_history": [
+            {
+               "object_type": "QC status",
+               "evaluator": "Automated",
+               "status": "Pass",
+               "timestamp": "2022-11-22T00:00:00Z"
+            }
+         ],
+         "description": "Expected frame count from experiment length, always pass",
+         "reference": null,
+         "tags": [
+            "Frame count checks"
+         ],
+         "evaluated_assets": null
+      },
+      {
+         "object_type": "QC metric",
+         "name": "Video 1 frame count",
+         "modality": {
+            "name": "Behavior videos",
+            "abbreviation": "behavior-videos"
+         },
+         "stage": "Raw data",
+         "value": 662,
+         "status_history": [
+            {
+               "object_type": "QC status",
+               "evaluator": "Automated",
+               "status": "Pass",
+               "timestamp": "2022-11-22T00:00:00Z"
+            }
+         ],
+         "description": "Pass when frame count matches expected",
+         "reference": null,
+         "tags": [
+            "Frame count checks",
+            "Video 1"
+         ],
+         "evaluated_assets": null
+      },
+      {
+         "object_type": "QC metric",
+         "name": "Video 2 num frames",
+         "modality": {
+            "name": "Behavior videos",
+            "abbreviation": "behavior-videos"
+         },
+         "stage": "Raw data",
+         "value": 662,
+         "status_history": [
+            {
+               "object_type": "QC status",
+               "evaluator": "Automated",
+               "status": "Pass",
+               "timestamp": "2022-11-22T00:00:00Z"
+            }
+         ],
+         "description": "Pass when frame count matches expected",
+         "reference": null,
+         "tags": [
+            "Frame count checks",
+            "Video 2"
+         ],
+         "evaluated_assets": null
+      },
+      {
+         "object_type": "QC metric",
+         "name": "ProbeA",
+         "modality": {
+            "name": "Extracellular electrophysiology",
+            "abbreviation": "ecephys"
+         },
+         "stage": "Raw data",
+         "value": true,
+         "status_history": [
+            {
+               "object_type": "QC status",
+               "evaluator": "Automated",
+               "status": "Pass",
+               "timestamp": "2022-11-22T00:00:00Z"
+            }
+         ],
+         "description": "Pass when probe is present in the recording",
+         "reference": null,
+         "tags": [
+            "Probes present"
+         ],
+         "evaluated_assets": null
+      },
+      {
+         "object_type": "QC metric",
+         "name": "ProbeB",
+         "modality": {
+            "name": "Extracellular electrophysiology",
+            "abbreviation": "ecephys"
+         },
+         "stage": "Raw data",
+         "value": true,
+         "status_history": [
+            {
+               "object_type": "QC status",
+               "evaluator": "Automated",
+               "status": "Pass",
+               "timestamp": "2022-11-22T00:00:00Z"
+            }
+         ],
+         "description": "Pass when probe is present in the recording",
+         "reference": null,
+         "tags": [
+            "Probes present"
+         ],
+         "evaluated_assets": null
+      },
+      {
+         "object_type": "QC metric",
+         "name": "ProbeC",
+         "modality": {
+            "name": "Extracellular electrophysiology",
+            "abbreviation": "ecephys"
+         },
+         "stage": "Raw data",
+         "value": true,
+         "status_history": [
+            {
+               "object_type": "QC status",
+               "evaluator": "Automated",
+               "status": "Pass",
+               "timestamp": "2022-11-22T00:00:00Z"
+            }
+         ],
+         "description": "Pass when probe is present in the recording",
+         "reference": null,
+         "tags": [
+            "Probes present"
+         ],
+         "evaluated_assets": null
+      }
+   ],
+   "key_experimenters": null,
+   "notes": null,
+   "default_grouping": [
+      "Drift map",
+      "Frame count checks",
+      "Probes present"
+   ],
+   "allow_tag_failures": [
+      "Video 2"
+   ],
+   "status": {
+      "Probe A": "Pending",
+      "Probes present": "Pass",
+      "Video 1": "Pass",
+      "Probe C": "Pass",
+      "Video 2": "Pass",
+      "Probe B": "Pending",
+      "Frame count checks": "Pass",
+      "Drift map": "Pending",
+      "behavior-videos": "Pass",
+      "ecephys": "Pending",
+      "Raw data": "Pending"
+   }
+}
