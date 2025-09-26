@@ -9,7 +9,6 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 from aind_data_schema.core.quality_control import (
     QualityControl,
-    QCEvaluation,
     QCMetric,
     QCStatus,
     Status,
@@ -166,22 +165,18 @@ class TestHelpersDataSchema(unittest.TestCase):
         )
         metric0 = QCMetric(
             name="Metric0",
+            modality=Modality.ECEPHYS,
+            stage=Stage.RAW,
             value=0,
             status_history=[
                 status,
             ],
         )
 
-        eval = QCEvaluation(
-            name="Evaluation0",
-            modality=Modality.ECEPHYS,
-            stage=Stage.RAW,
-            metrics=[metric0],
-        )
-
         mock_get_quality_control_by_names.return_value = [
             QualityControl(
-                evaluations=[eval],
+                metrics=[metric0],
+                default_grouping=["test_grouping"],
             )
         ]
 
@@ -190,7 +185,7 @@ class TestHelpersDataSchema(unittest.TestCase):
         test_df = pd.DataFrame(
             {
                 "name": ["fake_name"],
-                "Evaluation0_Metric0": [0],
+                "Metric0": [0],
             }
         )
 
@@ -213,22 +208,18 @@ class TestHelpersDataSchema(unittest.TestCase):
         )
         metric0 = QCMetric(
             name="Metric0",
+            modality=Modality.ECEPHYS,
+            stage=Stage.RAW,
             value=0,
             status_history=[
                 status,
             ],
         )
 
-        eval = QCEvaluation(
-            name="Evaluation0",
-            modality=Modality.ECEPHYS,
-            stage=Stage.RAW,
-            metrics=[metric0],
-        )
-
         mock_get_quality_control_by_names.return_value = [
             QualityControl(
-                evaluations=[eval],
+                metrics=[metric0],
+                default_grouping=["test_grouping"],
             )
         ]
 
@@ -237,7 +228,7 @@ class TestHelpersDataSchema(unittest.TestCase):
         test_df = pd.DataFrame(
             {
                 "name": ["fake_name"],
-                "Evaluation0_Metric0": [Status.PASS],
+                "Metric0": [Status.PASS],
             }
         )
 
@@ -262,8 +253,8 @@ class TestHelpersDataSchema(unittest.TestCase):
         )
 
         self.assertEqual(len(result), 2)
-        self.assertEqual(result[0].evaluations[0].name, "Drift map")
-        self.assertEqual(result[1].evaluations[0].name, "Drift map")
+        self.assertEqual(result[0].metrics[0].name, "Probe A drift")
+        self.assertEqual(result[1].metrics[0].name, "Probe A drift")
         mock_client.fetch_records_by_filter_list.assert_called_once_with(
             filter_key="name",
             filter_values=["name1", "name2"],

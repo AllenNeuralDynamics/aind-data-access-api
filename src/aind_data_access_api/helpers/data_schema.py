@@ -141,9 +141,7 @@ def get_quality_control_status_df(
             # Find the most recent status before the given datetime
             for status in reversed(metric.status_history):
                 if status.timestamp <= date:
-                    qc_metrics_flat[f"{eval.name}_{metric.name}"] = (
-                        status.status
-                    )
+                    qc_metrics_flat[metric.name] = status.status
                     break
 
         data.append(qc_metrics_flat)
@@ -175,7 +173,7 @@ def get_quality_control_value_df(
         qc_metrics_flat = {}
         qc_metrics_flat["name"] = name
         for metric in qc.metrics:
-            qc_metrics_flat[f"{eval.name}_{metric.name}"] = metric.value
+            qc_metrics_flat[metric.name] = metric.value
 
         data.append(qc_metrics_flat)
 
