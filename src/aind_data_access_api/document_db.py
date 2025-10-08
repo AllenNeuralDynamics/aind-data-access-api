@@ -625,6 +625,11 @@ class MetadataDbClient(Client):
         """Url to deregister (delete) an asset in DocDB and Code Ocean"""
         return f"https://{self.host}/{self.version}/assets/deregister"
 
+    @property
+    def _add_qc_evaluation_url(self) -> str:
+        """Url to add QC evaluation(s) to a data asset"""
+        return f"https://{self.host}/{self.version}/add_qc_evaluation"
+
     def generate_data_summary(self, record_id: str) -> Dict[str, Any]:
         """Get an LLM-generated summary for a data asset."""
         url = f"{self._data_summary_url}/{record_id}"
@@ -660,6 +665,29 @@ class MetadataDbClient(Client):
         )
         response = self.session.delete(
             url=self._deregister_asset_url,
+            headers=dict(signed_header.headers),
+            data=data,
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def add_qc_evaluation(
+        self, data_asset_id: str, qc_eval: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Add one or more QC evaluations to a data asset."""
+
+        post_request_content = {
+            "data_asset_id": data_asset_id,
+            "qc_evaluation": qc_eval,
+        }
+
+        data = json.dumps(post_request_content)
+
+        signed_header = self._signed_request(
+            method="POST", url=self._add_qc_evaluation_url, data=data
+        )
+        response = self.session.post(
+            url=self._add_qc_evaluation_url,
             headers=dict(signed_header.headers),
             data=data,
         )
