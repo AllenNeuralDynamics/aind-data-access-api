@@ -1038,20 +1038,20 @@ class TestMetadataDbClient(unittest.TestCase):
         mock_post.return_value = mock_response
 
         client = MetadataDbClient(**self.example_client_args)
-        qc_eval = {
-            "modality": {"name": "ecephys", "abbreviation": "ecephys"},
-            "stage": "Raw data",
-            "name": "Test QC",
-            "metrics": [],
+        qc_contents = {
+            "qc_evaluation": {
+                "modality": {"name": "ecephys", "abbreviation": "ecephys"},
+                "stage": "Raw data",
+                "name": "Test QC",
+                "metrics": [],
+            }
         }
-        response = client.add_qc_evaluation("fake-uuid", qc_eval)
+        response = client.add_qc_evaluation("fake-uuid", qc_contents)
         mock_auth.assert_called_once()
         mock_post.assert_called_once_with(
             url="https://example.com/v1/add_qc_evaluation",
             headers={"Content-Type": "application/json"},
-            data=json.dumps(
-                {"data_asset_id": "fake-uuid", "qc_evaluation": qc_eval}
-            ),
+            data=json.dumps({**qc_contents, "data_asset_id": "fake-uuid"}),
         )
         self.assertEqual(response, response_message)
 
@@ -1082,10 +1082,9 @@ class TestMetadataDbClient(unittest.TestCase):
         mock_post.return_value = mock_response
 
         client = MetadataDbClient(**self.example_client_args)
-        qc_eval = {"foo": "bar"}
-
+        qc_contents = {"foo": "bar"}
         with self.assertRaises(requests.exceptions.HTTPError) as e:
-            client.add_qc_evaluation("fake-uuid", qc_eval)
+            client.add_qc_evaluation("fake-uuid", qc_contents)
         self.assertIn("400 Client Error", str(e.exception))
 
 

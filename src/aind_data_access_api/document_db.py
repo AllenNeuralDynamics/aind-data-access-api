@@ -627,7 +627,7 @@ class MetadataDbClient(Client):
 
     @property
     def _add_qc_evaluation_url(self) -> str:
-        """Url to add QC evaluation(s) to a data asset"""
+        """Url to add QC evaluation(s) or other QC content to a data asset"""
         return f"https://{self.host}/{self.version}/add_qc_evaluation"
 
     def generate_data_summary(self, record_id: str) -> Dict[str, Any]:
@@ -672,17 +672,15 @@ class MetadataDbClient(Client):
         return response.json()
 
     def add_qc_evaluation(
-        self, data_asset_id: str, qc_eval: Dict[str, Any]
+        self, data_asset_id: str, qc_contents: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Add one or more QC evaluations to a data asset."""
+        """Add one or more QC evaluations (or other QC content)
+        to a data asset."""
 
-        post_request_content = {
-            "data_asset_id": data_asset_id,
-            "qc_evaluation": qc_eval,
-        }
+        qc_contents_with_id = dict(qc_contents)
+        qc_contents_with_id["data_asset_id"] = data_asset_id
 
-        data = json.dumps(post_request_content)
-
+        data = json.dumps(qc_contents_with_id)
         signed_header = self._signed_request(
             method="POST", url=self._add_qc_evaluation_url, data=data
         )

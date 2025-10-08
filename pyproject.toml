@@ -19,7 +19,7 @@ dynamic = ["version"]
 dependencies = [
     "requests",
     "boto3",
-    "pydantic>=2.0",
+    "pydantic>=2.0,<2.12",
     "pydantic-settings>=2.0",
 ]
 
