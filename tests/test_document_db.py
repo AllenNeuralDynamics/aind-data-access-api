@@ -1016,6 +1016,77 @@ class TestMetadataDbClient(unittest.TestCase):
         )
         self.assertEqual(response_message, response)
 
+    @patch("boto3.session.Session")
+    @patch("botocore.auth.SigV4Auth.add_auth")
+    @patch("requests.Session.post")
+    def test_add_qc_evaluation_success(
+        self,
+        mock_post: MagicMock,
+        mock_auth: MagicMock,
+        mock_session: MagicMock,
+    ):
+        """Tests add_qc_evaluation method success case"""
+        mock_creds = MagicMock()
+        mock_creds.access_key = "abc"
+        mock_creds.secret_key = "efg"
+        mock_session.return_value.region_name = "us-west-2"
+        mock_session.get_credentials.return_value = mock_creds
+        mock_response = Response()
+        mock_response.status_code = 200
+        response_message = {"acknowledged": True, "matchedCount": 1}
+        mock_response._content = json.dumps(response_message).encode("utf-8")
+        mock_post.return_value = mock_response
+
+        client = MetadataDbClient(**self.example_client_args)
+        qc_contents = {
+            "qc_evaluation": {
+                "modality": {"name": "ecephys", "abbreviation": "ecephys"},
+                "stage": "Raw data",
+                "name": "Test QC",
+                "metrics": [],
+            }
+        }
+        response = client.add_qc_evaluation("fake-uuid", qc_contents)
+        mock_auth.assert_called_once()
+        mock_post.assert_called_once_with(
+            url="https://example.com/v1/add_qc_evaluation",
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({**qc_contents, "data_asset_id": "fake-uuid"}),
+        )
+        self.assertEqual(response, response_message)
+
+    @patch("boto3.session.Session")
+    @patch("botocore.auth.SigV4Auth.add_auth")
+    @patch("requests.Session.post")
+    def test_add_qc_evaluation_failure(
+        self,
+        mock_post: MagicMock,
+        mock_auth: MagicMock,
+        mock_session: MagicMock,
+    ):
+        """Tests add_qc_evaluation failure case"""
+        mock_creds = MagicMock()
+        mock_creds.access_key = "abc"
+        mock_creds.secret_key = "efg"
+        mock_session.return_value.region_name = "us-west-2"
+        mock_session.return_value.get_credentials.return_value = mock_creds
+        mock_response = Response()
+        mock_response.status_code = 400
+        mock_response._content = json.dumps(
+            {
+                "detail": "Invalid QC evaluation submission. "
+                "'qc_evaluation' field missing required keys.",
+                "error": "BadRequest",
+            }
+        ).encode("utf-8")
+        mock_post.return_value = mock_response
+
+        client = MetadataDbClient(**self.example_client_args)
+        qc_contents = {"foo": "bar"}
+        with self.assertRaises(requests.exceptions.HTTPError) as e:
+            client.add_qc_evaluation("fake-uuid", qc_contents)
+        self.assertIn("400 Client Error", str(e.exception))
+
 
 class TestAnalysisDbClient(unittest.TestCase):
     """Test methods in AnalysisDbClient class."""
