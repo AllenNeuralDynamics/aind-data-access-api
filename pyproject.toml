@@ -19,7 +19,7 @@ dynamic = ["version"]
 dependencies = [
     "requests",
     "boto3",
-    "pydantic>=2.0",
+    "pydantic>=2.0,<2.12",
     "pydantic-settings>=2.0",
 ]
 
@@ -47,6 +47,7 @@ rds = [
 ]
 helpers = [
     "aind-data-schema>=1.1.0,<2.0",
+    "pandas",
 ]
 full = [
     "aind-data-access-api[secrets]",
