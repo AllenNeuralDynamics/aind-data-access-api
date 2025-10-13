@@ -585,7 +585,7 @@ class MetadataDbClient(Client):
         host: str,
         database: str = "metadata_index",
         collection: str = "data_assets",
-        version: str = "v1",
+        version: str = "v2",
         boto: Optional[BotoSession] = None,
         session: Optional[Session] = None,
     ):
