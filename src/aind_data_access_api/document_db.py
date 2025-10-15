@@ -677,9 +677,7 @@ class MetadataDbClient(Client):
         """Add one or more QC evaluations (or other QC content)
         to a data asset."""
 
-        qc_contents_with_id = dict(qc_contents)
-        qc_contents_with_id["data_asset_id"] = data_asset_id
-
+        qc_contents_with_id = {**qc_contents, "data_asset_id": data_asset_id}
         data = json.dumps(qc_contents_with_id)
         signed_header = self._signed_request(
             method="POST", url=self._add_qc_evaluation_url, data=data
