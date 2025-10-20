@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from typing import List, Optional, Union
 
 import pandas as pd
-from aind_data_schema.core.quality_control import QualityControl
+from aind_data_schema.core.quality_control import QCEvaluation, QualityControl
 
 from aind_data_access_api.document_db import MetadataDbClient
 from aind_data_access_api.helpers.docdb import (
@@ -182,3 +182,39 @@ def get_quality_control_value_df(
         data.append(qc_metrics_flat)
 
     return pd.DataFrame(data)
+
+
+def serialize_qc_evaluations(
+    client: MetadataDbClient,
+    data_asset_id: str,
+    evaluations: Union[QCEvaluation, List[QCEvaluation]],
+):
+    """Serialize QCEvaluation object(s) and add them to DocDB.
+
+    Parameters
+    ----------
+    client : MetadataDbClient
+        A connected DocumentDB client.
+    evaluations : QCEvaluation or list[QCEvaluation]
+        One or more QCEvaluation objects from aind-data-schema.
+
+    Returns
+    -------
+    dict or list[dict]
+        The response(s) from MetadataDbClient.add_qc_evaluation.
+    """
+
+    if isinstance(evaluations, QCEvaluation):
+        evaluations = [evaluations]
+
+    serialized = [e.model_dump(mode="json") for e in evaluations]
+
+    responses = []
+    for qc_eval_dict in serialized:
+        qc_contents = {"qc_evaluation": qc_eval_dict}
+        resp = client.add_qc_evaluation(
+            data_asset_id=data_asset_id, qc_contents=qc_contents
+        )
+        responses.append(resp)
+
+    return responses[0] if len(responses) == 1 else responses
