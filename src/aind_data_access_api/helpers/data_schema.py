@@ -184,7 +184,7 @@ def get_quality_control_value_df(
     return pd.DataFrame(data)
 
 
-def serialize_qc_evaluations(
+def add_qc_evaluations_to_docdb(
     client: MetadataDbClient,
     data_asset_id: str,
     evaluations: Union[QCEvaluation, List[QCEvaluation]],
@@ -207,14 +207,13 @@ def serialize_qc_evaluations(
     if isinstance(evaluations, QCEvaluation):
         evaluations = [evaluations]
 
-    serialized = [e.model_dump(mode="json") for e in evaluations]
+    serialized = [
+        e.model_dump(mode="json", exclude_none=True) for e in evaluations
+    ]
 
-    responses = []
-    for qc_eval_dict in serialized:
-        qc_contents = {"qc_evaluation": qc_eval_dict}
-        resp = client.add_qc_evaluation(
-            data_asset_id=data_asset_id, qc_contents=qc_contents
-        )
-        responses.append(resp)
+    qc_contents = {"qc_evaluation": serialized}
+    response = client.add_qc_evaluation(
+        data_asset_id=data_asset_id, qc_contents=qc_contents
+    )
 
-    return responses[0] if len(responses) == 1 else responses
+    return response

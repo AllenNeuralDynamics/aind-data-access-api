@@ -20,12 +20,12 @@ from aind_data_schema_models.modalities import Modality
 from requests import HTTPError
 
 from aind_data_access_api.helpers.data_schema import (
+    add_qc_evaluations_to_docdb,
     get_quality_control_by_id,
     get_quality_control_by_name,
     get_quality_control_by_names,
     get_quality_control_status_df,
     get_quality_control_value_df,
-    serialize_qc_evaluations,
 )
 
 TEST_DIR = Path(os.path.dirname(os.path.realpath(__file__))).parent
@@ -316,7 +316,8 @@ class TestHelpersDataSchema(unittest.TestCase):
         )
 
     def test_serialize_qc_single_success(self):
-        """Test serialize_qc_evaluations succeeds for a single QCEvaluation."""
+        """Test add_qc_evaluations_to_docdb succeeds for a single
+        QCEvaluation."""
         mock_client = MagicMock()
         # mock a response that add_qc_evaluation would return
         mock_client.add_qc_evaluation.return_value = {"acknowledged": True}
@@ -345,20 +346,26 @@ class TestHelpersDataSchema(unittest.TestCase):
             notes="Single test",
         )
 
-        response = serialize_qc_evaluations(mock_client, "valid_id", qc_eval)
+        response = add_qc_evaluations_to_docdb(
+            mock_client, "valid_id", qc_eval
+        )
 
         self.assertIsInstance(response, dict)
         self.assertTrue(response["acknowledged"])
-        mock_client.add_qc_evaluation.assert_called_once()
+        mock_client.add_qc_evaluation.assert_called_once_with(
+            data_asset_id="valid_id",
+            qc_contents={
+                "qc_evaluation": [
+                    qc_eval.model_dump(mode="json", exclude_none=True)
+                ]
+            },
+        )
 
     def test_serialize_qc_list_success(self):
-        """Test serialize_qc_evaluations succeeds for a list of
+        """Test add_qc_evaluations_to_docdb succeeds for a list of
         QCEvaluations."""
         mock_client = MagicMock()
-        mock_client.add_qc_evaluation.side_effect = [
-            {"acknowledged": True},
-            {"acknowledged": True},
-        ]
+        mock_client.add_qc_evaluation.return_value = {"acknowledged": True}
 
         modality = {
             "name": "Extracellular electrophysiology",
@@ -404,15 +411,21 @@ class TestHelpersDataSchema(unittest.TestCase):
             notes="Second test",
         )
 
-        response = serialize_qc_evaluations(
+        response = add_qc_evaluations_to_docdb(
             mock_client, "valid_id", [qc_eval1, qc_eval2]
         )
 
-        self.assertIsInstance(response, list)
-        self.assertEqual(len(response), 2)
-        for r in response:
-            self.assertTrue(r["acknowledged"])
-        self.assertEqual(mock_client.add_qc_evaluation.call_count, 2)
+        self.assertIsInstance(response, dict)
+        self.assertTrue(response["acknowledged"])
+        mock_client.add_qc_evaluation.assert_called_once_with(
+            data_asset_id="valid_id",
+            qc_contents={
+                "qc_evaluation": [
+                    qc_eval1.model_dump(mode="json", exclude_none=True),
+                    qc_eval2.model_dump(mode="json", exclude_none=True),
+                ]
+            },
+        )
 
     def test_serialize_qc_failure(self):
         """Test error when data_asset_id is invalid."""
@@ -446,7 +459,7 @@ class TestHelpersDataSchema(unittest.TestCase):
         )
 
         with self.assertRaises(HTTPError) as e:
-            serialize_qc_evaluations(
+            add_qc_evaluations_to_docdb(
                 client=mock_client,
                 data_asset_id="bad_id",
                 evaluations=qc_eval,
