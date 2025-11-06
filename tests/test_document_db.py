@@ -981,6 +981,52 @@ class TestMetadataDbClient(unittest.TestCase):
 
     @patch("boto3.session.Session")
     @patch("botocore.auth.SigV4Auth.add_auth")
+    @patch("requests.Session.post")
+    def test_register_co_result(
+        self,
+        mock_post: MagicMock,
+        mock_auth: MagicMock,
+        mock_session: MagicMock,
+    ):
+        """Tests register_co_result method"""
+        mock_creds = MagicMock()
+        mock_creds.access_key = "abc"
+        mock_creds.secret_key = "efg"
+        mock_session.return_value.region_name = "us-west-2"
+        mock_session.get_credentials.return_value = mock_creds
+        mock_response = Response()
+        mock_response.status_code = 201
+        response_message = {
+            "message": (
+                "Inserted new DocDB record for result asset "
+                "s3://codeocean-bucket/123-456."
+            ),
+        }
+        mock_response._content = json.dumps(response_message).encode("utf-8")
+        mock_post.return_value = mock_response
+
+        client = MetadataDbClient(**self.example_client_args)
+        response = client.register_co_result(
+            s3_location="s3://codeocean-bucket/123-456",
+            name="co_internal_result",
+            co_asset_id="123-456",
+            co_computation_id="comp-789",
+        )
+        mock_auth.assert_called_once()
+        mock_post.assert_called_once_with(
+            url="https://example.com/v1/assets/register",
+            headers={"Content-Type": "application/json"},
+            data=(
+                '{"s3_location": "s3://codeocean-bucket/123-456", '
+                '"name": "co_internal_result", '
+                '"co_asset_id": "123-456", '
+                '"co_computation_id": "comp-789"}'
+            ),
+        )
+        self.assertEqual(response_message, response)
+
+    @patch("boto3.session.Session")
+    @patch("botocore.auth.SigV4Auth.add_auth")
     @patch("requests.Session.delete")
     def test_deregister_asset(
         self,
