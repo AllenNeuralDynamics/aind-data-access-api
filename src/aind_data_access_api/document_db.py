@@ -655,6 +655,34 @@ class MetadataDbClient(Client):
         response.raise_for_status()
         return response.json()
 
+    def register_co_result(
+        self,
+        s3_location: str,
+        name: str,
+        co_asset_id: str,
+        co_computation_id: str,
+    ) -> Dict[str, Any]:
+        """Register a Code Ocean result asset to the DocDB metadata index."""
+
+        data = json.dumps(
+            {
+                "s3_location": s3_location,
+                "name": name,
+                "co_asset_id": co_asset_id,
+                "co_computation_id": co_computation_id,
+            }
+        )
+        signed_header = self._signed_request(
+            method="POST", url=self._register_asset_url, data=data
+        )
+        response = self.session.post(
+            url=self._register_asset_url,
+            headers=dict(signed_header.headers),
+            data=data,
+        )
+        response.raise_for_status()
+        return response.json()
+
     def deregister_asset(self, s3_location: str) -> Dict[str, Any]:
         """De-register (delete) a data asset in Code Ocean and the
         DocDB metadata index."""
