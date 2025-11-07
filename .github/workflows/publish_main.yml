@@ -9,7 +9,7 @@ jobs:
     name: Tag
     uses: AllenNeuralDynamics/.github/.github/workflows/release-tag.yml@main
     secrets:
-      repo_token: ${{ secrets.GITHUB_TOKEN }}
+      repo-token: ${{ secrets.GITHUB_TOKEN }}
   publish:
     runs-on: ubuntu-latest
     name: Publish package
