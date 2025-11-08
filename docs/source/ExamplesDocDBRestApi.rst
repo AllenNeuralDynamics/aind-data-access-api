@@ -8,6 +8,20 @@ REST API using the provided Python client.
 Querying Metadata
 ~~~~~~~~~~~~~~~~~~~~~~
 
+.. note::
+
+    There are a several indexed fields in the DocDB metadata collection to support
+    efficient query execution by limiting the number of documents to be scanned.
+    Please use these fields in your filter queries whenever possible.
+    
+    Currently, the following fields are indexed in the v1 (``metadata_index/data_assets``)
+    collection: ``_id``, ``name``, ``location``, ``subject.subject_id``,
+    ``data_description.project_name``, and ``data_description.modality.abbreviation``.
+    
+    The same fields are indexed in the v2 (``metadata_index_v2/data_assets``) collection,
+    other than spelling for the modality field (``data_description.modalities.abbreviation``).
+
+
 Count Example 1: Get # of records with a certain subject_id
 -----------------------------------------------------------
 
