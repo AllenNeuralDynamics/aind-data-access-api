@@ -5,24 +5,16 @@ on:
       - main
 
 jobs:
-  tag_and_publish:
-    name: Parse version
+  tag:
+    name: Tag
+    uses: AllenNeuralDynamics/.github/.github/workflows/release-tag.yml@main
+    secrets:
+      repo-token: ${{ secrets.GITHUB_TOKEN }}
+  publish:
     runs-on: ubuntu-latest
-    outputs:
-      pkg_version: ${{ steps.output_version.outputs.pkg_version }}
+    name: Publish package
+    needs: tag
     steps:
-    - uses: actions/checkout@v4
-    - name: Get version from file
-      run: |
-        pkg_name=$(grep -P 'version = \{attr = .*\}' pyproject.toml | grep -oP '\w+.__version__')
-        init_file="./src/${pkg_name//.__version__}/__init__.py"
-        pkg_version=$(grep -Po '[0-9]+\.[0-9]+\.[0-9]+' "$init_file")
-        echo "tag=$pkg_version" >> "$GITHUB_ENV"
-    - name: Create git tag
-      run: |
-        git tag "v${{ env.tag }}"
-    - name: Push git tag
-      run: git push origin "v${{ env.tag }}"
     - name: Set up Python 3.10
       uses: actions/setup-python@v5
       with:
