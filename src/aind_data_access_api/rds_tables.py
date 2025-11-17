@@ -48,7 +48,7 @@ class Client:
     def __init__(
         self,
         credentials: RDSCredentials,
-        drivername: Optional[str] = "postgresql",
+        drivername: Optional[str] = "postgresql+psycopg",
     ):
         """
         Construct a client to interface with relational database.
@@ -60,7 +60,7 @@ class Client:
             Combination of dialect[+driver] where the dialect is
             the database name such as ``mysql``, ``oracle``, ``postgresql``,
             etc. and the optional driver name is a DBAPI such as
-            ``psycopg2``, ``pyodbc``, ``cx_oracle``, etc.
+            ``psycopg``, ``pyodbc``, ``cx_oracle``, etc.
 
         """
         self.credentials = credentials
