@@ -15,6 +15,7 @@ jobs:
     name: Publish package
     needs: tag
     steps:
+    - uses: actions/checkout@v5
     - name: Set up Python 3.10
       uses: actions/setup-python@v5
       with:
