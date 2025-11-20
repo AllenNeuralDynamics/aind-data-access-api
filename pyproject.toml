@@ -41,9 +41,7 @@ docdb = [
     "sshtunnel"
 ]
 rds = [
-    "psycopg2-binary==2.9.5",
-    "pandas>=2.0.0,<2.2.0",
-    "SQLAlchemy==1.4.49"
+    "redshift-connector>=2.0.0",
 ]
 helpers = [
     "aind-data-schema>=1.1.0,<2.0",
