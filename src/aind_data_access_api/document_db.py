@@ -632,17 +632,7 @@ class MetadataDbClient(Client):
 
     def generate_data_summary(self, record_id: str) -> Dict[str, Any]:
         """
-        Get an LLM-generated summary for a data asset.
-
-        Parameters
-        ----------
-        record_id : str
-            The ID of the record to generate a summary for.
-
-        Returns
-        -------
-        Dict[str, Any]
-            The LLM-generated summary for the data asset.
+        Get an LLM-generated summary for a data asset with the given record id.
         """
         url = f"{self._data_summary_url}/{record_id}"
         signed_header = self._signed_request(method="GET", url=url)
