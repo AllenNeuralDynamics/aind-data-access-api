@@ -631,7 +631,19 @@ class MetadataDbClient(Client):
         return f"https://{self.host}/{self.version}/add_qc_evaluation"
 
     def generate_data_summary(self, record_id: str) -> Dict[str, Any]:
-        """Get an LLM-generated summary for a data asset."""
+        """
+        Get an LLM-generated summary for a data asset.
+
+        Parameters
+        ----------
+        record_id : str
+            The ID of the record to generate a summary for.
+
+        Returns
+        -------
+        Dict[str, Any]
+            The LLM-generated summary for the data asset.
+        """
         url = f"{self._data_summary_url}/{record_id}"
         signed_header = self._signed_request(method="GET", url=url)
         response = self.session.get(
@@ -641,8 +653,21 @@ class MetadataDbClient(Client):
         return response.json()
 
     def register_asset(self, s3_location: str) -> Dict[str, Any]:
-        """Register a data asset to Code Ocean and the DocDB metadata index."""
+        """
+        Register a data asset to Code Ocean and add its metadata to DocDB
+        given the metadata exists at the top level of the provided S3 location.
 
+        Parameters
+        ----------
+        s3_location : str
+            The S3 location containing the asset and its metadata.
+
+        Returns
+        -------
+        Dict[str, Any]
+            The response from the registration API, including registration
+            status and details.
+        """
         data = json.dumps({"s3_location": s3_location})
         signed_header = self._signed_request(
             method="POST", url=self._register_asset_url, data=data
@@ -662,8 +687,28 @@ class MetadataDbClient(Client):
         co_asset_id: str,
         co_computation_id: str,
     ) -> Dict[str, Any]:
-        """Register a Code Ocean result asset to the DocDB metadata index."""
+        """
+        Register a Code Ocean result asset and add its metadata to DocDB
+        given the metadata exists at the top level of the Code Ocean
+        computation result.
 
+        Parameters
+        ----------
+        s3_location : str
+            The S3 location containing the result asset and its metadata.
+        name : str
+            The name of the result asset.
+        co_asset_id : str
+            The Code Ocean asset ID for the result.
+        co_computation_id : str
+            The Code Ocean computation ID associated with the result.
+
+        Returns
+        -------
+        Dict[str, Any]
+            The response from the registration API, including registration
+            status and details.
+        """
         data = json.dumps(
             {
                 "s3_location": s3_location,
@@ -684,9 +729,22 @@ class MetadataDbClient(Client):
         return response.json()
 
     def deregister_asset(self, s3_location: str) -> Dict[str, Any]:
-        """De-register (delete) a data asset in Code Ocean and the
-        DocDB metadata index."""
+        """
+        De-register (delete) a data asset from Code Ocean and remove its
+        metadata from DocDB given that the asset and its metadata are located
+        at the provided S3 location.
 
+        Parameters
+        ----------
+        s3_location : str
+            The S3 location containing the asset and metadata to be removed.
+
+        Returns
+        -------
+        Dict[str, Any]
+            The response from the deregistration API, including deregistration
+            status and details.
+        """
         data = json.dumps({"s3_location": s3_location})
         signed_header = self._signed_request(
             method="DELETE", url=self._deregister_asset_url, data=data
