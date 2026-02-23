@@ -193,7 +193,8 @@ It's possible to attach a custom Session to retry certain requests errors:
 Updating Metadata
 ~~~~~~~~~~~~~~~~~~~~~~
 
-1. **Permissions**: Request permissions for AWS Credentials to write to DocDB through the API Gateway.
+1. **Permissions**: Request permissions for AWS Credentials to write to DocDB through the API Gateway. 
+Note that the asset de/registration endpoints are intended for administrative use and require elevated AWS credentials/permissions.
 2. **Query DocDB**: Filter for the records you want to update.
 3. **Update DocDB**: Use ``upsert_one_docdb_record`` or ``upsert_list_of_docdb_records`` to update the records.
 
