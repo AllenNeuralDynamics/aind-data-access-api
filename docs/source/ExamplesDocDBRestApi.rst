@@ -192,9 +192,16 @@ It's possible to attach a custom Session to retry certain requests errors:
 
 Updating Metadata
 ~~~~~~~~~~~~~~~~~~~~~~
+.. note::
+
+   Manual updates to metadata in DocDB should be made through the
+   `aind-data-migration-scripts <https://github.com/AllenNeuralDynamics/aind-data-migration-scripts>`_
+   repository to track changes. Please see the README in that repository for instructions.
+   
+   For special use cases, a minimal example of updating metadata directly using the API is provided below.
 
 1. **Permissions**: Request permissions for AWS Credentials to write to DocDB through the API Gateway. 
-Note that the asset de/registration endpoints are intended for administrative use and require elevated AWS credentials/permissions.
+   Note that the asset de/registration endpoints are intended for administrative use and require elevated AWS credentials/permissions.
 2. **Query DocDB**: Filter for the records you want to update.
 3. **Update DocDB**: Use ``upsert_one_docdb_record`` or ``upsert_list_of_docdb_records`` to update the records.
 
