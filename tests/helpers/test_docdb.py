@@ -8,7 +8,9 @@ from aind_data_access_api.helpers.docdb import (
     get_id_from_name,
     get_name_from_id,
     get_projection_by_id,
+    get_projection_by_name,
     get_record_by_id,
+    get_record_by_name,
 )
 
 
@@ -75,8 +77,8 @@ class TestHelpersDocDB(unittest.TestCase):
         record = get_record_by_id(client, _id="abcd")
         self.assertIsNone(record)
 
-    def test_get_projected_record_from_docdb(self):
-        """Tests get_projected_record_from_docdb"""
+    def test_get_projection_by_id(self):
+        """Tests get_projection_by_id"""
         client = MagicMock()
         client.retrieve_docdb_records.return_value = [
             {"quality_control": {"a": 1}}
@@ -94,6 +96,36 @@ class TestHelpersDocDB(unittest.TestCase):
         ]
         field = get_field_by_id(client, _id="abcd", field="quality_control")
         self.assertEqual({"quality_control": {"a": 1}}, field)
+
+    def test_get_record_by_name(self):
+        """Tests get_record_by_name"""
+        client = MagicMock()
+        client.retrieve_docdb_records.return_value = [{"name": "abcd"}]
+        record = get_record_by_name(client=client, name="abcd")
+        self.assertEqual({"name": "abcd"}, record)
+
+        # test the empty case
+        client.retrieve_docdb_records.return_value = []
+        record = get_record_by_name(client=client, name="abcd")
+        self.assertIsNone(record)
+
+    def test_get_projection_by_name(self):
+        """Tests get_projection_by_name"""
+        client = MagicMock()
+        client.retrieve_docdb_records.return_value = [
+            {"quality_control": {"a": 1}}
+        ]
+        record = get_projection_by_name(
+            client=client, name="abcd", projection={"quality_control": 1}
+        )
+        self.assertEqual({"quality_control": {"a": 1}}, record)
+
+        # test the empty case
+        client.retrieve_docdb_records.return_value = []
+        record = get_projection_by_name(
+            client=client, name="abcd", projection={"quality_control": 1}
+        )
+        self.assertIsNone(record)
 
 
 if __name__ == "__main__":
