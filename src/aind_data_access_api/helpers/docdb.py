@@ -37,7 +37,7 @@ def get_projection_by_id(
     """
     Download a record from docdb using the record _id and a projection.
 
-    Projections return fields set to 1 {"field": 1}
+    Projections return fields set to 1, e.g. {"field": 1}
 
     Parameters
     ----------
@@ -137,3 +137,61 @@ def get_name_from_id(
     if len(records) == 0:
         raise ValueError(f"No record found with _id {_id}")
     return records[0]["name"]
+
+
+def get_record_by_name(
+    client: MetadataDbClient,
+    name: str,
+) -> Optional[dict]:
+    """
+    Download a record from docdb using the record name.
+
+    Parameters
+    ----------
+    client : MetadataDbClient
+    name : str
+
+    Returns
+    -------
+    Optional[dict]
+        None if record does not exist. Otherwise, it will return the record as
+        a dict.
+    """
+    records = client.retrieve_docdb_records(
+        filter_query={"name": name}, limit=1
+    )
+    if len(records) > 0:
+        return records[0]
+    else:
+        return None
+
+
+def get_projection_by_name(
+    client: MetadataDbClient,
+    name: str,
+    projection: dict,
+) -> Optional[dict]:
+    """
+    Download a record from docdb using the record name and a projection.
+
+    Projections return fields set to 1, e.g. {"field": 1}
+
+    Parameters
+    ----------
+    client : MetadataDbClient
+    name : str
+    projection : dict
+
+    Returns
+    -------
+    Optional[dict]
+        None if record does not exist. Otherwise, it will return the projected
+        record as a dict.
+    """
+    records = client.retrieve_docdb_records(
+        filter_query={"name": name}, projection=projection, limit=1
+    )
+    if len(records) > 0:
+        return records[0]
+    else:
+        return None
